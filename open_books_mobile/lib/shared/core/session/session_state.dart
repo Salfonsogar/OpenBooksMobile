@@ -1,0 +1,48 @@
+import 'package:equatable/equatable.dart';
+
+abstract class SessionState extends Equatable {
+  const SessionState();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class SessionInitial extends SessionState {}
+
+class SessionLoading extends SessionState {}
+
+class SessionAuthenticated extends SessionState {
+  final int userId;
+  final String userName;
+  final String email;
+  final String nombreCompleto;
+  final String nombreRol;
+  final bool sancionado;
+  final String token;
+
+  const SessionAuthenticated({
+    required this.userId,
+    required this.userName,
+    required this.email,
+    required this.nombreCompleto,
+    required this.nombreRol,
+    required this.sancionado,
+    required this.token,
+  });
+
+  bool get isAdmin => nombreRol == 'Administrador';
+
+  @override
+  List<Object?> get props => [userId, userName, email, nombreCompleto, nombreRol, sancionado, token];
+}
+
+class SessionUnauthenticated extends SessionState {}
+
+class SessionError extends SessionState {
+  final String message;
+
+  const SessionError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
