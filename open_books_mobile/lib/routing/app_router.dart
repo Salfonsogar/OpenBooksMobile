@@ -9,6 +9,8 @@ import '../features/auth/ui/pages/login_page.dart';
 import '../features/auth/ui/pages/register_page.dart';
 import '../features/auth/ui/pages/recovery_page.dart';
 import '../features/libros/ui/pages/home_page.dart';
+import '../features/libros/ui/pages/search_page.dart';
+import '../features/libros/ui/pages/book_detail_page.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -58,6 +60,27 @@ class AppRouter {
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomePage(),
+      ),
+      GoRoute(
+        path: '/search',
+        builder: (context, state) => const SearchPage(),
+      ),
+      GoRoute(
+        path: '/book/:id',
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return BookDetailPage(libroId: id);
+        },
+      ),
+      GoRoute(
+        path: '/reader/:id',
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return Scaffold(
+            appBar: AppBar(title: const Text('Reader')),
+            body: Center(child: Text('Reader para libro $id (pendiente - Fase 5)')),
+          );
+        },
       ),
     ],
   );
