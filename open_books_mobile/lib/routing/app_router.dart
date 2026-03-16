@@ -7,6 +7,7 @@ import '../shared/core/session/session_cubit.dart';
 import '../shared/core/session/session_state.dart';
 import '../features/auth/ui/pages/login_page.dart';
 import '../features/auth/ui/pages/register_page.dart';
+import '../features/auth/ui/pages/recovery_page.dart';
 import '../features/libros/ui/pages/home_page.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -23,7 +24,9 @@ class AppRouter {
     redirect: (context, state) {
       final sessionState = sessionCubit.state;
       final isLoggedIn = sessionState is SessionAuthenticated;
-      final isLoggingIn = state.matchedLocation == '/login' || state.matchedLocation == '/register';
+      final isLoggingIn = state.matchedLocation == '/login' ||
+          state.matchedLocation == '/register' ||
+          state.matchedLocation == '/recovery';
 
       if (!isLoggedIn && !isLoggingIn) {
         return '/login';
@@ -47,6 +50,10 @@ class AppRouter {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterPage(),
+      ),
+      GoRoute(
+        path: '/recovery',
+        builder: (context, state) => const RecoveryPage(),
       ),
       GoRoute(
         path: '/home',

@@ -25,11 +25,11 @@ class AuthInterceptor extends Interceptor {
   }
 
   bool _shouldAddToken(String path) {
-    final noAuthPaths = [
+    const noAuthPaths = [
       '/api/Usuarios/Login',
       '/api/Usuarios/Register',
       '/api/Usuarios/SolicitarRecuperacion',
     ];
-    return !noAuthPaths.any((path) => path.contains(path));
+    return !noAuthPaths.any((noAuthPath) => path.contains(noAuthPath));
   }
 }
