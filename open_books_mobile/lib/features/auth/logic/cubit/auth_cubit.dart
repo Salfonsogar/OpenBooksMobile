@@ -28,6 +28,7 @@ class AuthCubit extends Cubit<AuthState> {
         nombreRol: response.usuario.nombreRol,
         sancionado: response.usuario.sancionado,
         token: response.token,
+        fotoPerfilBase64: response.usuario.fotoPerfilBase64,
       );
 
       emit(AuthLoginSuccess(

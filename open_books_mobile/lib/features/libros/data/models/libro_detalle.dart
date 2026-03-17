@@ -11,6 +11,7 @@ class LibroDetalle {
   final int totalResenas;
   final String? portadaBase64;
   final List<String> categorias;
+  final int? numeroPaginas;
 
   LibroDetalle({
     required this.id,
@@ -23,6 +24,7 @@ class LibroDetalle {
     required this.totalResenas,
     this.portadaBase64,
     required this.categorias,
+    this.numeroPaginas,
   });
 
   factory LibroDetalle.fromJson(Map<String, dynamic> json) {
@@ -43,6 +45,7 @@ class LibroDetalle {
               ?.map((e) => e as String)
               .toList() ??
           [],
+      numeroPaginas: json['numeroPaginas'] as int?,
     );
   }
 
@@ -58,6 +61,7 @@ class LibroDetalle {
       'totalResenas': totalResenas,
       'portadaBase64': portadaBase64,
       'categorias': categorias,
+      'numeroPaginas': numeroPaginas,
     };
   }
 
@@ -72,6 +76,7 @@ class LibroDetalle {
     int? totalResenas,
     String? portadaBase64,
     List<String>? categorias,
+    int? numeroPaginas,
   }) {
     return LibroDetalle(
       id: id ?? this.id,
@@ -84,6 +89,7 @@ class LibroDetalle {
       totalResenas: totalResenas ?? this.totalResenas,
       portadaBase64: portadaBase64 ?? this.portadaBase64,
       categorias: categorias ?? this.categorias,
+      numeroPaginas: numeroPaginas ?? this.numeroPaginas,
     );
   }
 }

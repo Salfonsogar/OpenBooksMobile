@@ -11,8 +11,15 @@ import '../features/auth/ui/pages/recovery_page.dart';
 import '../features/libros/ui/pages/home_page.dart';
 import '../features/libros/ui/pages/search_page.dart';
 import '../features/libros/ui/pages/book_detail_page.dart';
+import '../features/biblioteca/ui/pages/library_page.dart';
+import '../features/perfil/ui/pages/profile_page.dart';
+import '../features/perfil/ui/pages/edit_profile_page.dart';
+import '../features/historial/ui/pages/history_page.dart';
+import '../shared/ui/widgets/search_header.dart';
+import '../features/auth/data/models/usuario.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 class AppRouter {
   final SessionCubit sessionCubit;
@@ -57,13 +64,32 @@ class AppRouter {
         path: '/recovery',
         builder: (context, state) => const RecoveryPage(),
       ),
-      GoRoute(
-        path: '/home',
-        builder: (context, state) => const HomePage(),
+      ShellRoute(
+        navigatorKey: _shellNavigatorKey,
+        builder: (context, state, child) {
+          return MainShell(child: child);
+        },
+        routes: [
+          GoRoute(
+            path: '/home',
+            builder: (context, state) => const HomePage(),
+          ),
+          GoRoute(
+            path: '/library',
+            builder: (context, state) => const LibraryPage(),
+          ),
+          GoRoute(
+            path: '/history',
+            builder: (context, state) => const HistoryPage(),
+          ),
+        ],
       ),
       GoRoute(
         path: '/search',
-        builder: (context, state) => const SearchPage(),
+        builder: (context, state) {
+          final autor = state.uri.queryParameters['autor'];
+          return SearchPage(autorInicial: autor);
+        },
       ),
       GoRoute(
         path: '/book/:id',
@@ -82,8 +108,84 @@ class AppRouter {
           );
         },
       ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfilePage(),
+        routes: [
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) {
+              final usuario = state.extra as Usuario;
+              return EditProfilePage(usuario: usuario);
+            },
+          ),
+        ],
+      ),
     ],
   );
+}
+
+class MainShell extends StatelessWidget {
+  final Widget child;
+
+  const MainShell({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          SearchHeader(
+            onSearchTap: () => context.pushReplacement('/search'),
+            onProfileTap: () => context.pushReplacement('/profile'),
+          ),
+          Expanded(child: child),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _calculateSelectedIndex(context),
+        onDestinationSelected: (index) => _onItemTapped(index, context),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Inicio',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.library_books_outlined),
+            selectedIcon: Icon(Icons.library_books),
+            label: 'Biblioteca',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history),
+            label: 'Historial',
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _calculateSelectedIndex(BuildContext context) {
+    final location = GoRouterState.of(context).matchedLocation;
+    if (location.startsWith('/library')) return 1;
+    if (location.startsWith('/history')) return 2;
+    return 0;
+  }
+
+  void _onItemTapped(int index, BuildContext context) {
+    switch (index) {
+      case 0:
+        context.go('/home');
+        break;
+      case 1:
+        context.go('/library');
+        break;
+      case 2:
+        context.go('/history');
+        break;
+    }
+  }
 }
 
 class RouterRefreshNotifier extends ChangeNotifier {

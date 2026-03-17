@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/network/api_client.dart';
@@ -53,9 +55,22 @@ class LibrosDataSource {
 
   Future<String> getPortada(int id) async {
     try {
-      final response = await _apiClient.get('/api/Libros/$id/portada');
-      return response.data['portadaBase64'] as String? ?? '';
+      final response = await _apiClient.get(
+        '/api/Libros/$id/portada',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      
+      final bytes = response.data as List<int>;
+      
+      if (bytes.isEmpty) {
+        return '';
+      }
+      
+      return base64Encode(bytes);
     } on DioException catch (e) {
+      if (e.response?.statusCode == 404 || e.response?.statusCode == 204) {
+        return '';
+      }
       throw _handleError(e);
     }
   }

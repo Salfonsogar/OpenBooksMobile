@@ -134,6 +134,19 @@ class LibrosCubit extends Cubit<LibrosState> {
     await cargarLibros(categorias: categorias, refresh: true);
   }
 
+  Future<void> buscarLibrosConFiltros(
+    String query, {
+    List<int>? categorias,
+    String? autor,
+  }) async {
+    await cargarLibros(
+      query: query,
+      categorias: categorias,
+      autor: autor,
+      refresh: true,
+    );
+  }
+
   Future<void> refresh() async {
     final currentState = state;
     if (currentState is LibrosLoaded) {
@@ -146,5 +159,27 @@ class LibrosCubit extends Cubit<LibrosState> {
     } else {
       await cargarLibros(refresh: true);
     }
+  }
+
+  Future<List<Libro>> getLibrosAleatorios() async {
+    return await _repository.getLibrosAleatorios(limit: 10);
+  }
+
+  Future<PagedResult<Categoria>> getCategorias() async {
+    return await _repository.getCategorias();
+  }
+
+  Future<List<Libro>> getTop5Libros() async {
+    return await _repository.getTop5Libros();
+  }
+
+  Future<List<Libro>> getLibrosPorCategoria(int categoriaId) async {
+    final result = await _repository.getLibros(categorias: [categoriaId], pageSize: 10);
+    return result.data;
+  }
+
+  Future<List<Libro>> getLibrosPorAutor(String autor) async {
+    final result = await _repository.getLibros(autor: autor, pageSize: 10);
+    return result.data;
   }
 }

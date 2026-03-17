@@ -30,6 +30,7 @@ class SessionCubit extends Cubit<SessionState> {
           nombreRol: user['nombreRol'] ?? 'Usuario',
           sancionado: user['sancionado'] ?? false,
           token: token,
+          fotoPerfilBase64: user['fotoPerfilBase64'],
         ));
       } else {
         emit(SessionUnauthenticated());
@@ -47,6 +48,7 @@ class SessionCubit extends Cubit<SessionState> {
     required String nombreRol,
     required bool sancionado,
     required String token,
+    String? fotoPerfilBase64,
   }) async {
     await _storage.write(key: _tokenKey, value: token);
 
@@ -57,6 +59,7 @@ class SessionCubit extends Cubit<SessionState> {
       'nombreCompleto': nombreCompleto,
       'nombreRol': nombreRol,
       'sancionado': sancionado,
+      'fotoPerfilBase64': fotoPerfilBase64,
     };
     await _storage.write(key: _userKey, value: jsonEncode(user));
 
@@ -68,6 +71,7 @@ class SessionCubit extends Cubit<SessionState> {
       nombreRol: nombreRol,
       sancionado: sancionado,
       token: token,
+      fotoPerfilBase64: fotoPerfilBase64,
     ));
   }
 
@@ -81,6 +85,7 @@ class SessionCubit extends Cubit<SessionState> {
     String? userName,
     String? email,
     String? nombreCompleto,
+    String? fotoPerfilBase64,
   }) async {
     final currentState = state;
     if (currentState is SessionAuthenticated) {
@@ -91,6 +96,7 @@ class SessionCubit extends Cubit<SessionState> {
         'nombreCompleto': nombreCompleto ?? currentState.nombreCompleto,
         'nombreRol': currentState.nombreRol,
         'sancionado': currentState.sancionado,
+        'fotoPerfilBase64': fotoPerfilBase64 ?? currentState.fotoPerfilBase64,
       };
       await _storage.write(key: _userKey, value: jsonEncode(user));
 
@@ -102,6 +108,7 @@ class SessionCubit extends Cubit<SessionState> {
         nombreRol: currentState.nombreRol,
         sancionado: currentState.sancionado,
         token: currentState.token,
+        fotoPerfilBase64: fotoPerfilBase64 ?? currentState.fotoPerfilBase64,
       ));
     }
   }
