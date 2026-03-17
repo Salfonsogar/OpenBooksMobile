@@ -19,6 +19,7 @@ class SessionAuthenticated extends SessionState {
   final String nombreRol;
   final bool sancionado;
   final String token;
+  final String? fotoPerfilBase64;
 
   const SessionAuthenticated({
     required this.userId,
@@ -28,12 +29,13 @@ class SessionAuthenticated extends SessionState {
     required this.nombreRol,
     required this.sancionado,
     required this.token,
+    this.fotoPerfilBase64,
   });
 
   bool get isAdmin => nombreRol == 'Administrador';
 
   @override
-  List<Object?> get props => [userId, userName, email, nombreCompleto, nombreRol, sancionado, token];
+  List<Object?> get props => [userId, userName, email, nombreCompleto, nombreRol, sancionado, token, fotoPerfilBase64];
 }
 
 class SessionUnauthenticated extends SessionState {}

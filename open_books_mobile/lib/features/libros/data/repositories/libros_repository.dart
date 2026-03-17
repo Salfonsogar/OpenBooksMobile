@@ -73,4 +73,11 @@ class LibrosRepository {
   Future<List<Libro>> getTop5Libros() {
     return _valoracionesDataSource.getTop5Libros();
   }
+
+  Future<List<Libro>> getLibrosAleatorios({int limit = 10}) async {
+    final result = await _librosDataSource.getLibros(page: 1, pageSize: 50);
+    final libros = result.data;
+    libros.shuffle();
+    return libros.take(limit).toList();
+  }
 }

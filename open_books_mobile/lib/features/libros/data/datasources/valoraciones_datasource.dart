@@ -54,8 +54,12 @@ class ValoracionesDataSource {
 
   Future<List<Libro>> getTop5Libros() async {
     try {
-      final response = await _apiClient.get('/api/Valoraciones/top5');
-      return (response.data as List<dynamic>)
+      final response = await _apiClient.get(
+        '/api/Libros',
+        queryParameters: {'query': '', 'page': 1, 'pageSize': 10},
+      );
+      final data = response.data as Map<String, dynamic>;
+      return (data['data'] as List<dynamic>)
           .map((e) => Libro.fromJson(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {

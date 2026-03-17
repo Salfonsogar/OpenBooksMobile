@@ -5,10 +5,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../logic/cubit/libros_cubit.dart';
+import '../../logic/cubit/categorias_cubit.dart';
 import '../widgets/libro_card.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  final String? autorInicial;
+
+  const SearchPage({super.key, this.autorInicial});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -16,11 +19,32 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
   Timer? _debounce;
+  bool _showFilters = false;
+  String? _selectedAutor;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<CategoriasCubit>().cargarCategorias();
+    
+    if (widget.autorInicial != null && widget.autorInicial!.isNotEmpty) {
+      _searchController.text = widget.autorInicial!;
+      _selectedAutor = widget.autorInicial;
+      context.read<LibrosCubit>().buscarLibrosConFiltros(
+        '',
+        autor: widget.autorInicial,
+      );
+    } else {
+      context.read<LibrosCubit>().cargarLibros();
+    }
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -32,80 +56,226 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
+  void _toggleFilters() {
+    setState(() {
+      _showFilters = !_showFilters;
+    });
+  }
+
+  void _applyFilters(List<int> categorias, String? autor) {
+    context.read<LibrosCubit>().buscarLibrosConFiltros(
+      _searchController.text,
+      categorias: categorias,
+      autor: autor,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: TextField(
-          controller: _searchController,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Buscar libros...',
-            border: InputBorder.none,
-          ),
-          onChanged: _onSearchChanged,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildSearchBar(),
+            if (_showFilters) _buildFilters(),
+            Expanded(child: _buildResults()),
+          ],
         ),
-        actions: [
-          if (_searchController.text.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                _searchController.clear();
-                context.read<LibrosCubit>().cargarLibros(refresh: true);
-              },
+      ),
+    );
+  }
+
+Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.go('/home'),
+          ),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                decoration: const InputDecoration(
+                  hintText: 'Buscar libros...',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                onChanged: (value) {
+                  _onSearchChanged(value);
+                  setState(() {});
+                },
+              ),
             ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: _showFilters 
+                  ? Theme.of(context).colorScheme.primary 
+                  : Theme.of(context).colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: Icon(
+                _showFilters ? Icons.filter_list_off : Icons.filter_list,
+                color: _showFilters 
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+              onPressed: _toggleFilters,
+            ),
+          ),
         ],
       ),
-      body: BlocBuilder<LibrosCubit, LibrosState>(
-        builder: (context, state) {
-          if (state is LibrosLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    );
+  }
 
-          if (state is LibrosError) {
-            return Center(child: Text(state.message));
-          }
-
-          if (state is LibrosLoaded) {
-            if (state.libros.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.search_off,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('No se encontraron libros'),
-                  ],
+  Widget _buildFilters() {
+    return BlocBuilder<CategoriasCubit, CategoriasState>(
+      builder: (context, state) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              Text(
+                'Autor',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-              );
-            }
-
-            return GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.65,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
               ),
-              itemCount: state.libros.length,
-              itemBuilder: (context, index) {
-                final libro = state.libros[index];
-                return LibroCard(
-                  libro: libro,
-                  onTap: () => context.push('/book/${libro.id}'),
-                );
-              },
+              const SizedBox(height: 4),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Buscar por autor...',
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                onSubmitted: (value) {
+                  _applyFilters(
+                    [],
+                    value.isNotEmpty ? value : null,
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Categorías',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              if (state is CategoriasLoading)
+                const SizedBox(
+                  height: 40,
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (state is CategoriasLoaded)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: state.categorias.map((categoria) {
+                    return FilterChip(
+                      label: Text(categoria.nombre),
+                      selected: false,
+                      onSelected: (selected) {
+                        _applyFilters([categoria.id], _selectedAutor);
+                      },
+                    );
+                  }).toList(),
+                )
+              else if (state is CategoriasError)
+                Text(
+                  'Error: ${state.message}',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                )
+              else
+                const SizedBox(height: 40),
+              const Divider(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildResults() {
+    return BlocBuilder<LibrosCubit, LibrosState>(
+      builder: (context, state) {
+        if (state is LibrosLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (state is LibrosError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(state.message),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => context.read<LibrosCubit>().cargarLibros(),
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (state is LibrosLoaded) {
+          if (state.libros.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.search_off,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('No se encontraron libros'),
+                ],
+              ),
             );
           }
 
-          return const Center(child: CircularProgressIndicator());
-        },
-      ),
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.65,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+            ),
+            itemCount: state.libros.length,
+            itemBuilder: (context, index) {
+              final libro = state.libros[index];
+              return LibroCard(
+                libro: libro,
+                onTap: () => context.pushReplacement('/book/${libro.id}'),
+              );
+            },
+          );
+        }
+
+        return const Center(child: CircularProgressIndicator());
+      },
     );
   }
 }
