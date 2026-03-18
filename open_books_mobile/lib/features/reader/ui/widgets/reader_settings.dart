@@ -7,13 +7,41 @@ import '../../logic/cubit/reader_settings_cubit.dart';
 class ReaderSettingsSheet extends StatelessWidget {
   const ReaderSettingsSheet({super.key});
 
+  Map<String, Color> _getThemeColors(String theme) {
+    switch (theme) {
+      case 'sepia':
+        return {
+          'background': const Color(0xFFF4ECD8),
+          'text': const Color(0xFF5B4636),
+          'header': const Color(0xFFF4ECD8),
+          'icon': const Color(0xFF5B4636),
+        };
+      case 'dark':
+        return {
+          'background': Colors.grey[900]!,
+          'text': Colors.grey[300]!,
+          'header': Colors.grey[800]!,
+          'icon': Colors.white,
+        };
+      default:
+        return {
+          'background': Colors.white,
+          'text': Colors.black87,
+          'header': Colors.white,
+          'icon': Colors.black87,
+        };
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ReaderSettingsCubit, ReaderSettings>(
       builder: (context, settings) {
+        final themeColors = _getThemeColors(settings.theme);
+        
         return Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
+            color: themeColors['background'],
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -24,7 +52,7 @@ class ReaderSettingsSheet extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[400],
+                  color: themeColors['text']!.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -33,15 +61,16 @@ class ReaderSettingsSheet extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Configuración',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
+                        color: themeColors['text'],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: Icon(Icons.close, color: themeColors['icon']),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
@@ -53,20 +82,20 @@ class ReaderSettingsSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSectionTitle('Tema'),
-                      _buildThemeSelector(context, settings),
+                      _buildSectionTitle('Tema', themeColors),
+                      _buildThemeSelector(context, settings, themeColors),
                       const SizedBox(height: 24),
-                      _buildSectionTitle('Tamaño de fuente'),
-                      _buildFontSizeSlider(context, settings),
+                      _buildSectionTitle('Tamaño de fuente', themeColors),
+                      _buildFontSizeSlider(context, settings, themeColors),
                       const SizedBox(height: 24),
-                      _buildSectionTitle('Familia de fuente'),
-                      _buildFontFamilySelector(context, settings),
+                      _buildSectionTitle('Familia de fuente', themeColors),
+                      _buildFontFamilySelector(context, settings, themeColors),
                       const SizedBox(height: 24),
-                      _buildSectionTitle('Interlineado'),
-                      _buildLineHeightSelector(context, settings),
+                      _buildSectionTitle('Interlineado', themeColors),
+                      _buildLineHeightSelector(context, settings, themeColors),
                       const SizedBox(height: 24),
-                      _buildSectionTitle('Márgenes'),
-                      _buildMarginSelector(context, settings),
+                      _buildSectionTitle('Márgenes', themeColors),
+                      _buildMarginSelector(context, settings, themeColors),
                       const SizedBox(height: 32),
                     ],
                   ),
@@ -79,21 +108,21 @@ class ReaderSettingsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, Map<String, Color> themeColors) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: Colors.grey,
+          color: themeColors['text']!.withValues(alpha: 0.7),
         ),
       ),
     );
   }
 
-  Widget _buildThemeSelector(BuildContext context, ReaderSettings settings) {
+  Widget _buildThemeSelector(BuildContext context, ReaderSettings settings, Map<String, Color> themeColors) {
     final themes = [
       {'key': 'light', 'label': 'Claro', 'bg': Colors.white, 'text': Colors.black},
       {'key': 'sepia', 'label': 'Sepia', 'bg': const Color(0xFFF4ECD8), 'text': const Color(0xFF5B4636)},
@@ -115,7 +144,7 @@ class ReaderSettingsSheet extends StatelessWidget {
                 color: theme['bg'] as Color,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isSelected ? Colors.blue : Colors.grey[300]!,
+                  color: isSelected ? themeColors['text']! : Colors.grey[300]!,
                   width: isSelected ? 2 : 1,
                 ),
               ),
@@ -144,25 +173,26 @@ class ReaderSettingsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildFontSizeSlider(BuildContext context, ReaderSettings settings) {
+  Widget _buildFontSizeSlider(BuildContext context, ReaderSettings settings, Map<String, Color> themeColors) {
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('A', style: TextStyle(fontSize: 12)),
+            Text('A', style: TextStyle(fontSize: 12, color: themeColors['text'])),
             Text(
               '${settings.fontSize.toInt()}px',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold, color: themeColors['text']),
             ),
-            const Text('A', style: TextStyle(fontSize: 24)),
+            Text('A', style: TextStyle(fontSize: 24, color: themeColors['text'])),
           ],
         ),
         Slider(
           value: settings.fontSize,
           min: 12,
           max: 28,
-          divisions: 8,
+          activeColor: themeColors['icon'],
+          inactiveColor: themeColors['text']!.withValues(alpha: 0.3),
           onChanged: (value) {
             context.read<ReaderSettingsCubit>().actualizarFontSize(value);
           },
@@ -171,7 +201,7 @@ class ReaderSettingsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildFontFamilySelector(BuildContext context, ReaderSettings settings) {
+  Widget _buildFontFamilySelector(BuildContext context, ReaderSettings settings, Map<String, Color> themeColors) {
     final fonts = [
       {'key': 'sans-serif', 'label': 'Sans', 'family': 'Roboto'},
       {'key': 'serif', 'label': 'Serif', 'family': 'Georgia'},
@@ -190,10 +220,10 @@ class ReaderSettingsSheet extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.blue.withValues(alpha: 0.1) : Colors.grey[100],
+                color: isSelected ? themeColors['icon']!.withValues(alpha: 0.1) : themeColors['background'],
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: isSelected ? Colors.blue : Colors.grey[300]!,
+                  color: isSelected ? themeColors['icon']! : themeColors['text']!.withValues(alpha: 0.3),
                 ),
               ),
               child: Center(
@@ -202,6 +232,7 @@ class ReaderSettingsSheet extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: font['family'] as String,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: themeColors['text'],
                   ),
                 ),
               ),
@@ -212,7 +243,7 @@ class ReaderSettingsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildLineHeightSelector(BuildContext context, ReaderSettings settings) {
+  Widget _buildLineHeightSelector(BuildContext context, ReaderSettings settings, Map<String, Color> themeColors) {
     final heights = [1.2, 1.5, 1.8, 2.0];
 
     return Row(
@@ -227,10 +258,10 @@ class ReaderSettingsSheet extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.blue.withValues(alpha: 0.1) : Colors.grey[100],
+                color: isSelected ? themeColors['icon']!.withValues(alpha: 0.1) : themeColors['background'],
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: isSelected ? Colors.blue : Colors.grey[300]!,
+                  color: isSelected ? themeColors['icon']! : themeColors['text']!.withValues(alpha: 0.3),
                 ),
               ),
               child: Center(
@@ -238,6 +269,7 @@ class ReaderSettingsSheet extends StatelessWidget {
                   height.toString(),
                   style: TextStyle(
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: themeColors['text'],
                   ),
                 ),
               ),
@@ -248,7 +280,7 @@ class ReaderSettingsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildMarginSelector(BuildContext context, ReaderSettings settings) {
+  Widget _buildMarginSelector(BuildContext context, ReaderSettings settings, Map<String, Color> themeColors) {
     final margins = [
       {'key': 'narrow', 'label': 'Pequeño'},
       {'key': 'normal', 'label': 'Normal'},
@@ -267,10 +299,10 @@ class ReaderSettingsSheet extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.blue.withValues(alpha: 0.1) : Colors.grey[100],
+                color: isSelected ? themeColors['icon']!.withValues(alpha: 0.1) : themeColors['background'],
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: isSelected ? Colors.blue : Colors.grey[300]!,
+                  color: isSelected ? themeColors['icon']! : themeColors['text']!.withValues(alpha: 0.3),
                 ),
               ),
               child: Center(
@@ -278,6 +310,7 @@ class ReaderSettingsSheet extends StatelessWidget {
                   margin['label'] as String,
                   style: TextStyle(
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: themeColors['text'],
                   ),
                 ),
               ),

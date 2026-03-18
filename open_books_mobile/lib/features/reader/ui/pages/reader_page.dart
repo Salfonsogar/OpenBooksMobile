@@ -109,19 +109,22 @@ class _ReaderPageState extends State<ReaderPage> {
         return {
           'background': const Color(0xFFF4ECD8),
           'text': const Color(0xFF5B4636),
-          'header': Colors.brown[800]!,
+          'header': const Color(0xFFF4ECD8),
+          'icon': const Color(0xFF5B4636),
         };
       case 'dark':
         return {
           'background': Colors.grey[900]!,
           'text': Colors.grey[300]!,
           'header': Colors.black,
+          'icon': Colors.white,
         };
       default:
         return {
           'background': Colors.white,
           'text': Colors.black87,
-          'header': Colors.black.withValues(alpha: 0.8),
+          'header': Colors.white,
+          'icon': Colors.black87,
         };
     }
   }
@@ -244,23 +247,23 @@ class _ReaderPageState extends State<ReaderPage> {
       child: Container(
         color: themeColors['header'],
         padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top,
-          left: 8,
-          right: 8,
-          bottom: 8,
+          top: MediaQuery.of(context).padding.top + 4,
+          left: 12,
+          right: 12,
+          bottom: 12,
         ),
         child: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.arrow_back, color: themeColors['background']),
+              icon: Icon(Icons.arrow_back, color: themeColors['icon'], size: 28),
               onPressed: () => Navigator.of(context).pop(),
             ),
             Expanded(
               child: Text(
                 titulo,
                 style: TextStyle(
-                  color: themeColors['background'],
-                  fontSize: 16,
+                  color: themeColors['icon'],
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
                 maxLines: 1,
@@ -268,12 +271,16 @@ class _ReaderPageState extends State<ReaderPage> {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.settings, color: themeColors['background']),
-              onPressed: () => _showSettingsSheet(context),
+              icon: Icon(Icons.search, color: themeColors['icon'], size: 28),
+              onPressed: () => _showSearchDialog(context, state, settings),
             ),
             IconButton(
-              icon: Icon(Icons.list, color: themeColors['background']),
-              onPressed: () => _showTocDialog(context, state),
+              icon: Icon(Icons.list, color: themeColors['icon'], size: 28),
+              onPressed: () => _showTocDialog(context, state, settings),
+            ),
+            IconButton(
+              icon: Icon(Icons.settings, color: themeColors['icon'], size: 28),
+              onPressed: () => _showSettingsSheet(context),
             ),
           ],
         ),
@@ -301,10 +308,10 @@ class _ReaderPageState extends State<ReaderPage> {
       child: Container(
         color: themeColors['header'],
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).padding.bottom + 8,
+          bottom: MediaQuery.of(context).padding.bottom + 12,
           left: 16,
           right: 16,
-          top: 8,
+          top: 12,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -315,20 +322,20 @@ class _ReaderPageState extends State<ReaderPage> {
                 Text(
                   '$chapterName ($progress%)',
                   style: TextStyle(
-                    color: themeColors['background'],
-                    fontSize: 12,
+                    color: themeColors['icon'],
+                    fontSize: 14,
                   ),
                 ),
                 Text(
                   '${_currentIndex + 1}/$totalChapters',
                   style: TextStyle(
-                    color: themeColors['background'],
-                    fontSize: 12,
+                    color: themeColors['icon'],
+                    fontSize: 14,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             GestureDetector(
               onTapUp: (details) {
                 final width = MediaQuery.of(context).size.width - 32;
@@ -349,16 +356,16 @@ class _ReaderPageState extends State<ReaderPage> {
                 _pageController.jumpToPage(_currentIndex);
               },
               child: Container(
-                height: 30,
+                height: 40,
                 color: Colors.transparent,
                 child: Center(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(6),
                     child: LinearProgressIndicator(
                       value: (_currentIndex + 1) / totalChapters,
-                      backgroundColor: Colors.grey[700],
-                      valueColor: AlwaysStoppedAnimation<Color>(themeColors['background']!),
-                      minHeight: 8,
+                      backgroundColor: themeColors['text']!.withValues(alpha: 0.3),
+                      valueColor: AlwaysStoppedAnimation<Color>(themeColors['text']!),
+                      minHeight: 12,
                     ),
                   ),
                 ),
@@ -389,7 +396,7 @@ class _ReaderPageState extends State<ReaderPage> {
     );
   }
 
-  void _showTocDialog(BuildContext context, ReaderState state) {
+  void _showTocDialog(BuildContext context, ReaderState state, ReaderSettings settings) {
     if (state is! ReaderLoaded) return;
 
     final toc = state.manifest.toc;
@@ -474,6 +481,67 @@ class _ReaderPageState extends State<ReaderPage> {
                     },
                   );
                 },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSearchDialog(BuildContext context, ReaderState state, ReaderSettings settings) {
+    if (state is! ReaderLoaded) return;
+
+    final themeColors = _getThemeColors(settings.theme);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (dialogContext) => Container(
+        height: MediaQuery.of(context).size.height * 0.9,
+        decoration: BoxDecoration(
+          color: themeColors['background'],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: themeColors['text']!.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                style: TextStyle(color: themeColors['text']),
+                decoration: InputDecoration(
+                  hintText: 'Buscar en el libro...',
+                  hintStyle: TextStyle(color: themeColors['text']!.withValues(alpha: 0.5)),
+                  prefixIcon: Icon(Icons.search, color: themeColors['icon']),
+                  filled: true,
+                  fillColor: themeColors['text']!.withValues(alpha: 0.1),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                onChanged: (query) {
+                  // TODO: Implement search logic
+                },
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  'Escribe para buscar en el contenido',
+                  style: TextStyle(color: themeColors['text']!.withValues(alpha: 0.5)),
+                ),
               ),
             ),
           ],
