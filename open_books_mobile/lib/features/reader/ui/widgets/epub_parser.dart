@@ -145,6 +145,7 @@ class ChapterContent extends StatelessWidget {
   final Color backgroundColor;
   final int libroId;
   final String chapterPath;
+  final String fontFamily;
   final Function(String)? onImageTap;
 
   const ChapterContent({
@@ -157,6 +158,7 @@ class ChapterContent extends StatelessWidget {
     this.horizontalMargin = 16.0,
     this.textColor = Colors.black,
     this.backgroundColor = Colors.white,
+    this.fontFamily = 'sans-serif',
     this.onImageTap,
   });
 
@@ -191,6 +193,7 @@ class ChapterContent extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: textColor,
               height: lineHeight,
+              fontFamily: fontFamily,
             ),
           ),
         );
@@ -204,6 +207,7 @@ class ChapterContent extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: textColor,
               height: lineHeight,
+              fontFamily: fontFamily,
             ),
           ),
         );
@@ -217,6 +221,7 @@ class ChapterContent extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: textColor,
               height: lineHeight,
+              fontFamily: fontFamily,
             ),
           ),
         );
@@ -230,6 +235,7 @@ class ChapterContent extends StatelessWidget {
               fontSize: fontSize,
               color: textColor,
               height: lineHeight,
+              fontFamily: fontFamily,
             ),
           ),
         );
@@ -301,6 +307,7 @@ class ChapterContent extends StatelessWidget {
               fontStyle: FontStyle.italic,
               color: textColor,
               height: lineHeight,
+              fontFamily: fontFamily,
             ),
           ),
         );
@@ -316,6 +323,7 @@ class ChapterContent extends StatelessWidget {
               color: Colors.blue,
               decoration: TextDecoration.underline,
               height: lineHeight,
+              fontFamily: fontFamily,
             ),
           ),
         );

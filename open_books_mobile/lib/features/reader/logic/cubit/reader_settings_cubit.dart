@@ -48,6 +48,12 @@ class ReaderSettingsCubit extends Cubit<ReaderSettings> {
     await _guardarSettings(newSettings);
   }
 
+  Future<void> actualizarFontFamily(String family) async {
+    final newSettings = state.copyWith(fontFamily: family);
+    emit(newSettings);
+    await _guardarSettings(newSettings);
+  }
+
   Future<void> _guardarSettings(ReaderSettings settings) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_settingsKey, jsonEncode(settings.toJson()));

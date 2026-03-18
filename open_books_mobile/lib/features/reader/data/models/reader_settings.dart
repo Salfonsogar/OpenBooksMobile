@@ -5,12 +5,14 @@ class ReaderSettings extends Equatable {
   final double lineHeight;
   final String marginMode;
   final String theme;
+  final String fontFamily;
 
   const ReaderSettings({
-    this.fontSize = 1.0,
+    this.fontSize = 16.0,
     this.lineHeight = 1.6,
     this.marginMode = 'normal',
     this.theme = 'light',
+    this.fontFamily = 'sans-serif',
   });
 
   static const defaultSettings = ReaderSettings();
@@ -20,12 +22,14 @@ class ReaderSettings extends Equatable {
     double? lineHeight,
     String? marginMode,
     String? theme,
+    String? fontFamily,
   }) {
     return ReaderSettings(
       fontSize: fontSize ?? this.fontSize,
       lineHeight: lineHeight ?? this.lineHeight,
       marginMode: marginMode ?? this.marginMode,
       theme: theme ?? this.theme,
+      fontFamily: fontFamily ?? this.fontFamily,
     );
   }
 
@@ -46,18 +50,20 @@ class ReaderSettings extends Equatable {
       'lineHeight': lineHeight,
       'marginMode': marginMode,
       'theme': theme,
+      'fontFamily': fontFamily,
     };
   }
 
   factory ReaderSettings.fromJson(Map<String, dynamic> json) {
     return ReaderSettings(
-      fontSize: (json['fontSize'] as num?)?.toDouble() ?? 1.0,
+      fontSize: (json['fontSize'] as num?)?.toDouble() ?? 16.0,
       lineHeight: (json['lineHeight'] as num?)?.toDouble() ?? 1.6,
       marginMode: json['marginMode'] as String? ?? 'normal',
       theme: json['theme'] as String? ?? 'light',
+      fontFamily: json['fontFamily'] as String? ?? 'sans-serif',
     );
   }
 
   @override
-  List<Object?> get props => [fontSize, lineHeight, marginMode, theme];
+  List<Object?> get props => [fontSize, lineHeight, marginMode, theme, fontFamily];
 }

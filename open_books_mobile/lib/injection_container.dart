@@ -17,6 +17,7 @@ import 'features/historial/data/repositories/historial_repository.dart';
 import 'features/historial/logic/cubit/historial_cubit.dart';
 import 'features/reader/data/datasources/epub_datasource.dart';
 import 'features/reader/data/repositories/epub_repository.dart';
+import 'features/reader/logic/cubit/reader_settings_cubit.dart';
 import 'shared/core/network/api_client.dart';
 import 'shared/core/session/session_cubit.dart';
 
@@ -129,5 +130,8 @@ Future<void> setupDependencies() async {
   );
   getIt.registerLazySingleton<EpubRepository>(
     () => EpubRepository(getIt<EpubDataSource>()),
+  );
+  getIt.registerFactory<ReaderSettingsCubit>(
+    () => ReaderSettingsCubit(),
   );
 }
