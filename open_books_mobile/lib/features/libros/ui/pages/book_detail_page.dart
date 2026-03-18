@@ -252,7 +252,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
         width: double.infinity,
         child: ElevatedButton(
           onPressed: () {
-            context.pushReplacement('/reader/${libro.id}');
+            context.push('/reader/${libro.id}');
           },
           child: const Text('Leer'),
         ),
@@ -262,7 +262,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
       child: OutlinedButton(
         onPressed: () {
           if (estaEnBiblioteca) {
-            context.pushReplacement('/reader/${libro.id}');
+            context.push('/reader/${libro.id}');
           } else {
             context.read<LibroDetalleCubit>().agregarABiblioteca();
           }

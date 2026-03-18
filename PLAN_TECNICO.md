@@ -1214,16 +1214,46 @@ Usar Flutter Local Notifications para:
 - [ ] Perfil de usuario
 - [ ] Editar perfil
 
-### Fase 5: LECTOR EPUB (Semana 4-5)
-- [ ] Parser EPUB
-- [ ] Reader Page
-- [ ] Navegación capítulos
-- [ ] TOC Sidebar
-- [ ] Reader Settings (font, theme, margins)
-- [ ] Bookmarks
-- [ ] Highlights
-- [ ] Progreso de lectura (footer)
-- [ ] Cache offline
+### Fase 5: LECTOR EPUB - CORE (Semana 4)
+- [ ] Estructura de carpetas feature reader
+- [ ] Modelos: EpubManifest, ReaderSettings
+- [ ] Data layer: EpubDataSource, EpubRepository
+- [ ] ReaderCubit: carga manifest, navegación capítulos
+- [ ] ReaderSettingsCubit: configuraciones
+- [ ] Parser HTML → Widgets (soporte: p, h1-h6, img, strong, em, blockquote, a)
+- [ ] ReaderPage básica con PageView
+- [ ] Navegación: siguiente/anterior capítulo
+
+### Fase 5.1: LECTOR EPUB - UI COMPLETA (Semana 4)
+- [ ] Header: título libro, botón TOC, botón settings
+- [ ] TOC Sidebar: tabla de contenidos
+- [ ] Settings Panel: fontSize (80-200%), lineHeight (1.2-2.0), marginMode (narrow/normal/wide), theme (light/dark/sepia)
+- [ ] Reader Footer: indicador de progreso + slider
+- [ ] Tocar centro para mostrar/ocultar UI
+- [ ] Gesture horizontal para cambiar página
+
+### Fase 5.2: LECTOR EPUB - AVANZADO (Semana 5)
+- [ ] Resolución de rutas relativas (../images/)
+- [ ] Cache en memoria de capítulos
+- [ ] Precarga de siguiente capítulo
+- [ ] Layout incremental (generación dinámica de páginas)
+- [ ] Recalculo de páginas al cambiar settings
+
+### Fase 5.3: LECTOR EPUB - BOOKMARKS (Semana 5)
+- [ ] Modelo Bookmark
+- [ ] Crear marcador desde capítulo actual
+- [ ] Sidebar de marcadores
+- [ ] Eliminar marcador
+- [ ] Navegar a marcador
+- [ ] Persistencia SQLite de marcadores
+
+### Fase 5.4: LECTOR EPUB - HIGHLIGHTS (Semana 5)
+- [ ] Modelo Highlight
+- [ ] Colores: Amarillo, Verde, Azul, Rosa, Naranja
+- [ ] Guardar highlight con color
+- [ ] Mostrar highlights en texto
+- [ ] Eliminar highlight
+- [ ] Persistencia SQLite de highlights
 
 ### Fase 6: Notificaciones (Semana 5)
 - [ ] SignalR Service
@@ -1241,7 +1271,7 @@ Usar Flutter Local Notifications para:
 
 ### Fase 8: Offline + Testing (Semana 6)
 - [ ] SQLite setup
-- [ ] Cache lectura offline
+- [ ] Cache lectura offline (capítulos)
 - [ ] Unit tests
 - [ ] Widget tests
 - [ ] Integration tests
@@ -1276,7 +1306,308 @@ dev_dependencies:
 
 ---
 
-## 12. SECURITY
+## 12. PLAN DETALLADO FASE 5: LECTOR EPUB
+
+### Fase 5.0: CORE - Estructura Base
+
+#### Archivos a crear:
+```
+lib/features/reader/
+├── data/
+│   ├── models/
+│   │   ├── epub_manifest.dart
+│   │   └── reader_settings.dart
+│   ├── datasources/
+│   │   └── epub_datasource.dart
+│   └── repositories/
+│       └── epub_repository.dart
+├── logic/
+│   └── cubit/
+│       ├── reader_cubit.dart
+│       └── reader_settings_cubit.dart
+└── ui/
+    ├── pages/
+    │   └── reader_page.dart
+    └── widgets/
+        └── chapter_content.dart
+```
+
+#### Implementación:
+
+**1. epub_manifest.dart**
+```dart
+class EpubManifest {
+  final String titulo;
+  final String autor;
+  final List<TocItem> toc;
+  final List<String> readingOrder;
+}
+
+class TocItem {
+  final String titulo;
+  final String href;
+}
+```
+
+**2. reader_settings.dart**
+```dart
+class ReaderSettings {
+  final double fontSize;     // 0.8 - 2.0 (80% - 200%)
+  final double lineHeight;    // 1.2, 1.5, 1.8, 2.0
+  final String marginMode;   // narrow, normal, wide
+  final String theme;        // light, dark, sepia
+  
+  // Valores por defecto
+  static const defaultSettings = ReaderSettings(
+    fontSize: 1.0,
+    lineHeight: 1.6,
+    marginMode: 'normal',
+    theme: 'light',
+  );
+}
+```
+
+**3. epub_datasource.dart**
+```dart
+class EpubDataSource {
+  // GET /api/Libros/{id}/epub/manifest
+  Future<EpubManifest> getManifest(int libroId);
+  
+  // GET /api/Libros/{id}/epub/resource?path={path}
+  Future<String> getResource(int libroId, String path);
+}
+```
+
+**4. reader_cubit.dart**
+```dart
+// Estados
+- ReaderInitial
+- ReaderLoading  
+- ReaderLoaded(manifest, currentIndex, content)
+- ReaderError(message)
+
+// Métodos
+- cargarLibro(libroId)
+- cargarCapitulo(index)
+- siguienteCapitulo()
+- capituloAnterior()
+- irACapitulo(index)
+```
+
+**5. epub_parser.dart**
+```dart
+class EpubParser {
+  // Convierte HTML → List<ReaderBlock>
+  // Soporte: p, h1-h6, img, strong, em, blockquote, a
+  List<ReaderBlock> parse(String html);
+}
+
+class ReaderBlock {
+  final String type;  // p, h1, h2, img, etc.
+  final dynamic content;
+}
+```
+
+**6. reader_page.dart**
+```dart
+// PageView con paginación
+// Carga manifest al iniciar
+// Muestra capítulo actual
+// Gesture horizontal para navegación
+```
+
+---
+
+### Fase 5.1: UI COMPLETA
+
+#### Archivos a crear/actualizar:
+```
+lib/features/reader/
+├── ui/
+│   ├── pages/
+│   │   └── reader_page.dart        (actualizar)
+│   └── widgets/
+│       ├── reader_header.dart      (nuevo)
+│       ├── toc_sidebar.dart       (nuevo)
+│       ├── settings_panel.dart    (nuevo)
+│       └── reader_footer.dart     (nuevo)
+```
+
+#### Implementación:
+
+**1. reader_header.dart**
+- Título del libro
+- Botón TOC (abre sidebar)
+- Botón Settings (abre bottom sheet)
+- Botón volver
+
+**2. toc_sidebar.dart**
+- Slide-in desde izquierda
+- Lista de capítulos (del manifest.toc)
+- Al tocar → navegar a capítulo
+
+**3. settings_panel.dart**
+- Bottom sheet con:
+  - **FontSize**: Slider 80%-200%
+  - **LineHeight**: Opción (1.2, 1.5, 1.8, 2.0)
+  - **Margin**: Opción (narrow, normal, wide)
+  - **Theme**: Opción (light, dark, sepia)
+- Persiste en SharedPreferences
+
+**4. reader_footer.dart**
+- "Capítulo X de Y"
+- Slider de progreso
+- Al cambiar → navegar a capítulo
+
+**5. reader_page.dart (actualizar)**
+- Integrar header, content, footer
+- Tocar centro → mostrar/ocultar UI
+- Gesture horizontal → siguiente/anterior página
+
+---
+
+### Fase 5.2: AVANZADO
+
+#### Mejoras técnicas:
+
+**1. Resolución de rutas relativas**
+```dart
+// Transforma: ../images/img1.jpg
+// Hacia: api/Libros/{id}/epub/resource?path=images/img1.jpg
+String resolveRelativePath(String relativePath, String currentPath);
+```
+
+**2. Cache en memoria**
+```dart
+class ChapterCache {
+  final Map<String, String> _cache = {};
+  
+  String? get(String path);
+  void put(String path, String content);
+  void clear();
+}
+```
+
+**3. Precarga de capítulo**
+```dart
+// Mientras lee capítulo actual, descarga siguiente en background
+Future<void> precargarSiguiente();
+```
+
+**4. Layout incremental**
+```dart
+// Genera páginas dinámicamente
+// Solo construye las visibles en viewport
+class PageGenerator {
+  List<Widget> generatePages(List<ReaderBlock> blocks, Size viewport);
+}
+```
+
+**5. Recalculo de páginas**
+```dart
+// Cuando cambia settings → recalcular páginas
+void onSettingsChanged(ReaderSettings settings);
+```
+
+---
+
+### Fase 5.3: BOOKMARKS
+
+#### Modelo:
+```dart
+class Bookmark {
+  final int id;
+  final int bookId;
+  final int chapterIndex;
+  final String title;
+  final DateTime createdAt;
+}
+```
+
+#### Implementación:
+
+**1. SQLite Table**
+```sql
+CREATE TABLE bookmarks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  book_id INTEGER,
+  chapter_index INTEGER,
+  title TEXT,
+  created_at INTEGER
+);
+```
+
+**2. ReaderCubit (agregar métodos)**
+```dart
+- crearBookmark(titulo)
+- eliminarBookmark(id)
+- getBookmarks(bookId)
+- navegarABookmark(bookmark)
+```
+
+**3. bookmarks_sidebar.dart**
+- Lista de marcadores del libro actual
+- Al tocar → navegar al capítulo
+- Swipe para eliminar
+
+---
+
+### Fase 5.4: HIGHLIGHTS
+
+#### Modelo:
+```dart
+class Highlight {
+  final int id;
+  final int bookId;
+  final int chapterIndex;
+  final String text;
+  final String color;  // #FFEB3B, #4CAF50, #2196F3, #E91E63, #FF9800
+  final DateTime createdAt;
+}
+```
+
+#### Colores disponibles:
+| Color   | Hex       |
+|---------|-----------|
+| Amarillo | #FFEB3B |
+| Verde   | #4CAF50  |
+| Azul    | #2196F3  |
+| Rosa    | #E91E63  |
+| Naranja | #FF9800  |
+
+#### Implementación:
+
+**1. SQLite Table**
+```sql
+CREATE TABLE highlights (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  book_id INTEGER,
+  chapter_index INTEGER,
+  text TEXT,
+  color TEXT,
+  created_at INTEGER
+);
+```
+
+**2. ReaderCubit (agregar métodos)**
+```dart
+- crearHighlight(texto, color)
+- eliminarHighlight(id)
+- getHighlights(bookId, chapterIndex)
+```
+
+**3. highlight_menu.dart**
+- Al seleccionar texto → mostrar menú
+- Elegir color
+- Guardar highlight
+
+**4. chapter_content.dart (actualizar)**
+- Renderizar highlights con BackgroundColor
+- Al tocar highlight → opciones (eliminar)
+
+---
+
+## 13. SECURITY
 
 - No guardar passwords localmente
 - Usar HTTPS siempre

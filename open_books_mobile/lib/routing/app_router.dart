@@ -15,6 +15,7 @@ import '../features/biblioteca/ui/pages/library_page.dart';
 import '../features/perfil/ui/pages/profile_page.dart';
 import '../features/perfil/ui/pages/edit_profile_page.dart';
 import '../features/historial/ui/pages/history_page.dart';
+import '../features/reader/ui/pages/reader_page.dart';
 import '../shared/ui/widgets/search_header.dart';
 import '../features/auth/data/models/usuario.dart';
 
@@ -102,10 +103,7 @@ class AppRouter {
         path: '/reader/:id',
         builder: (context, state) {
           final id = int.parse(state.pathParameters['id']!);
-          return Scaffold(
-            appBar: AppBar(title: const Text('Reader')),
-            body: Center(child: Text('Reader para libro $id (pendiente - Fase 5)')),
-          );
+          return ReaderPage(libroId: id);
         },
       ),
       GoRoute(
