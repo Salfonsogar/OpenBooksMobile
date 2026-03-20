@@ -1234,18 +1234,18 @@ Usar Flutter Local Notifications para:
 
 ### Fase 5.2: LECTOR EPUB - AVANZADO (Semana 5)
 - [ ] Resolución de rutas relativas (../images/)
-- [ ] Cache en memoria de capítulos
-- [ ] Precarga de siguiente capítulo
+- [x] Cache en memoria de capítulos
+- [x] Precarga de siguiente capítulo
 - [ ] Layout incremental (generación dinámica de páginas)
 - [ ] Recalculo de páginas al cambiar settings
 
 ### Fase 5.3: LECTOR EPUB - BOOKMARKS (Semana 5)
-- [ ] Modelo Bookmark
-- [ ] Crear marcador desde capítulo actual
-- [ ] Sidebar de marcadores
-- [ ] Eliminar marcador
-- [ ] Navegar a marcador
-- [ ] Persistencia SQLite de marcadores
+- [x] Modelo Bookmark
+- [x] Crear marcador desde capítulo actual
+- [x] Sidebar de marcadores (integrado con índice)
+- [x] Eliminar marcador
+- [x] Navegar a marcador
+- [x] Persistencia de marcadores
 
 ### Fase 5.4: LECTOR EPUB - HIGHLIGHTS (Semana 5)
 - [ ] Modelo Highlight

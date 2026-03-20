@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../data/chapter_cache.dart';
 import '../../data/models/epub_manifest.dart';
 import '../../data/repositories/epub_repository.dart';
 
@@ -19,33 +20,33 @@ class ReaderLoaded extends ReaderState {
   final EpubManifest manifest;
   final int currentChapterIndex;
   final String currentContent;
-  final Map<int, String> chapterContents;
+  final Set<int> cachedChapterIndices;
 
   const ReaderLoaded({
     required this.manifest,
     required this.currentChapterIndex,
     required this.currentContent,
-    this.chapterContents = const {},
+    this.cachedChapterIndices = const {},
   });
 
   @override
-  List<Object?> get props => [manifest, currentChapterIndex, currentContent, chapterContents];
+  List<Object?> get props => [manifest, currentChapterIndex, currentContent, cachedChapterIndices];
 
   ReaderLoaded copyWith({
     EpubManifest? manifest,
     int? currentChapterIndex,
     String? currentContent,
-    Map<int, String>? chapterContents,
+    Set<int>? cachedChapterIndices,
   }) {
     return ReaderLoaded(
       manifest: manifest ?? this.manifest,
       currentChapterIndex: currentChapterIndex ?? this.currentChapterIndex,
       currentContent: currentContent ?? this.currentContent,
-      chapterContents: chapterContents ?? this.chapterContents,
+      cachedChapterIndices: cachedChapterIndices ?? this.cachedChapterIndices,
     );
   }
 
-  String? getContentForChapter(int index) => chapterContents[index];
+  bool hasChapterCached(int index) => cachedChapterIndices.contains(index);
 }
 
 class ReaderError extends ReaderState {
@@ -60,6 +61,7 @@ class ReaderError extends ReaderState {
 class ReaderCubit extends Cubit<ReaderState> {
   final EpubRepository _repository;
   final int libroId;
+  final ChapterCache _chapterCache = ChapterCache();
 
   ReaderCubit(this._repository, this.libroId) : super(ReaderInitial());
 
@@ -75,13 +77,17 @@ class ReaderCubit extends Cubit<ReaderState> {
 
       final firstChapter = manifest.readingOrder.first.href;
       final content = await _repository.getResource(libroId, firstChapter);
+      
+      _chapterCache.put(0, content);
 
       emit(ReaderLoaded(
         manifest: manifest,
         currentChapterIndex: 0,
         currentContent: content,
-        chapterContents: {0: content},
+        cachedChapterIndices: {0},
       ));
+
+      _precargarSiguienteCapitulo(0);
     } catch (e) {
       emit(ReaderError(e.toString().replaceAll('Exception: ', '')));
     }
@@ -95,18 +101,32 @@ class ReaderCubit extends Cubit<ReaderState> {
       return;
     }
 
+    if (_chapterCache.has(index)) {
+      final content = _chapterCache.get(index)!;
+      emit(currentState.copyWith(
+        currentChapterIndex: index,
+        currentContent: content,
+      ));
+      _precargarSiguienteCapitulo(index);
+      return;
+    }
+
     try {
       final chapterPath = currentState.manifest.readingOrder[index].href;
       final content = await _repository.getResource(libroId, chapterPath);
 
-      final newContents = Map<int, String>.from(currentState.chapterContents);
-      newContents[index] = content;
+      _chapterCache.put(index, content);
+
+      final newCachedIndices = Set<int>.from(currentState.cachedChapterIndices)..add(index);
 
       emit(currentState.copyWith(
         currentChapterIndex: index,
         currentContent: content,
-        chapterContents: newContents,
+        cachedChapterIndices: newCachedIndices,
       ));
+
+      _precargarSiguienteCapitulo(index);
+      _optimizeCache(currentState.currentChapterIndex);
     } catch (e) {
       emit(ReaderError(e.toString().replaceAll('Exception: ', '')));
     }
@@ -144,15 +164,54 @@ class ReaderCubit extends Cubit<ReaderState> {
       return null;
     }
     
-    if (currentState.chapterContents.containsKey(index)) {
-      return currentState.chapterContents[index];
+    if (_chapterCache.has(index)) {
+      return _chapterCache.get(index);
     }
     
-    await cargarCapitulo(index);
-    final newState = state;
-    if (newState is ReaderLoaded) {
-      return newState.chapterContents[index];
+    try {
+      final chapterPath = currentState.manifest.readingOrder[index].href;
+      final content = await _repository.getResource(libroId, chapterPath);
+      _chapterCache.put(index, content);
+      return content;
+    } catch (e) {
+      return null;
     }
-    return null;
   }
+
+  void _precargarSiguienteCapitulo(int currentIndex) {
+    final currentState = state;
+    if (currentState is! ReaderLoaded) return;
+
+    final nextIndex = currentIndex + 1;
+    if (nextIndex >= currentState.manifest.readingOrder.length) return;
+    if (_chapterCache.has(nextIndex)) return;
+
+    Future.microtask(() async {
+      try {
+        final chapterPath = currentState.manifest.readingOrder[nextIndex].href;
+        final content = await _repository.getResource(libroId, chapterPath);
+        
+        if (!isClosed) {
+          _chapterCache.put(nextIndex, content);
+        }
+      } catch (e) {
+      }
+    });
+  }
+
+  void _optimizeCache(int currentIndex) {
+    const windowSize = 5;
+    final indicesToKeep = <int>{};
+    
+    for (int i = currentIndex - windowSize; i <= currentIndex + windowSize; i++) {
+      if (i >= 0 && i < _chapterCache.length) {
+        indicesToKeep.add(i);
+      }
+    }
+    
+    _chapterCache.keepOnlyIndices(indicesToKeep);
+  }
+
+  int get cachedChaptersCount => _chapterCache.length;
+  List<int> get cachedIndices => _chapterCache.cachedIndices;
 }
