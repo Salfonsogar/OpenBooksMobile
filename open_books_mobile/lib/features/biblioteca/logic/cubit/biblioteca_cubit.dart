@@ -5,8 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/core/session/session_cubit.dart';
 import '../../../../shared/core/session/session_state.dart';
+import '../../data/models/libro_biblioteca.dart';
 import '../../data/repositories/biblioteca_repository.dart';
-import '../../../libros/data/models/libro.dart';
 
 abstract class BibliotecaState extends Equatable {
   const BibliotecaState();
@@ -20,14 +20,14 @@ class BibliotecaInitial extends BibliotecaState {}
 class BibliotecaLoading extends BibliotecaState {}
 
 class BibliotecaLoaded extends BibliotecaState {
-  final List<Libro> libros;
+  final List<LibroBiblioteca> libros;
 
   const BibliotecaLoaded({required this.libros});
 
   @override
   List<Object> get props => [libros];
 
-  BibliotecaLoaded copyWith({List<Libro>? libros}) {
+  BibliotecaLoaded copyWith({List<LibroBiblioteca>? libros}) {
     return BibliotecaLoaded(libros: libros ?? this.libros);
   }
 
@@ -114,5 +114,9 @@ class BibliotecaCubit extends Cubit<BibliotecaState> {
 
   Future<void> refresh() async {
     await cargarBiblioteca();
+  }
+
+  Future<String> descargarLibro(int libroId) async {
+    return _repository.descargarLibro(libroId);
   }
 }

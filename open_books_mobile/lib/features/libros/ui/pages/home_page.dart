@@ -195,20 +195,22 @@ class _HomePageState extends State<HomePage> {
             titulo,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),
         SizedBox(
-          height: 260,
+          height: 280,
           child: Scrollbar(
             thumbVisibility: false,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               itemCount: libros.length,
               itemBuilder: (context, index) {
                 final libro = libros[index];
                 return Container(
-                  width: 150,
+                  width: 160,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   child: LibroCard(
                     libro: libro,

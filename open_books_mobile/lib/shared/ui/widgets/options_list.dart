@@ -19,9 +19,15 @@ class OptionsList extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: Icon(option.icon),
-        title: Text(option.title),
-        trailing: const Icon(Icons.chevron_right),
+        leading: Icon(option.icon, color: Theme.of(context).colorScheme.onSurface),
+        title: Text(
+          option.title,
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         onTap: option.onTap,
       ),
     );

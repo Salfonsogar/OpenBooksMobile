@@ -51,9 +51,13 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Crear Cuenta'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text(
+          'Crear Cuenta',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => context.pop(),
         ),
       ),
@@ -82,9 +86,16 @@ class _RegisterPageState extends State<RegisterPage> {
                   TextFormField(
                     controller: _nombreUsuarioController,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                    decoration: InputDecoration(
                       labelText: 'Nombre de usuario',
-                      prefixIcon: Icon(Icons.person_outlined),
+                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      prefixIcon: Icon(
+                        Icons.person_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -101,9 +112,16 @@ class _RegisterPageState extends State<RegisterPage> {
                     controller: _nombreCompletoController,
                     textInputAction: TextInputAction.next,
                     textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                    decoration: InputDecoration(
                       labelText: 'Nombre completo',
-                      prefixIcon: Icon(Icons.badge_outlined),
+                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      prefixIcon: Icon(
+                        Icons.badge_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -117,9 +135,16 @@ class _RegisterPageState extends State<RegisterPage> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                    decoration: InputDecoration(
                       labelText: 'Correo electrónico',
-                      prefixIcon: Icon(Icons.email_outlined),
+                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      prefixIcon: Icon(
+                        Icons.email_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -136,14 +161,20 @@ class _RegisterPageState extends State<RegisterPage> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.next,
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       labelText: 'Contraseña',
-                      prefixIcon: const Icon(Icons.lock_outlined),
+                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      prefixIcon: Icon(
+                        Icons.lock_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         onPressed: () {
                           setState(() {
@@ -151,6 +182,8 @@ class _RegisterPageState extends State<RegisterPage> {
                           });
                         },
                       ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -168,14 +201,20 @@ class _RegisterPageState extends State<RegisterPage> {
                     obscureText: _obscureConfirmPassword,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _onRegister(),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       labelText: 'Confirmar contraseña',
-                      prefixIcon: const Icon(Icons.lock_outlined),
+                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      prefixIcon: Icon(
+                        Icons.lock_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscureConfirmPassword
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         onPressed: () {
                           setState(() {
@@ -183,6 +222,8 @@ class _RegisterPageState extends State<RegisterPage> {
                           });
                         },
                       ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -202,14 +243,16 @@ class _RegisterPageState extends State<RegisterPage> {
                         onPressed: isLoading ? null : _onRegister,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
                         ),
                         child: isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 height: 20,
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.onPrimary,
                                 ),
                               )
                             : const Text(
@@ -223,10 +266,16 @@ class _RegisterPageState extends State<RegisterPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('¿Ya tienes cuenta?'),
+                      Text(
+                        '¿Ya tienes cuenta?',
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
                       TextButton(
                         onPressed: () => context.pop(),
-                        child: const Text('Inicia Sesión'),
+                        child: Text(
+                          'Inicia Sesión',
+                          style: TextStyle(color: Theme.of(context).colorScheme.primary),
+                        ),
                       ),
                     ],
                   ),

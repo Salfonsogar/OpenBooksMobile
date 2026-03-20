@@ -2,19 +2,30 @@ import 'package:flutter/material.dart';
 
 class CloseHeader extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onClose;
+  final String? title;
 
-  const CloseHeader({super.key, required this.onClose});
+  const CloseHeader({
+    super.key,
+    required this.onClose,
+    this.title,
+  });
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: const Color(0xFF1E293B),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       elevation: 0,
       automaticallyImplyLeading: false,
-      iconTheme: const IconThemeData(color: Colors.white),
+      iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+      title: title != null
+          ? Text(
+              title!,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            )
+          : null,
       actions: [
         IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
           onPressed: onClose,
         ),
       ],

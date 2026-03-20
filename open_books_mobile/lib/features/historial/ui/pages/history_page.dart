@@ -33,9 +33,22 @@ class _HistoryPageState extends State<HistoryPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(state.message),
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  state.message,
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                ),
                 const SizedBox(height: 16),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  ),
                   onPressed: () =>
                       context.read<HistorialCubit>().cargarHistorial(),
                   child: const Text('Reintentar'),
@@ -60,7 +73,9 @@ class _HistoryPageState extends State<HistoryPage> {
                 const SizedBox(height: 16),
                 Text(
                   'Sin historial de lectura',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -71,6 +86,10 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  ),
                   onPressed: () => context.go('/home'),
                   child: const Text('Explorar libros'),
                 ),
@@ -105,7 +124,10 @@ class _HistoryPageState extends State<HistoryPage> {
                                 color: Theme.of(context)
                                     .colorScheme
                                     .surfaceContainerHighest,
-                                child: const Icon(Icons.menu_book),
+                                child: Icon(
+                                  Icons.menu_book,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
                               );
                             },
                           )
@@ -115,20 +137,28 @@ class _HistoryPageState extends State<HistoryPage> {
                             color: Theme.of(context)
                                 .colorScheme
                                 .surfaceContainerHighest,
-                            child: const Icon(Icons.menu_book),
+                            child: Icon(
+                              Icons.menu_book,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
                           ),
                   ),
                   title: Text(
                     libro.titulo,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   ),
                   subtitle: Text(
                     libro.autor,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: Icon(
+                    Icons.chevron_right,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   onTap: () => context.pushReplacement('/book/${libro.id}'),
                 ),
               );

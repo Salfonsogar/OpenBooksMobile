@@ -17,18 +17,14 @@ class ReaderBlock {
 
 class EpubParser {
   String fixImagePaths(String htmlString, String chapterPath) {
-    debugPrint('[READER] fixImagePaths - chapterPath: $chapterPath');
     final document = html_parser.parse(htmlString);
     final images = document.getElementsByTagName('img');
-    debugPrint('[READER] fixImagePaths - found ${images.length} images');
     
     for (var img in images) {
       final src = img.attributes['src'];
-      debugPrint('[READER] fixImagePaths - original src: $src');
       if (src != null && src.startsWith('../')) {
         final baseDir = p.dirname(chapterPath);
         final resolvedPath = p.normalize(p.join(baseDir, src));
-        debugPrint('[READER] fixImagePaths - resolved to: $resolvedPath');
         img.attributes['src'] = resolvedPath;
       }
     }
@@ -242,7 +238,6 @@ class ChapterContent extends StatelessWidget {
       case 'img':
         final imagePath = _resolveImagePath(block.content as String);
         final url = 'https://localhost:7080/api/Libros/$libroId/epub/resource?path=${Uri.encodeComponent(imagePath)}';
-        debugPrint('[READER] Image - path: $imagePath, url: $url');
         return GestureDetector(
           onTap: onImageTap != null ? () => onImageTap!(url) : null,
           child: Padding(
@@ -252,7 +247,6 @@ class ChapterContent extends StatelessWidget {
               fit: BoxFit.contain,
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) {
-                  debugPrint('[READER] Image loaded successfully: $url');
                   return child;
                 }
                 return Container(
@@ -268,7 +262,6 @@ class ChapterContent extends StatelessWidget {
                 );
               },
               errorBuilder: (context, error, stackTrace) {
-                debugPrint('[READER] Image ERROR - path: $imagePath, error: $error');
                 return Container(
                   height: 200,
                   color: Colors.grey[300],

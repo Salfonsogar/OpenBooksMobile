@@ -74,4 +74,30 @@ class ApiClient {
   }) async {
     return _dio.put<T>(path, data: data, queryParameters: queryParameters, options: options);
   }
+
+  Future<Response<dynamic>> download(
+    String path,
+    String savePath, {
+    ProgressCallback? onReceiveProgress,
+    CancelToken? cancelToken,
+  }) async {
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: dotenv.env['API_BASE_URL'] ?? 'http://localhost:7080',
+        receiveTimeout: const Duration(minutes: 5),
+        headers: {
+          'Accept': '*/*',
+        },
+      ),
+    );
+
+    dio.interceptors.add(AuthInterceptor());
+
+    return dio.download(
+      path,
+      savePath,
+      onReceiveProgress: onReceiveProgress,
+      cancelToken: cancelToken,
+    );
+  }
 }

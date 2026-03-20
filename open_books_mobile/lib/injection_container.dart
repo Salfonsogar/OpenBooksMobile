@@ -134,7 +134,7 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<EpubRepository>(
     () => EpubRepository(getIt<EpubDataSource>()),
   );
-  getIt.registerFactory<ReaderSettingsCubit>(
+  getIt.registerLazySingleton<ReaderSettingsCubit>(
     () => ReaderSettingsCubit(),
   );
   getIt.registerLazySingleton<BookmarkDataSource>(

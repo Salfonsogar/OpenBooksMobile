@@ -16,6 +16,7 @@ import '../features/perfil/ui/pages/profile_page.dart';
 import '../features/perfil/ui/pages/edit_profile_page.dart';
 import '../features/historial/ui/pages/history_page.dart';
 import '../features/reader/ui/pages/reader_page.dart';
+import '../features/settings/ui/pages/settings_page.dart';
 import '../shared/ui/widgets/search_header.dart';
 import '../features/auth/data/models/usuario.dart';
 
@@ -119,6 +120,10 @@ class AppRouter {
           ),
         ],
       ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsPage(),
+      ),
     ],
   );
 }
@@ -141,22 +146,24 @@ class MainShell extends StatelessWidget {
         ],
       ),
       bottomNavigationBar: NavigationBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        indicatorColor: Theme.of(context).colorScheme.primaryContainer,
         selectedIndex: _calculateSelectedIndex(context),
         onDestinationSelected: (index) => _onItemTapped(index, context),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
+            icon: Icon(Icons.home_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            selectedIcon: Icon(Icons.home, color: Theme.of(context).colorScheme.onPrimaryContainer),
             label: 'Inicio',
           ),
           NavigationDestination(
-            icon: Icon(Icons.library_books_outlined),
-            selectedIcon: Icon(Icons.library_books),
+            icon: Icon(Icons.library_books_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            selectedIcon: Icon(Icons.library_books, color: Theme.of(context).colorScheme.onPrimaryContainer),
             label: 'Biblioteca',
           ),
           NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
+            icon: Icon(Icons.history_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            selectedIcon: Icon(Icons.history, color: Theme.of(context).colorScheme.onPrimaryContainer),
             label: 'Historial',
           ),
         ],

@@ -63,21 +63,25 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.menu_book_rounded,
                       size: 80,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       AppConstants.appName,
-                      style: Theme.of(context).textTheme.headlineLarge,
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Tu biblioteca personal',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 48),
@@ -85,9 +89,16 @@ class _LoginPageState extends State<LoginPage> {
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                      decoration: InputDecoration(
                         labelText: 'Correo electrónico',
-                        prefixIcon: Icon(Icons.email_outlined),
+                        labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        prefixIcon: Icon(
+                          Icons.email_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -105,14 +116,20 @@ class _LoginPageState extends State<LoginPage> {
                       obscureText: _obscurePassword,
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _onLogin(),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: 'Contraseña',
-                        prefixIcon: const Icon(Icons.lock_outlined),
+                        labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        prefixIcon: Icon(
+                          Icons.lock_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           onPressed: () {
                             setState(() {
@@ -120,6 +137,8 @@ class _LoginPageState extends State<LoginPage> {
                             });
                           },
                         ),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -136,7 +155,10 @@ class _LoginPageState extends State<LoginPage> {
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: () => context.push('/recovery'),
-                        child: const Text('¿Olvidaste tu contraseña?'),
+                        child: Text(
+                          '¿Olvidaste tu contraseña?',
+                          style: TextStyle(color: Theme.of(context).colorScheme.primary),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -147,14 +169,16 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: isLoading ? null : _onLogin,
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
                           ),
                           child: isLoading
-                              ? const SizedBox(
+                              ? SizedBox(
                                   height: 20,
                                   width: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.onPrimary,
                                   ),
                                 )
                               : const Text(
@@ -168,10 +192,16 @@ class _LoginPageState extends State<LoginPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('¿No tienes cuenta?'),
+                        Text(
+                          '¿No tienes cuenta?',
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
                         TextButton(
                           onPressed: () => context.push('/register'),
-                          child: const Text('Regístrate'),
+                          child: Text(
+                            'Regístrate',
+                            style: TextStyle(color: Theme.of(context).colorScheme.primary),
+                          ),
                         ),
                       ],
                     ),

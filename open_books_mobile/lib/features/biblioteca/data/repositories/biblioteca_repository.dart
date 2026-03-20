@@ -1,12 +1,12 @@
 import '../datasources/biblioteca_datasource.dart';
-import '../../../libros/data/models/libro.dart';
+import '../models/libro_biblioteca.dart';
 
 class BibliotecaRepository {
   final BibliotecaDataSource _dataSource;
 
   BibliotecaRepository(this._dataSource);
 
-  Future<List<Libro>> getLibrosBiblioteca(int usuarioId) {
+  Future<List<LibroBiblioteca>> getLibrosBiblioteca(int usuarioId) {
     return _dataSource.getLibrosBiblioteca(usuarioId);
   }
 
@@ -16,5 +16,9 @@ class BibliotecaRepository {
 
   Future<void> quitarLibro(int usuarioId, int libroId) {
     return _dataSource.quitarLibro(usuarioId, libroId);
+  }
+
+  Future<String> descargarLibro(int libroId) {
+    return _dataSource.descargarLibro(libroId);
   }
 }

@@ -708,7 +708,11 @@ class _ReaderPageState extends State<ReaderPage> {
             onPressed: () => Navigator.pop(dialogContext),
             child: Text('Cancelar', style: TextStyle(color: themeColors['text'])),
           ),
-          FilledButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: themeColors['accent'],
+              foregroundColor: themeColors['background'],
+            ),
             onPressed: () {
               final title = controller.text.trim();
               if (title.isNotEmpty) {
@@ -721,7 +725,8 @@ class _ReaderPageState extends State<ReaderPage> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Marcador "$title" agregado'),
+                    content: Text('Marcador "$title" agregado', style: TextStyle(color: themeColors['text'])),
+                    backgroundColor: themeColors['background'],
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
                   ),
@@ -775,7 +780,11 @@ class _ReaderPageState extends State<ReaderPage> {
             onPressed: () => Navigator.pop(dialogContext),
             child: Text('Cancelar', style: TextStyle(color: themeColors['text'])),
           ),
-          FilledButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: themeColors['accent'],
+              foregroundColor: themeColors['background'],
+            ),
             onPressed: () {
               final title = controller.text.trim();
               if (title.isNotEmpty) {
@@ -788,7 +797,8 @@ class _ReaderPageState extends State<ReaderPage> {
                 Navigator.pop(dialogContext);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Marcador actualizado a "$title"'),
+                    content: Text('Marcador actualizado a "$title"', style: TextStyle(color: themeColors['text'])),
+                    backgroundColor: themeColors['background'],
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
                   ),
@@ -820,13 +830,18 @@ class _ReaderPageState extends State<ReaderPage> {
             onPressed: () => Navigator.pop(dialogContext),
             child: Text('Cancelar', style: TextStyle(color: themeColors['text'])),
           ),
-          FilledButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () {
               _bookmarkCubit.eliminarBookmark(bookmark.id!, widget.libroId);
               Navigator.pop(dialogContext);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Marcador "${bookmark.title}" eliminado'),
+                  content: Text('Marcador "${bookmark.title}" eliminado', style: TextStyle(color: themeColors['text'])),
+                  backgroundColor: themeColors['background'],
                   duration: const Duration(seconds: 2),
                   behavior: SnackBarBehavior.floating,
                 ),

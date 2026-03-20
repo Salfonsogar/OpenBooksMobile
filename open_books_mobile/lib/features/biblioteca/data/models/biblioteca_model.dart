@@ -1,14 +1,14 @@
-import '../../../libros/data/models/libro.dart';
+import 'libro_biblioteca.dart';
 
 class Biblioteca {
-  final List<Libro> libros;
+  final List<LibroBiblioteca> libros;
 
   Biblioteca({required this.libros});
 
   factory Biblioteca.fromJson(Map<String, dynamic> json) {
     return Biblioteca(
       libros: (json['libros'] as List<dynamic>?)
-              ?.map((e) => Libro.fromJson(e as Map<String, dynamic>))
+              ?.map((e) => LibroBiblioteca.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
     );
