@@ -18,6 +18,12 @@ import '../features/historial/ui/pages/history_page.dart';
 import '../features/reader/ui/pages/reader_page.dart';
 import '../features/settings/ui/pages/settings_page.dart';
 import '../features/notifications/ui/pages/notifications_page.dart';
+import '../features/admin/ui/pages/admin_page.dart';
+import '../features/admin/dashboard/ui/pages/admin_dashboard_page.dart';
+import '../features/admin/libros/ui/pages/admin_libros_page.dart';
+import '../features/admin/moderacion/ui/pages/admin_moderacion_page.dart';
+import '../features/admin/sugerencias/ui/pages/admin_sugerencias_page.dart';
+import '../features/admin/usuarios/ui/pages/admin_usuarios_page.dart';
 import '../shared/ui/widgets/search_header.dart';
 import '../features/auth/data/models/usuario.dart';
 
@@ -40,12 +46,24 @@ class AppRouter {
           state.matchedLocation == '/register' ||
           state.matchedLocation == '/recovery';
 
+      final isAdminRoute = state.matchedLocation.startsWith('/admin');
+      final isAdmin = sessionState is SessionAuthenticated &&
+          sessionState.isAdmin;
+
       if (!isLoggedIn && !isLoggingIn) {
         return '/login';
       }
 
       if (isLoggedIn && isLoggingIn) {
+        return isAdmin ? '/admin' : '/home';
+      }
+
+      if (isAdminRoute && !isAdmin) {
         return '/home';
+      }
+
+      if (!isAdminRoute && isAdmin) {
+        return '/admin';
       }
 
       return null;
@@ -129,8 +147,58 @@ class AppRouter {
         path: '/notifications',
         builder: (context, state) => const NotificationsPage(),
       ),
+      ShellRoute(
+        builder: (context, state, child) {
+          final route = state.matchedLocation;
+          final title = _getModuleTitle(route);
+          return AdminPage(
+            child: child,
+            moduleTitle: title,
+            moduleRoute: route,
+          );
+        },
+        routes: [
+          GoRoute(
+            path: '/admin',
+            builder: (context, state) => const AdminDashboardPage(),
+          ),
+          GoRoute(
+            path: '/admin/usuarios',
+            builder: (context, state) => const AdminUsuariosPage(),
+          ),
+          GoRoute(
+            path: '/admin/libros',
+            builder: (context, state) => const AdminLibrosPage(),
+          ),
+          GoRoute(
+            path: '/admin/moderacion',
+            builder: (context, state) => const AdminModeracionPage(),
+          ),
+          GoRoute(
+            path: '/admin/sugerencias',
+            builder: (context, state) => const AdminSugerenciasPage(),
+          ),
+        ],
+      ),
     ],
   );
+}
+
+String _getModuleTitle(String route) {
+  switch (route) {
+    case '/admin':
+      return 'Dashboard';
+    case '/admin/usuarios':
+      return 'Usuarios';
+    case '/admin/libros':
+      return 'Libros y Categorías';
+    case '/admin/moderacion':
+      return 'Moderación';
+    case '/admin/sugerencias':
+      return 'Sugerencias';
+    default:
+      return 'Panel Admin';
+  }
 }
 
 class MainShell extends StatelessWidget {

@@ -1,17 +1,21 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/roles_repository.dart';
 import '../../../../shared/core/session/session_cubit.dart';
 import 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepository _authRepository;
+  final RolesRepository _rolesRepository;
   final SessionCubit _sessionCubit;
 
   AuthCubit({
     required AuthRepository authRepository,
+    required RolesRepository rolesRepository,
     required SessionCubit sessionCubit,
   })  : _authRepository = authRepository,
+        _rolesRepository = rolesRepository,
         _sessionCubit = sessionCubit,
         super(AuthInitial());
 
@@ -20,12 +24,21 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final response = await _authRepository.login(correo, contrasena);
       
+      String nombreRol = 'Usuario';
+      try {
+        final rol = await _rolesRepository.getRol(response.usuario.rolId);
+        if (rol != null) {
+          nombreRol = rol.nombre;
+        }
+      } catch (_) {}
+
       await _sessionCubit.login(
         userId: response.usuario.id,
         userName: response.usuario.userName,
         email: response.usuario.email,
         nombreCompleto: response.usuario.nombreCompleto,
-        nombreRol: response.usuario.nombreRol,
+        rolId: response.usuario.rolId,
+        nombreRol: nombreRol,
         sancionado: response.usuario.sancionado,
         token: response.token,
         fotoPerfilBase64: response.usuario.fotoPerfilBase64,
@@ -57,12 +70,21 @@ class AuthCubit extends Cubit<AuthState> {
         nombreCompleto: nombreCompleto,
       );
 
+      String nombreRol = 'Usuario';
+      try {
+        final rol = await _rolesRepository.getRol(rolId);
+        if (rol != null) {
+          nombreRol = rol.nombre;
+        }
+      } catch (_) {}
+
       await _sessionCubit.login(
         userId: response.usuario.id,
         userName: response.usuario.userName,
         email: response.usuario.email,
         nombreCompleto: response.usuario.nombreCompleto,
-        nombreRol: response.usuario.nombreRol,
+        rolId: rolId,
+        nombreRol: nombreRol,
         sancionado: response.usuario.sancionado,
         token: response.token,
       );
