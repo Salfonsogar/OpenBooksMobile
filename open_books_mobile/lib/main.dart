@@ -8,6 +8,8 @@ import 'features/libros/logic/cubit/cubit.dart';
 import 'features/biblioteca/logic/cubit/biblioteca_cubit.dart';
 import 'features/perfil/logic/cubit/perfil_cubit.dart';
 import 'features/historial/logic/cubit/historial_cubit.dart';
+import 'features/notifications/logic/cubit/notification_cubit.dart';
+import 'features/notifications/ui/widgets/notification_overlay_manager.dart';
 import 'features/reader/data/models/reader_settings.dart';
 import 'features/reader/logic/cubit/reader_settings_cubit.dart';
 import 'shared/core/session/session_cubit.dart';
@@ -41,6 +43,7 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
   late final BibliotecaCubit _bibliotecaCubit;
   late final PerfilCubit _perfilCubit;
   late final HistorialCubit _historialCubit;
+  late final NotificationCubit _notificationCubit;
   late final ReaderSettingsCubit _settingsCubit;
 
   @override
@@ -54,6 +57,8 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
     _historialCubit = getIt<HistorialCubit>();
     _bibliotecaCubit = getIt<BibliotecaCubit>();
     _perfilCubit = getIt<PerfilCubit>();
+    _notificationCubit = NotificationCubit();
+    _sessionCubit.setNotificationCubit(_notificationCubit);
     _settingsCubit = getIt<ReaderSettingsCubit>();
     _appRouter = AppRouter(sessionCubit: _sessionCubit);
 
@@ -66,6 +71,7 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
     _bibliotecaCubit.close();
     _perfilCubit.close();
     _historialCubit.close();
+    _notificationCubit.close();
     super.dispose();
   }
 
@@ -81,19 +87,25 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
         BlocProvider<BibliotecaCubit>.value(value: _bibliotecaCubit),
         BlocProvider<PerfilCubit>.value(value: _perfilCubit),
         BlocProvider<HistorialCubit>.value(value: _historialCubit),
+        BlocProvider<NotificationCubit>.value(value: _notificationCubit),
         BlocProvider<ReaderSettingsCubit>.value(value: _settingsCubit),
       ],
       child: BlocBuilder<ReaderSettingsCubit, ReaderSettings>(
         builder: (context, settings) {
-          return MaterialApp.router(
-            title: 'OpenBooks',
-            debugShowCheckedModeBanner: false,
-            theme: _buildTheme(settings.theme, Brightness.light),
-            darkTheme: _buildTheme(settings.theme, Brightness.dark),
-            themeMode: _getThemeMode(settings.theme),
-            routerConfig: _appRouter.router,
-            scrollBehavior: const ScrollBehavior().copyWith(
-              scrollbars: false,
+          return NotificationOverlayManager(
+            onViewNotifications: () {
+              _appRouter.router.push('/notifications');
+            },
+            child: MaterialApp.router(
+              title: 'OpenBooks',
+              debugShowCheckedModeBanner: false,
+              theme: _buildTheme(settings.theme, Brightness.light),
+              darkTheme: _buildTheme(settings.theme, Brightness.dark),
+              themeMode: _getThemeMode(settings.theme),
+              routerConfig: _appRouter.router,
+              scrollBehavior: const ScrollBehavior().copyWith(
+                scrollbars: false,
+              ),
             ),
           );
         },

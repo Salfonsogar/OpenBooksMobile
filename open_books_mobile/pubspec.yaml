@@ -43,6 +43,9 @@ dependencies:
   # Notificaciones
   flutter_local_notifications: ^18.0.0
   
+  # SignalR
+  signalr_netcore: ^1.0.0
+  
   # HTML Parser 
   html: ^0.15.4
   

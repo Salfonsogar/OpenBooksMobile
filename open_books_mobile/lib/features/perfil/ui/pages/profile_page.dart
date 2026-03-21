@@ -163,9 +163,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.notifications_outlined,
                         title: 'Notificaciones',
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Próximamente')),
-                          );
+                          context.push('/notifications');
                         },
                       ),
                       OptionItem(

@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/core/session/session_cubit.dart';
 import '../../../../shared/core/session/session_state.dart';
+import '../../../features/notifications/logic/cubit/notification_cubit.dart';
+import '../../../features/notifications/logic/cubit/notification_state.dart';
 
 class SearchHeader extends StatelessWidget {
   final VoidCallback? onSearchTap;
@@ -67,64 +69,92 @@ class SearchHeader extends StatelessWidget {
           GestureDetector(
             onTap: showFilterIcon ? onFilterTap : onProfileTap,
             child: showFilterIcon
-                ? Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.filter_list,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  )
-                : BlocBuilder<SessionCubit, SessionState>(
-                    builder: (context, state) {
-                      if (state is SessionAuthenticated &&
-                          state.fotoPerfilBase64 != null &&
-                          state.fotoPerfilBase64!.isNotEmpty) {
-                        try {
-                          return CircleAvatar(
-                            radius: 20,
-                            backgroundImage: MemoryImage(
-                              base64Decode(state.fotoPerfilBase64!),
-                            ),
-                          );
-                        } catch (e) {
-                          return CircleAvatar(
-                            radius: 20,
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primaryContainer,
-                            child: Text(
-                              state.userName.isNotEmpty
+                ? const SizedBox.shrink()
+                : BlocBuilder<NotificationCubit, NotificationState>(
+                    builder: (context, notificationState) {
+                      final unreadCount = notificationState is NotificationLoaded
+                          ? notificationState.unreadCount
+                          : 0;
+                      
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          BlocBuilder<SessionCubit, SessionState>(
+                            builder: (context, state) {
+                              if (state is SessionAuthenticated &&
+                                  state.fotoPerfilBase64 != null &&
+                                  state.fotoPerfilBase64!.isNotEmpty) {
+                                try {
+                                  return CircleAvatar(
+                                    radius: 20,
+                                    backgroundImage: MemoryImage(
+                                      base64Decode(state.fotoPerfilBase64!),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  return CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor:
+                                        Theme.of(context).colorScheme.primaryContainer,
+                                    child: Text(
+                                      state.userName.isNotEmpty
+                                          ? state.userName[0].toUpperCase()
+                                          : '?',
+                                      style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimaryContainer,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
+                              final initial = state is SessionAuthenticated &&
+                                      state.userName.isNotEmpty
                                   ? state.userName[0].toUpperCase()
-                                  : '?',
-                              style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onPrimaryContainer,
-                                fontWeight: FontWeight.bold,
+                                  : '?';
+                              return CircleAvatar(
+                                radius: 20,
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primaryContainer,
+                                child: Text(
+                                  initial,
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          if (unreadCount > 0)
+                            Positioned(
+                              right: -4,
+                              top: -4,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.error,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 18,
+                                  minHeight: 18,
+                                ),
+                                child: Text(
+                                  unreadCount > 9 ? '9+' : unreadCount.toString(),
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onError,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
                             ),
-                          );
-                        }
-                      }
-                      final initial = state is SessionAuthenticated &&
-                              state.userName.isNotEmpty
-                          ? state.userName[0].toUpperCase()
-                          : '?';
-                      return CircleAvatar(
-                        radius: 20,
-                        backgroundColor:
-                            Theme.of(context).colorScheme.primaryContainer,
-                        child: Text(
-                          initial,
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        ],
                       );
                     },
                   ),

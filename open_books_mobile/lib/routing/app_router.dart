@@ -17,6 +17,7 @@ import '../features/perfil/ui/pages/edit_profile_page.dart';
 import '../features/historial/ui/pages/history_page.dart';
 import '../features/reader/ui/pages/reader_page.dart';
 import '../features/settings/ui/pages/settings_page.dart';
+import '../features/notifications/ui/pages/notifications_page.dart';
 import '../shared/ui/widgets/search_header.dart';
 import '../features/auth/data/models/usuario.dart';
 
@@ -123,6 +124,10 @@ class AppRouter {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsPage(),
       ),
     ],
   );
