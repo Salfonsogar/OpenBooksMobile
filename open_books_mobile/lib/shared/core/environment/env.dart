@@ -12,11 +12,11 @@ class Env {
   Future<void> init() async {
     await dotenv.load(fileName: '.env');
 
-    apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'https://localhost:7080';
+    apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:5201';
     apiTimeout = int.tryParse(dotenv.env['API_TIMEOUT'] ?? '30000') ?? 30000;
     signalrUrl =
         dotenv.env['SIGNALR_URL'] ??
-        'https://localhost:7080/Hub/NotificacionesHub';
+        'http://10.0.2.2:5201/Hub/NotificacionesHub';
   }
 
   String get fullApiUrl => apiBaseUrl;

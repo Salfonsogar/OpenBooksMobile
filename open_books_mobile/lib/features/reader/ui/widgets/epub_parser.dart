@@ -3,6 +3,9 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as html_dom;
 import 'package:path/path.dart' as p;
 
+import '../../data/models/highlight.dart';
+import '../../../../shared/core/constants/app_constants.dart';
+
 class ReaderBlock {
   final String type;
   final dynamic content;
@@ -15,11 +18,25 @@ class ReaderBlock {
   });
 }
 
+class HighlightColor {
+  static const Map<String, Color> colors = {
+    'yellow': AppColors.highlightYellow,
+    'green': AppColors.highlightGreen,
+    'blue': AppColors.highlightBlue,
+    'pink': AppColors.highlightPink,
+    'orange': AppColors.highlightOrange,
+  };
+
+  static Color getColor(String name) {
+    return colors[name] ?? AppColors.highlightYellow;
+  }
+}
+
 class EpubParser {
   String fixImagePaths(String htmlString, String chapterPath) {
     final document = html_parser.parse(htmlString);
     final images = document.getElementsByTagName('img');
-    
+
     for (var img in images) {
       final src = img.attributes['src'];
       if (src != null && src.startsWith('../')) {
@@ -28,16 +45,16 @@ class EpubParser {
         img.attributes['src'] = resolvedPath;
       }
     }
-    
+
     return document.outerHtml;
   }
 
   List<ReaderBlock> parse(String htmlString) {
     final blocks = <ReaderBlock>[];
-    
+
     final document = html_parser.parse(htmlString);
     final body = document.body;
-    
+
     if (body == null) return blocks;
 
     _processNodes(body.nodes, blocks);
@@ -49,7 +66,7 @@ class EpubParser {
     for (var node in nodes) {
       if (node is html_dom.Element) {
         final tagName = node.localName?.toLowerCase() ?? '';
-        
+
         switch (tagName) {
           case 'h1':
           case 'h2':
@@ -105,7 +122,7 @@ class EpubParser {
 
   void _parseTextAndImages(html_dom.Element node, String type, List<ReaderBlock> blocks) {
     final text = _cleanText(node.text.trim());
-    
+
     if (text.isNotEmpty) {
       blocks.add(ReaderBlock(type: type, content: text));
     }
@@ -132,7 +149,7 @@ class EpubParser {
   }
 }
 
-class ChapterContent extends StatelessWidget {
+class ChapterContent extends StatefulWidget {
   final List<ReaderBlock> blocks;
   final double fontSize;
   final double lineHeight;
@@ -142,6 +159,9 @@ class ChapterContent extends StatelessWidget {
   final int libroId;
   final String chapterPath;
   final String fontFamily;
+  final List<Highlight> highlights;
+  final Function(String text, int startIndex, int endIndex, String color)? onTextSelected;
+  final Function(Highlight highlight)? onHighlightTap;
   final Function(String)? onImageTap;
 
   const ChapterContent({
@@ -155,8 +175,245 @@ class ChapterContent extends StatelessWidget {
     this.textColor = Colors.black,
     this.backgroundColor = Colors.white,
     this.fontFamily = 'sans-serif',
+    this.highlights = const [],
+    this.onTextSelected,
+    this.onHighlightTap,
     this.onImageTap,
   });
+
+  @override
+  State<ChapterContent> createState() => _ChapterContentState();
+}
+
+class _ChapterContentState extends State<ChapterContent> {
+  OverlayEntry? _overlayEntry;
+  String _selectedText = '';
+  int _selectionStart = -1;
+  int _selectionEnd = -1;
+  int _currentBlockIndex = 0;
+
+  @override
+  void dispose() {
+    _removeOverlay();
+    super.dispose();
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  void _showHighlightMenu(Offset position) {
+    if (_selectedText.isEmpty || _selectionStart < 0 || _selectionEnd <= _selectionStart) {
+      return;
+    }
+
+    _removeOverlay();
+
+    final overlay = Overlay.of(context);
+    final renderBox = context.findRenderObject() as RenderBox;
+    final globalPosition = renderBox.localToGlobal(position);
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        left: (globalPosition.dx - 65).clamp(10, MediaQuery.of(context).size.width - 150),
+        top: (globalPosition.dy - 50).clamp(10, MediaQuery.of(context).size.height - 100),
+        child: Material(
+          color: Colors.transparent,
+          child: _HighlightMenuOverlay(
+            backgroundColor: widget.backgroundColor,
+            onColorSelected: (color) {
+              _createHighlight(color);
+              _removeOverlay();
+            },
+            onDismiss: () {
+              _removeOverlay();
+              _clearSelection();
+            },
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(_overlayEntry!);
+  }
+
+  void _createHighlight(String colorName) {
+    if (_selectedText.isNotEmpty && _selectionStart >= 0 && _selectionEnd > _selectionStart) {
+      final blockOffset = _getBlockOffset(_currentBlockIndex);
+      widget.onTextSelected?.call(
+        _selectedText,
+        blockOffset + _selectionStart,
+        blockOffset + _selectionEnd,
+        colorName,
+      );
+    }
+    _clearSelection();
+  }
+
+  void _clearSelection() {
+    setState(() {
+      _selectedText = '';
+      _selectionStart = -1;
+      _selectionEnd = -1;
+    });
+  }
+
+  int _getBlockOffset(int blockIndex) {
+    int offset = 0;
+    int currentIndex = 0;
+
+    for (final block in widget.blocks) {
+      if (currentIndex >= blockIndex) break;
+
+      if (_isTextBlock(block)) {
+        offset += block.content.toString().length + 1;
+      }
+      currentIndex++;
+    }
+
+    return offset;
+  }
+
+  bool _isTextBlock(ReaderBlock block) {
+    return block.type == 'p' || block.type == 'h1' || block.type == 'h2' ||
+           block.type == 'h3' || block.type == 'h4' || block.type == 'h5' ||
+           block.type == 'h6' || block.type == 'blockquote' || block.type == 'a';
+  }
+
+  Widget _buildHighlightableText(String text, int blockIndex) {
+    final highlightsInBlock = _getHighlightsForBlock(blockIndex);
+
+    final spans = <TextSpan>[];
+
+    if (highlightsInBlock.isEmpty) {
+      spans.add(TextSpan(
+        text: text,
+        style: TextStyle(
+          fontSize: widget.fontSize,
+          color: widget.textColor,
+          height: widget.lineHeight,
+          fontFamily: widget.fontFamily,
+        ),
+      ));
+    } else {
+      final sortedHighlights = List<Highlight>.from(highlightsInBlock)
+        ..sort((a, b) => a.startIndex.compareTo(b.startIndex));
+
+      int currentIndex = 0;
+      final blockEnd = text.length;
+
+      for (final highlight in sortedHighlights) {
+        if (highlight.startIndex >= blockEnd || highlight.endIndex > blockEnd) {
+          continue;
+        }
+
+        if (highlight.startIndex > currentIndex) {
+          spans.add(TextSpan(
+            text: text.substring(currentIndex, highlight.startIndex),
+            style: TextStyle(
+              fontSize: widget.fontSize,
+              color: widget.textColor,
+              height: widget.lineHeight,
+              fontFamily: widget.fontFamily,
+            ),
+          ));
+        }
+
+        spans.add(TextSpan(
+          text: text.substring(highlight.startIndex, highlight.endIndex),
+          style: TextStyle(
+            fontSize: widget.fontSize,
+            color: widget.textColor,
+            height: widget.lineHeight,
+            fontFamily: widget.fontFamily,
+            backgroundColor: HighlightColor.getColor(highlight.color).withValues(alpha: 0.4),
+          ),
+          recognizer: null,
+        ));
+
+        currentIndex = highlight.endIndex;
+      }
+
+      if (currentIndex < blockEnd) {
+        spans.add(TextSpan(
+          text: text.substring(currentIndex),
+          style: TextStyle(
+            fontSize: widget.fontSize,
+            color: widget.textColor,
+            height: widget.lineHeight,
+            fontFamily: widget.fontFamily,
+          ),
+        ));
+      }
+    }
+
+    return SelectableText.rich(
+      TextSpan(children: spans),
+      contextMenuBuilder: (context, editableTextState) {
+        return AdaptiveTextSelectionToolbar.buttonItems(
+          anchors: editableTextState.contextMenuAnchors,
+          buttonItems: [
+            ContextMenuButtonItem(
+              label: 'Resaltar',
+              onPressed: () {
+                final selection = editableTextState.textEditingValue.selection;
+                if (selection.isValid && !selection.isCollapsed) {
+                  final start = selection.baseOffset < selection.extentOffset
+                      ? selection.baseOffset
+                      : selection.extentOffset;
+                  final end = selection.baseOffset > selection.extentOffset
+                      ? selection.baseOffset
+                      : selection.extentOffset;
+
+                  setState(() {
+                    _selectedText = text.substring(start, end);
+                    _selectionStart = start;
+                    _selectionEnd = end;
+                    _currentBlockIndex = blockIndex;
+                  });
+
+                  ContextMenuController.removeAny();
+                  final anchor = editableTextState.contextMenuAnchors;
+                  _showHighlightMenu(Offset(anchor.primaryAnchor.dx, anchor.primaryAnchor.dy - 50));
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  List<Highlight> _getHighlightsForBlock(int blockIndex) {
+    int currentOffset = 0;
+    int currentIndex = 0;
+
+    for (final block in widget.blocks) {
+      if (currentIndex >= blockIndex) break;
+
+      if (_isTextBlock(block)) {
+        currentOffset += block.content.toString().length + 1;
+      }
+      currentIndex++;
+    }
+
+    return widget.highlights.where((h) {
+      return h.startIndex >= currentOffset &&
+          h.startIndex < currentOffset + (widget.blocks[blockIndex].content?.toString().length ?? 0);
+    }).map((h) {
+      return Highlight(
+        id: h.id,
+        bookId: h.bookId,
+        chapterIndex: h.chapterIndex,
+        text: h.text,
+        startIndex: h.startIndex - currentOffset,
+        endIndex: h.endIndex - currentOffset,
+        color: h.color,
+        createdAt: h.createdAt,
+      );
+    }).toList();
+  }
 
   String _resolveImagePath(String relativePath) {
     if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
@@ -168,78 +425,85 @@ class ChapterContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: backgroundColor,
-      padding: EdgeInsets.symmetric(horizontal: horizontalMargin),
+      color: widget.backgroundColor,
+      padding: EdgeInsets.symmetric(horizontal: widget.horizontalMargin),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: blocks.map((block) => _buildBlock(context, block)).toList(),
+        children: _buildBlocksWithHighlights(),
       ),
     );
   }
 
-  Widget _buildBlock(BuildContext context, ReaderBlock block) {
+  List<Widget> _buildBlocksWithHighlights() {
+    final widgets = <Widget>[];
+    int blockIndex = 0;
+
+    for (final block in widget.blocks) {
+      if (_isTextBlock(block)) {
+        widgets.add(_buildBlockWithHighlight(block, blockIndex));
+        blockIndex++;
+      } else {
+        widgets.add(_buildBlock(context, block));
+      }
+    }
+
+    return widgets;
+  }
+
+  Widget _buildBlockWithHighlight(ReaderBlock block, int blockIndex) {
+    final text = block.content.toString();
+
     switch (block.type) {
       case 'h1':
         return Padding(
           padding: const EdgeInsets.only(bottom: 16, top: 24),
-          child: Text(
-            block.content,
-            style: TextStyle(
-              fontSize: fontSize * 1.8,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-              height: lineHeight,
-              fontFamily: fontFamily,
-            ),
-          ),
+          child: _buildHighlightableText(text, blockIndex),
         );
       case 'h2':
         return Padding(
           padding: const EdgeInsets.only(bottom: 12, top: 20),
-          child: Text(
-            block.content,
-            style: TextStyle(
-              fontSize: fontSize * 1.5,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-              height: lineHeight,
-              fontFamily: fontFamily,
-            ),
-          ),
+          child: _buildHighlightableText(text, blockIndex),
         );
       case 'h3':
         return Padding(
           padding: const EdgeInsets.only(bottom: 10, top: 16),
-          child: Text(
-            block.content,
-            style: TextStyle(
-              fontSize: fontSize * 1.3,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-              height: lineHeight,
-              fontFamily: fontFamily,
-            ),
-          ),
+          child: _buildHighlightableText(text, blockIndex),
         );
-      case 'p':
-        if (block.content.isEmpty) return const SizedBox.shrink();
+      case 'blockquote':
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: Colors.grey[400]!,
+                width: 4,
+              ),
+            ),
+            color: Colors.grey[100],
+          ),
+          child: _buildHighlightableText(text, blockIndex),
+        );
+      case 'a':
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            block.content,
-            style: TextStyle(
-              fontSize: fontSize,
-              color: textColor,
-              height: lineHeight,
-              fontFamily: fontFamily,
-            ),
-          ),
+          child: _buildHighlightableText(text, blockIndex),
         );
+      default:
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildHighlightableText(text, blockIndex),
+        );
+    }
+  }
+
+  Widget _buildBlock(BuildContext context, ReaderBlock block) {
+    switch (block.type) {
       case 'img':
         final imagePath = _resolveImagePath(block.content as String);
-        final url = 'https://localhost:7080/api/Libros/$libroId/epub/resource?path=${Uri.encodeComponent(imagePath)}';
+        final url = 'http://10.0.2.2:5201/api/Libros/${widget.libroId}/epub/resource?path=${Uri.encodeComponent(imagePath)}';
         return GestureDetector(
-          onTap: onImageTap != null ? () => onImageTap!(url) : null,
+          onTap: widget.onImageTap != null ? () => widget.onImageTap!(url) : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Image.network(
@@ -280,48 +544,73 @@ class ChapterContent extends StatelessWidget {
             ),
           ),
         );
-      case 'blockquote':
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 12),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border(
-              left: BorderSide(
-                color: Colors.grey[400]!,
-                width: 4,
-              ),
-            ),
-            color: Colors.grey[100],
-          ),
-          child: Text(
-            block.content,
-            style: TextStyle(
-              fontSize: fontSize,
-              fontStyle: FontStyle.italic,
-              color: textColor,
-              height: lineHeight,
-              fontFamily: fontFamily,
-            ),
-          ),
-        );
       case 'br':
         return const SizedBox(height: 8);
-      case 'a':
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            block.content,
-            style: TextStyle(
-              fontSize: fontSize,
-              color: Colors.blue,
-              decoration: TextDecoration.underline,
-              height: lineHeight,
-              fontFamily: fontFamily,
-            ),
-          ),
-        );
       default:
         return const SizedBox.shrink();
     }
+  }
+}
+
+class _HighlightMenuOverlay extends StatelessWidget {
+  final Color backgroundColor;
+  final Function(String color) onColorSelected;
+  final VoidCallback onDismiss;
+
+  const _HighlightMenuOverlay({
+    required this.backgroundColor,
+    required this.onColorSelected,
+    required this.onDismiss,
+  });
+
+  static const List<Map<String, dynamic>> _colors = [
+    {'name': 'yellow', 'color': Color(0xFFFFEB3B)},
+    {'name': 'green', 'color': Color(0xFF4CAF50)},
+    {'name': 'blue', 'color': Color(0xFF2196F3)},
+    {'name': 'pink', 'color': Color(0xFFE91E63)},
+    {'name': 'orange', 'color': Color(0xFFFF9800)},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onDismiss,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: _colors.map((colorData) {
+            return GestureDetector(
+              onTap: () => onColorSelected(colorData['name'] as String),
+              child: Container(
+                width: 26,
+                height: 26,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: colorData['color'] as Color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
   }
 }

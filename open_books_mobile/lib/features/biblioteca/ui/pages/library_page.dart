@@ -156,8 +156,12 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget _buildLibroItem(LibroBiblioteca libro) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          width: 1,
+        ),
       ),
       child: InkWell(
         onTap: () => context.pushReplacement('/book/${libro.id}'),
@@ -230,7 +234,7 @@ class _LibraryPageState extends State<LibraryPage> {
                                 value: libro.progreso / 100,
                                 backgroundColor: Theme.of(context)
                                     .colorScheme
-                                    .surfaceContainerLow,
+                                    .surfaceContainerHighest,
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   Theme.of(context).colorScheme.primary,
                                 ),

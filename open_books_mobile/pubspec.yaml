@@ -41,7 +41,7 @@ dependencies:
   json_annotation: ^4.8.1
   
   # Notificaciones
-  flutter_local_notifications: ^14.0.0
+  flutter_local_notifications: ^18.0.0
   
   # HTML Parser 
   html: ^0.15.4

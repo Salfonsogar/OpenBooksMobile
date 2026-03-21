@@ -9,9 +9,11 @@ class ApiClient {
   ApiClient() {
     _dio = Dio(
       BaseOptions(
-        baseUrl: dotenv.env['API_BASE_URL'] ?? 'http://localhost:7080',
+        baseUrl: dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:5201',
         connectTimeout: Duration(milliseconds: int.tryParse(dotenv.env['API_TIMEOUT'] ?? '30000') ?? 30000),
         receiveTimeout: Duration(milliseconds: int.tryParse(dotenv.env['API_TIMEOUT'] ?? '30000') ?? 30000),
+        followRedirects: true,
+        validateStatus: (status) => true,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -83,8 +85,10 @@ class ApiClient {
   }) async {
     final dio = Dio(
       BaseOptions(
-        baseUrl: dotenv.env['API_BASE_URL'] ?? 'http://localhost:7080',
+        baseUrl: dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:5201',
         receiveTimeout: const Duration(minutes: 5),
+        followRedirects: true,
+        validateStatus: (status) => true,
         headers: {
           'Accept': '*/*',
         },

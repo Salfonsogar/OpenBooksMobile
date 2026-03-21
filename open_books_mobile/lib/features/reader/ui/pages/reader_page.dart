@@ -3,12 +3,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../injection_container.dart';
+import '../../data/datasources/highlight_datasource.dart';
 import '../../data/models/bookmark.dart';
 import '../../data/models/epub_manifest.dart';
+import '../../data/models/highlight.dart';
 import '../../data/models/reader_settings.dart';
 import '../../data/repositories/epub_repository.dart';
 import '../../logic/cubit/bookmark_cubit.dart';
 import '../../logic/cubit/bookmark_state.dart';
+import '../../logic/cubit/highlight_cubit.dart';
+import '../../logic/cubit/highlight_state.dart';
 import '../../logic/cubit/reader_cubit.dart';
 import '../../logic/cubit/reader_settings_cubit.dart';
 import '../widgets/epub_parser.dart';
@@ -30,6 +34,8 @@ class _ReaderPageState extends State<ReaderPage> {
   late final ReaderCubit _readerCubit;
   late final ReaderSettingsCubit _settingsCubit;
   late final BookmarkCubit _bookmarkCubit;
+  late final HighlightCubit _highlightCubit;
+  final HighlightDataSource _highlightDataSource = HighlightDataSource();
   List<ReadingOrderItem> _chapters = [];
   int _currentIndex = 0;
 
@@ -42,9 +48,11 @@ class _ReaderPageState extends State<ReaderPage> {
     );
     _settingsCubit = getIt<ReaderSettingsCubit>();
     _bookmarkCubit = getIt<BookmarkCubit>();
+    _highlightCubit = HighlightCubit(_highlightDataSource);
     _settingsCubit.cargarSettings();
     _readerCubit.cargarLibro();
     _bookmarkCubit.cargarBookmarks(widget.libroId);
+    _highlightCubit.cargarHighlights(widget.libroId);
   }
 
   @override
@@ -52,6 +60,7 @@ class _ReaderPageState extends State<ReaderPage> {
     _pageController.dispose();
     _readerCubit.close();
     _bookmarkCubit.close();
+    _highlightCubit.close();
     super.dispose();
   }
 
@@ -64,6 +73,7 @@ class _ReaderPageState extends State<ReaderPage> {
           BlocProvider.value(value: _readerCubit),
           BlocProvider.value(value: _settingsCubit),
           BlocProvider.value(value: _bookmarkCubit),
+          BlocProvider.value(value: _highlightCubit),
         ],
         child: BlocBuilder<ReaderSettingsCubit, ReaderSettings>(
           builder: (context, settings) {
@@ -182,6 +192,7 @@ class _ReaderPageState extends State<ReaderPage> {
           setState(() {
             _currentIndex = index;
           });
+          _highlightCubit.cargarHighlightsPorCapitulo(index);
         },
         itemBuilder: (context, index) {
           final chapterPath = _chapters[index].href;
@@ -218,16 +229,37 @@ class _ReaderPageState extends State<ReaderPage> {
                       ),
                       child: SizedBox(
                         width: constraints.maxWidth,
-                        child: ChapterContent(
-                          blocks: blocks,
-                          libroId: widget.libroId,
-                          chapterPath: chapterPath,
-                          fontSize: settings.fontSize,
-                          lineHeight: settings.lineHeight,
-                          horizontalMargin: 0,
-                          textColor: themeColors['text']!,
-                          backgroundColor: themeColors['background']!,
-                          fontFamily: settings.fontFamily,
+                        child: BlocBuilder<HighlightCubit, HighlightState>(
+                          builder: (context, highlightState) {
+                            final highlights = highlightState is HighlightLoaded
+                                ? highlightState.highlights
+                                : <Highlight>[];
+                            return ChapterContent(
+                              blocks: blocks,
+                              libroId: widget.libroId,
+                              chapterPath: chapterPath,
+                              fontSize: settings.fontSize,
+                              lineHeight: settings.lineHeight,
+                              horizontalMargin: 0,
+                              textColor: themeColors['text']!,
+                              backgroundColor: themeColors['background']!,
+                              fontFamily: settings.fontFamily,
+                              highlights: highlights,
+                              onTextSelected: (text, start, end, color) {
+                                _highlightCubit.crearHighlight(
+                                  bookId: widget.libroId,
+                                  chapterIndex: _currentIndex,
+                                  text: text,
+                                  startIndex: start,
+                                  endIndex: end,
+                                  color: color,
+                                );
+                              },
+                              onHighlightTap: (highlight) {
+                                _highlightCubit.eliminarHighlight(highlight.id!);
+                              },
+                            );
+                          },
                         ),
                       ),
                     ),
