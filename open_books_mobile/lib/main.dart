@@ -12,6 +12,14 @@ import 'features/notifications/logic/cubit/notification_cubit.dart';
 import 'features/notifications/ui/widgets/notification_overlay_manager.dart';
 import 'features/reader/data/models/reader_settings.dart';
 import 'features/reader/logic/cubit/reader_settings_cubit.dart';
+import 'features/admin/dashboard/logic/cubit/admin_dashboard_cubit.dart';
+import 'features/admin/usuarios/logic/cubit/admin_usuarios_cubit.dart';
+import 'features/admin/libros/logic/cubit/admin_libros_cubit.dart';
+import 'features/admin/categorias/logic/cubit/admin_categorias_cubit.dart';
+import 'features/admin/moderacion/logic/cubit/admin_denuncias_cubit.dart';
+import 'features/admin/moderacion/logic/cubit/admin_sanciones_cubit.dart';
+import 'features/admin/moderacion/logic/cubit/admin_roles_cubit.dart';
+import 'features/admin/sugerencias/logic/cubit/admin_sugerencias_cubit.dart';
 import 'shared/core/session/session_cubit.dart';
 import 'shared/core/theme/app_theme.dart';
 import 'routing/app_router.dart';
@@ -45,6 +53,14 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
   late final HistorialCubit _historialCubit;
   late final NotificationCubit _notificationCubit;
   late final ReaderSettingsCubit _settingsCubit;
+  late final AdminDashboardCubit _adminDashboardCubit;
+  late final AdminUsuariosCubit _adminUsuariosCubit;
+  late final AdminLibrosCubit _adminLibrosCubit;
+  late final AdminCategoriasCubit _adminCategoriasCubit;
+  late final AdminDenunciasCubit _adminDenunciasCubit;
+  late final AdminSancionesCubit _adminSancionesCubit;
+  late final AdminRolesCubit _adminRolesCubit;
+  late final AdminSugerenciasCubit _adminSugerenciasCubit;
 
   @override
   void initState() {
@@ -60,6 +76,14 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
     _notificationCubit = NotificationCubit();
     _sessionCubit.setNotificationCubit(_notificationCubit);
     _settingsCubit = getIt<ReaderSettingsCubit>();
+    _adminDashboardCubit = getIt<AdminDashboardCubit>();
+    _adminUsuariosCubit = getIt<AdminUsuariosCubit>();
+    _adminLibrosCubit = getIt<AdminLibrosCubit>();
+    _adminCategoriasCubit = getIt<AdminCategoriasCubit>();
+    _adminDenunciasCubit = getIt<AdminDenunciasCubit>();
+    _adminSancionesCubit = getIt<AdminSancionesCubit>();
+    _adminRolesCubit = getIt<AdminRolesCubit>();
+    _adminSugerenciasCubit = getIt<AdminSugerenciasCubit>();
     _appRouter = AppRouter(sessionCubit: _sessionCubit);
 
     _sessionCubit.checkSession();
@@ -72,6 +96,14 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
     _perfilCubit.close();
     _historialCubit.close();
     _notificationCubit.close();
+    _adminDashboardCubit.close();
+    _adminUsuariosCubit.close();
+    _adminLibrosCubit.close();
+    _adminCategoriasCubit.close();
+    _adminDenunciasCubit.close();
+    _adminSancionesCubit.close();
+    _adminRolesCubit.close();
+    _adminSugerenciasCubit.close();
     super.dispose();
   }
 
@@ -89,6 +121,14 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
         BlocProvider<HistorialCubit>.value(value: _historialCubit),
         BlocProvider<NotificationCubit>.value(value: _notificationCubit),
         BlocProvider<ReaderSettingsCubit>.value(value: _settingsCubit),
+        BlocProvider<AdminDashboardCubit>.value(value: _adminDashboardCubit),
+        BlocProvider<AdminUsuariosCubit>.value(value: _adminUsuariosCubit),
+        BlocProvider<AdminLibrosCubit>.value(value: _adminLibrosCubit),
+        BlocProvider<AdminCategoriasCubit>.value(value: _adminCategoriasCubit),
+        BlocProvider<AdminDenunciasCubit>.value(value: _adminDenunciasCubit),
+        BlocProvider<AdminSancionesCubit>.value(value: _adminSancionesCubit),
+        BlocProvider<AdminRolesCubit>.value(value: _adminRolesCubit),
+        BlocProvider<AdminSugerenciasCubit>.value(value: _adminSugerenciasCubit),
       ],
       child: BlocBuilder<ReaderSettingsCubit, ReaderSettings>(
         builder: (context, settings) {

@@ -2,17 +2,18 @@
 
 ## CONFIGURACIÓN CONFIRMADA
 
-| Aspecto        | Decisión                                          |
-|----------------|---------------------------------------------------|
+| Aspecto        | Decisión                                         |
+| -------------- | ------------------------------------------------- |
 | Offline        | Solo lectura descargada (sin sync de operaciones) |
 | Admin          | Misma app, acceso por rol                         |
 | Notificaciones | SignalR + Locales (sin FCM)                       |
-| UI             | Material Design estándar                          |
-| Navegación     | Bottom Navigation o Tabs (según pantalla)         |
+| UI             | Material Design estándar                         |
+| Navegación    | Bottom Navigation o Tabs (según pantalla)        |
 
 ## 1. RESUMEN DEL BACKEND ANALIZADO
 
 ### Stack Tecnológico
+
 - **Backend**: ASP.NET Core 8 + Entity Framework Core
 - **DB**: PostgreSQL
 - **Auth**: JWT Bearer Token
@@ -24,249 +25,136 @@
 
 ### Autenticación (No requiere auth)
 
-| Método | Endpoint                              | Descripción                          | Body/Params                                                    |
-|--------|---------------------------------------|--------------------------------------|----------------------------------------------------------------|
-| POST   | `/api/Usuarios/Login`                 | Iniciar sesión                       | `{ correo, contrasena }`                                       |
-| POST   | `/api/Usuarios/Register`              | Registrarse                          | `{ nombreUsuario, correo, contraseña, rolId, nombreCompleto }` |
-| POST   | `/api/Usuarios/SolicitarRecuperacion` | Solicitar recuperación de contraseña | `{ correo }`                                                   |
-| POST   | `/api/Usuarios/ResetearContrasena`    | Resetear contraseña                  | `{ token, nuevaContraseña }`                                   |
+| Método | Endpoint                                | Descripción                           | Body/Params                                                       |
+| ------- | --------------------------------------- | -------------------------------------- | ----------------------------------------------------------------- |
+| POST    | `/api/Usuarios/Login`                 | Iniciar sesión                        | `{ correo, contrasena }`                                        |
+| POST    | `/api/Usuarios/Register`              | Registrarse                            | `{ nombreUsuario, correo, contraseña, rolId, nombreCompleto }` |
+| POST    | `/api/Usuarios/SolicitarRecuperacion` | Solicitar recuperación de contraseña | `{ correo }`                                                    |
+| POST    | `/api/Usuarios/ResetearContrasena`    | Resetear contraseña                   | `{ token, nuevaContraseña }`                                   |
 
 ### Usuarios
 
-| Método | Endpoint             | Descripción                | Auth  | Body/Params                                              |
-|--------|----------------------|----------------------------|-------|----------------------------------------------------------|
-| GET    | `/api/Usuarios`      | Listar usuarios (paginado) | Admin | `pageNumber, pageSize`                                   |
-| GET    | `/api/Usuarios/{id}` | Obtener usuario por ID     | Sí    | -                                                        |
-| PATCH  | `/api/Usuarios/{id}` | Actualizar usuario         | Sí    | `{ userName?, email?, nombreCompleto? }`                 |
-| POST   | `/api/Usuarios`      | Crear usuario              | Admin | `{ userName, email, contraseña, rolId, nombreCompleto }` |
-| DELETE | `/api/Usuarios/{id}` | Eliminar usuario           | Admin | -                                                        |
+| Método | Endpoint               | Descripción               | Auth  | Body/Params                                                 |
+| ------- | ---------------------- | -------------------------- | ----- | ----------------------------------------------------------- |
+| GET     | `/api/Usuarios`      | Listar usuarios (paginado) | Admin | `pageNumber, pageSize`                                    |
+| GET     | `/api/Usuarios/{id}` | Obtener usuario por ID     | Sí   | -                                                           |
+| PATCH   | `/api/Usuarios/{id}` | Actualizar usuario         | Sí   | `{ userName?, email?, nombreCompleto? }`                  |
+| POST    | `/api/Usuarios`      | Crear usuario              | Admin | `{ userName, email, contraseña, rolId, nombreCompleto }` |
+| DELETE  | `/api/Usuarios/{id}` | Eliminar usuario           | Admin | -                                                           |
 
 ### Libros
 
-| Método | Endpoint                         | Descripción                        | Auth  | Body/Params                                                              |
-|--------|----------------------------------|------------------------------------|-------|--------------------------------------------------------------------------|
-| GET    | `/api/Libros`                    | Listar libros (búsqueda, filtrado) | No    | `query, page, pageSize, categorias, autor`                               |
-| GET    | `/api/Libros/{id}`               | Descargar archivo EPUB             | Sí    | -                                                                        |
-| GET    | `/api/Libros/{id}/detalle`       | Ver detalle con reseñas            | No    | `page, pageSize`                                                         |
-| GET    | `/api/Libros/{id}/portada`       | Obtener portada                    | No    | -                                                                        |
-| GET    | `/api/Libros/{id}/descargar`     | Descargar libro                    | Sí    | -                                                                        |
-| GET    | `/api/Libros/{id}/epub/manifest` | Obtener índice del libro           | No    | -                                                                        |
-| GET    | `/api/Libros/{id}/epub/resource` | Obtener contenido de capítulo      | No    | `path`                                                                   |
-| POST   | `/api/Libros/upload`             | Subir libro (EPUB)                 | Admin | `form-data: titulo, autor, descripcion, portada, archivo, categoriasIds` |
-| PATCH  | `/api/Libros/{id}`               | Actualizar libro                   | Admin | `form-data`                                                              |
-| DELETE | `/api/Libros/{id}`               | Eliminar libro                     | Admin | -                                                                        |
+| Método | Endpoint                           | Descripción                        | Auth  | Body/Params                                                                |
+| ------- | ---------------------------------- | ----------------------------------- | ----- | -------------------------------------------------------------------------- |
+| GET     | `/api/Libros`                    | Listar libros (búsqueda, filtrado) | No    | `query, page, pageSize, categorias, autor`                               |
+| GET     | `/api/Libros/{id}`               | Descargar archivo EPUB              | Sí   | -                                                                          |
+| GET     | `/api/Libros/{id}/detalle`       | Ver detalle con reseñas            | No    | `page, pageSize`                                                         |
+| GET     | `/api/Libros/{id}/portada`       | Obtener portada                     | No    | -                                                                          |
+| GET     | `/api/Libros/{id}/descargar`     | Descargar libro                     | Sí   | -                                                                          |
+| GET     | `/api/Libros/{id}/epub/manifest` | Obtener índice del libro           | No    | -                                                                          |
+| GET     | `/api/Libros/{id}/epub/resource` | Obtener contenido de capítulo      | No    | `path`                                                                   |
+| POST    | `/api/Libros/upload`             | Subir libro (EPUB)                  | Admin | `form-data: titulo, autor, descripcion, portada, archivo, categoriasIds` |
+| PATCH   | `/api/Libros/{id}`               | Actualizar libro                    | Admin | `form-data`                                                              |
+| DELETE  | `/api/Libros/{id}`               | Eliminar libro                      | Admin | -                                                                          |
 
 ### Biblioteca (del usuario)
 
-| Método | Endpoint                                       | Descripción                | Auth |
-|--------|------------------------------------------------|----------------------------|------|
-| GET    | `/api/Biblioteca/{usuarioId}/libros`           | Obtener libros del usuario | Sí   |
-| POST   | `/api/Biblioteca/{usuarioId}/libros/{libroId}` | Agregar libro a biblioteca | Sí   |
-| DELETE | `/api/Biblioteca/{usuarioId}/libros/{libroId}` | Quitar libro de biblioteca | Sí   |
+| Método | Endpoint                                         | Descripción               | Auth |
+| ------- | ------------------------------------------------ | -------------------------- | ---- |
+| GET     | `/api/Biblioteca/{usuarioId}/libros`           | Obtener libros del usuario | Sí  |
+| POST    | `/api/Biblioteca/{usuarioId}/libros/{libroId}` | Agregar libro a biblioteca | Sí  |
+| DELETE  | `/api/Biblioteca/{usuarioId}/libros/{libroId}` | Quitar libro de biblioteca | Sí  |
 
 ### Valoraciones
 
-| Método | Endpoint                            | Descripción                  | Auth | Body/Params               |
-|--------|-------------------------------------|------------------------------|------|---------------------------|
-| POST   | `/api/Valoraciones`                 | Crear valoración             | Sí   | `{ libroId, puntuacion }` |
-| PUT    | `/api/Valoraciones`                 | Actualizar valoración        | Sí   | `{ libroId, puntuacion }` |
-| DELETE | `/api/Valoraciones`                 | Eliminar valoración          | Sí   | `idLibro`                 |
-| GET    | `/api/Valoraciones/libro/{idLibro}` | Ver valoraciones de libro    | No   | -                         |
-| GET    | `/api/Valoraciones/top5`            | Top 5 libros mejor valorados | No   | -                         |
+| Método | Endpoint                              | Descripción                 | Auth | Body/Params                 |
+| ------- | ------------------------------------- | ---------------------------- | ---- | --------------------------- |
+| POST    | `/api/Valoraciones`                 | Crear valoración            | Sí  | `{ libroId, puntuacion }` |
+| PUT     | `/api/Valoraciones`                 | Actualizar valoración       | Sí  | `{ libroId, puntuacion }` |
+| DELETE  | `/api/Valoraciones`                 | Eliminar valoración         | Sí  | `idLibro`                 |
+| GET     | `/api/Valoraciones/libro/{idLibro}` | Ver valoraciones de libro    | No   | -                           |
+| GET     | `/api/Valoraciones/top5`            | Top 5 libros mejor valorados | No   | -                           |
 
 ### Reseñas
 
-| Método | Endpoint                       | Descripción              | Auth | Body/Params               |
-|--------|--------------------------------|--------------------------|------|---------------------------|
-| POST   | `/api/Resenas`                 | Crear reseña             | Sí   | `{ libroId, texto }`      |
-| PUT    | `/api/Resenas/{idResena}`      | Actualizar reseña        | Sí   | `{ texto }`               |
-| DELETE | `/api/Resenas/{idResena}`      | Eliminar reseña          | Sí   | -                         |
-| GET    | `/api/Resenas/libro/{idLibro}` | Ver reseñas de libro     | No   | `page, pageSize`          |
-| GET    | `/api/Resenas`                 | Listar todas las reseñas | No   | `idLibro, page, pageSize` |
+| Método | Endpoint                         | Descripción              | Auth | Body/Params                 |
+| ------- | -------------------------------- | ------------------------- | ---- | --------------------------- |
+| POST    | `/api/Resenas`                 | Crear reseña             | Sí  | `{ libroId, texto }`      |
+| PUT     | `/api/Resenas/{idResena}`      | Actualizar reseña        | Sí  | `{ texto }`               |
+| DELETE  | `/api/Resenas/{idResena}`      | Eliminar reseña          | Sí  | -                           |
+| GET     | `/api/Resenas/libro/{idLibro}` | Ver reseñas de libro     | No   | `page, pageSize`          |
+| GET     | `/api/Resenas`                 | Listar todas las reseñas | No   | `idLibro, page, pageSize` |
 
 ### Categorías
 
-| Método | Endpoint               | Descripción          | Auth  | Body/Params                 |
-|--------|------------------------|----------------------|-------|-----------------------------|
-| GET    | `/api/Categorias`      | Listar categorías    | No    | `pageNumber, pageSize`      |
-| GET    | `/api/Categorias/{id}` | Obtener categoría    | No    | -                           |
-| POST   | `/api/Categorias`      | Crear categoría      | Admin | `{ nombre, descripcion }`   |
-| PATCH  | `/api/Categorias/{id}` | Actualizar categoría | Admin | `{ nombre?, descripcion? }` |
-| DELETE | `/api/Categorias/{id}` | Eliminar categoría   | Admin | -                           |
+| Método | Endpoint                 | Descripción          | Auth  | Body/Params                   |
+| ------- | ------------------------ | --------------------- | ----- | ----------------------------- |
+| GET     | `/api/Categorias`      | Listar categorías    | No    | `pageNumber, pageSize`      |
+| GET     | `/api/Categorias/{id}` | Obtener categoría    | No    | -                             |
+| POST    | `/api/Categorias`      | Crear categoría      | Admin | `{ nombre, descripcion }`   |
+| PATCH   | `/api/Categorias/{id}` | Actualizar categoría | Admin | `{ nombre?, descripcion? }` |
+| DELETE  | `/api/Categorias/{id}` | Eliminar categoría   | Admin | -                             |
 
 ### Historial de Lectura
 
-| Método | Endpoint                    | Descripción                   | Auth | Body/Params |
-|--------|-----------------------------|-------------------------------|------|-------------|
-| GET    | `/api/Historial/mis-libros` | Obtener historial del usuario | Sí   | `cantidad`  |
+| Método | Endpoint                      | Descripción                  | Auth | Body/Params  |
+| ------- | ----------------------------- | ----------------------------- | ---- | ------------ |
+| GET     | `/api/Historial/mis-libros` | Obtener historial del usuario | Sí  | `cantidad` |
 
 ### Denuncias
 
-| Método | Endpoint             | Descripción       | Auth  | Body/Params                                    |
-|--------|----------------------|-------------------|-------|------------------------------------------------|
-| POST   | `/api/Denuncia`      | Crear denuncia    | Sí    | `{ usuarioDenunciadoId, motivo, descripcion }` |
-| GET    | `/api/Denuncia`      | Listar denuncias  | Admin | `pagina, tamanoPagina`                         |
-| DELETE | `/api/Denuncia/{id}` | Eliminar denuncia | Admin | -                                              |
+| Método | Endpoint               | Descripción      | Auth  | Body/Params                                      |
+| ------- | ---------------------- | ----------------- | ----- | ------------------------------------------------ |
+| POST    | `/api/Denuncia`      | Crear denuncia    | Sí   | `{ usuarioDenunciadoId, motivo, descripcion }` |
+| GET     | `/api/Denuncia`      | Listar denuncias  | Admin | `pagina, tamanoPagina`                         |
+| DELETE  | `/api/Denuncia/{id}` | Eliminar denuncia | Admin | -                                                |
 
 ### Sugerencias
 
-| Método | Endpoint               | Descripción         | Auth  | Body/Params               |
-|--------|------------------------|---------------------|-------|---------------------------|
-| POST   | `/api/Sugerencia`      | Crear sugerencia    | Sí    | `{ titulo, descripcion }` |
-| GET    | `/api/Sugerencia`      | Listar sugerencias  | Admin | `pagina, tamanoPagina`    |
-| DELETE | `/api/Sugerencia/{id}` | Eliminar sugerencia | Admin | -                         |
+| Método | Endpoint                 | Descripción        | Auth  | Body/Params                 |
+| ------- | ------------------------ | ------------------- | ----- | --------------------------- |
+| POST    | `/api/Sugerencia`      | Crear sugerencia    | Sí   | `{ titulo, descripcion }` |
+| GET     | `/api/Sugerencia`      | Listar sugerencias  | Admin | `pagina, tamanoPagina`    |
+| DELETE  | `/api/Sugerencia/{id}` | Eliminar sugerencia | Admin | -                           |
 
 ### Sanciones
 
-| Método | Endpoint                           | Descripción                | Auth  | Body/Params                       |
-|--------|------------------------------------|----------------------------|-------|-----------------------------------|
-| POST   | `/api/Sancion`                     | Crear sanción              | Admin | `{ idUsuario, motivo, fechaFin }` |
-| GET    | `/api/Sancion/usuario/{idUsuario}` | Ver sanciones de usuario   | Admin | -                                 |
-| GET    | `/api/Sancion`                     | Listar todas las sanciones | Admin | `page, pageSize`                  |
-| DELETE | `/api/Sancion/{id}`                | Eliminar sanción           | Admin | -                                 |
+| Método | Endpoint                             | Descripción               | Auth  | Body/Params                         |
+| ------- | ------------------------------------ | -------------------------- | ----- | ----------------------------------- |
+| POST    | `/api/Sancion`                     | Crear sanción             | Admin | `{ idUsuario, motivo, fechaFin }` |
+| GET     | `/api/Sancion/usuario/{idUsuario}` | Ver sanciones de usuario   | Admin | -                                   |
+| GET     | `/api/Sancion`                     | Listar todas las sanciones | Admin | `page, pageSize`                  |
+| DELETE  | `/api/Sancion/{id}`                | Eliminar sanción          | Admin | -                                   |
 
 ### Roles
 
-| Método | Endpoint         | Descripción    | Auth  |
-|--------|------------------|----------------|-------|
-| GET    | `/api/Rols`      | Listar roles   | No    |
-| GET    | `/api/Rols/{id}` | Obtener rol    | No    |
-| POST   | `/api/Rols`      | Crear rol      | Admin |
-| PATCH  | `/api/Rols/{id}` | Actualizar rol | -     |
-| DELETE | `/api/Rols/{id}` | Eliminar rol   | -     |
+| Método | Endpoint           | Descripción   | Auth  |
+| ------- | ------------------ | -------------- | ----- |
+| GET     | `/api/Rols`      | Listar roles   | No    |
+| GET     | `/api/Rols/{id}` | Obtener rol    | No    |
+| POST    | `/api/Rols`      | Crear rol      | Admin |
+| PATCH   | `/api/Rols/{id}` | Actualizar rol | -     |
+| DELETE  | `/api/Rols/{id}` | Eliminar rol   | -     |
 
 ### SignalR (Tiempo Real)
 
-| Hub               | Endpoint                 | Descripción                          |
-|-------------------|--------------------------|--------------------------------------|
+| Hub               | Endpoint                   | Descripción                         |
+| ----------------- | -------------------------- | ------------------------------------ |
 | NotificacionesHub | `/Hub/NotificacionesHub` | Recibe notificaciones en tiempo real |
-
----
-
-### Modelos de Datos Principales
-
-#### Usuario
-```json
-{
-  "id": 1,
-  "userName": "string",
-  "nombreCompleto": "string",
-  "email": "string",
-  "estado": true,
-  "sancionado": false,
-  "fechaRegistro": "2024-01-01T00:00:00Z",
-  "nombreRol": "Usuario",
-  "rolId": 2,
-  "fotoPerfil": "byte[]"
-}
-```
-
-#### LoginResponse
-```json
-{
-  "usuario": { ...Usuario },
-  "token": "jwt_token_string"
-}
-```
-
-#### Libro (respuesta lista)
-```json
-{
-  "id": 1,
-  "titulo": "string",
-  "autor": "string",
-  "descripcion": "string",
-  "portadaBase64": "string",
-  "categorias": ["string"]
-}
-```
-
-#### LibroDetalle
-```json
-{
-  "id": 1,
-  "titulo": "string",
-  "autor": "string",
-  "descripcion": "string",
-  "promedioValoraciones": 4.5,
-  "cantidadValoraciones": 10,
-  "resenas": [...],
-  "totalResenas": 5
-}
-```
-
-#### EpubManifest
-```json
-{
-  "titulo": "string",
-  "autor": "string",
-  "toc": [{ "titulo": "string", "href": "string" }],
-  "readingOrder": [{ "href": "string", "type": "string" }]
-}
-```
-
-#### PagedResult (respuesta paginada)
-```json
-{
-  "page": 1,
-  "pageSize": 10,
-  "total": 100,
-  "totalPages": 10,
-  "data": [...]
-}
-```
-
----
 
 ## 2. ARQUITECTURA: FEATURE-FIRST
 
 La arquitectura Feature-First organiza el código por **funcionalidades** en lugar de por capas. Cada feature contiene todo lo necesario para funcionar de manera independiente.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    FEATURES (Módulos)                  │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────┐ │
-│  │  Auth   │ │  Libros │ │ Reader  │ │   Admin     │ │
-│  │  - data │ │  - data │ │  - data │ │   - data   │ │
-│  │  - logic│ │  - logic│ │  - logic│ │   - logic  │ │
-│  │  - ui   │ │  - ui   │ │  - ui   │ │   - ui     │ │
-│  └─────────┘ └─────────┘ └─────────┘ └─────────────┘ │
-├─────────────────────────────────────────────────────────┤
-│                      SHARED (Común)                    │
-│  - Core (network, theme, utils, constants)             │
-│  - Services (storage, signalr, connectivity)          │
-│  - Routing                                            │
-│  - DI Container                                       │
-└─────────────────────────────────────────────────────────┘
-```
-
 **Stack**: Flutter + flutter_bloc (Cubit) + dio + get_it + go_router
 
 ### SessionCubit (Estado Global)
 
-Se implementará un `SessionCubit` en la raíz de la aplicación para manejar el estado global de la sesión:
+Se implementará un `SessionCubit` en la raíz de la aplicación para manejar el estado global de la sesión.
 
-```dart
-// shared/core/session/session_cubit.dart
-class SessionCubit extends Cubit<SessionState> {
-  final StorageService _storage;
-  
-  SessionCubit(this._storage) : super(SessionInitial());
-  
-  // Estados
-  // - SessionInitial
-  // - SessionLoading
-  // - SessionAuthenticated(user, token)
-  // - SessionUnauthenticated
-  
-  Future<void> checkSession() async { ... }
-  Future<void> login(LoginResponse response) async { ... }
-  Future<void> logout() async { ... }
-  Future<void> updateUser(Usuario user) async { ... }
-}
-```
 
 **Responsabilidades del SessionCubit:**
+
 - Gestionar el usuario actualmente autenticado
 - Almacenar y persistir el JWT token
 - Determinar estado de autenticación (auth/unauth)
@@ -389,9 +277,11 @@ mi_feature/
 ## 4. FLUJOS DE USUARIO
 
 ### Usuario Regular
+
 1. Login/Registro → 2. Home (catálogo) → 3. Detalle libro → 4. Biblioteca/Reader
 
 ### Administrador
+
 1. Login → 2. Dashboard Admin → 3. Gestión (usuarios/libros/categorías/denuncias)
 
 ---
@@ -400,70 +290,45 @@ mi_feature/
 
 ### Flujo USUARIO
 
-| #  | Caso de Uso           | Pantalla Flutter      | Endpoint                                      |
-|----|-----------------------|-----------------------|-----------------------------------------------|
-| 1  | Login                 | `LoginPage`           | POST /api/Usuarios/Login                      |
-| 2  | Registro              | `RegisterPage`        | POST /api/Usuarios/Register                   |
+| #  | Caso de Uso            | Pantalla Flutter        | Endpoint                                      |
+| -- | ---------------------- | ----------------------- | --------------------------------------------- |
+| 1  | Login                  | `LoginPage`           | POST /api/Usuarios/Login                      |
+| 2  | Registro               | `RegisterPage`        | POST /api/Usuarios/Register                   |
 | 3  | Recuperar contraseña  | `RecoveryPage`        | POST /api/Usuarios/SolicitarRecuperacion      |
 | 4  | Catálogo libros       | `HomePage`            | GET /api/Libros                               |
-| 5  | Buscar libros         | `SearchPage`          | GET /api/Libros?query=                        |
+| 5  | Buscar libros          | `SearchPage`          | GET /api/Libros?query=                        |
 | 6  | Filtrar por categoría | `FilterSheet`         | GET /api/Categorias                           |
-| 7  | Detalle libro         | `BookDetailPage`      | GET /api/Libros/{id}/detalle                  |
-| 8  | Valorar libro         | `RatingDialog`        | POST /api/Valoraciones                        |
+| 7  | Detalle libro          | `BookDetailPage`      | GET /api/Libros/{id}/detalle                  |
+| 8  | Valorar libro          | `RatingDialog`        | POST /api/Valoraciones                        |
 | 9  | Escribir reseña       | `ReviewDialog`        | POST /api/Resenas                             |
-| 10 | Agregar a biblioteca  | `BookDetailPage`      | POST /api/Biblioteca/{uid}/libros/{lid}       |
-| 11 | Mi biblioteca         | `LibraryPage`         | GET /api/Biblioteca/{uid}/libros              |
-| 12 | Leer libro (EPUB)     | `ReaderPage`          | GET /api/Libros/{id}/epub/manifest + resource |
+| 10 | Agregar a biblioteca   | `BookDetailPage`      | POST /api/Biblioteca/{uid}/libros/{lid}       |
+| 11 | Mi biblioteca          | `LibraryPage`         | GET /api/Biblioteca/{uid}/libros              |
+| 12 | Leer libro (EPUB)      | `ReaderPage`          | GET /api/Libros/{id}/epub/manifest + resource |
 | 13 | Configuración reader  | `ReaderSettingsPanel` | Local (SharedPreferences)                     |
-| 14 | Marcadores            | `BookmarksSidebar`    | Local (SQLite)                                |
-| 15 | Resaltados            | `HighlightMenu`       | Local (SQLite)                                |
-| 16 | Historial             | `HistoryPage`         | GET /api/Historial/mis-libros                 |
-| 17 | Mi perfil             | `ProfilePage`         | GET/PATCH /api/Usuarios/{id}                  |
-| 18 | Crear denuncia        | `ReportDialog`        | POST /api/Denuncia                            |
-| 19 | Crear sugerencia      | `SuggestionDialog`    | POST /api/Sugerencia                          |
+| 14 | Marcadores             | `BookmarksSidebar`    | Local (SQLite)                                |
+| 15 | Resaltados             | `HighlightMenu`       | Local (SQLite)                                |
+| 16 | Historial              | `HistoryPage`         | GET /api/Historial/mis-libros                 |
+| 17 | Mi perfil              | `ProfilePage`         | GET/PATCH /api/Usuarios/{id}                  |
+| 18 | Crear denuncia         | `ReportDialog`        | POST /api/Denuncia                            |
+| 19 | Crear sugerencia       | `SuggestionDialog`    | POST /api/Sugerencia                          |
 
 ### Flujo ADMINISTRADOR
 
-| # | Caso de Uso          | Pantalla Flutter       | Endpoint                                          |
-|---|----------------------|------------------------|---------------------------------------------------|
-| 1 | Dashboard admin      | `AdminDashboardPage`   | GET /api/Usuarios, /api/Denuncia, /api/Sugerencia |
-| 2 | Gestionar usuarios   | `AdminUsersPage`       | GET/DELETE /api/Usuarios                          |
-| 3 | Gestionar libros     | `AdminBooksPage`       | GET/DELETE /api/Libros                            |
-| 4 | Subir libro          | `AdminUploadBookPage`  | POST /api/Libros/upload                           |
-| 5 | Gestionar categorías | `AdminCategoriesPage`  | CRUD /api/Categorias                              |
-| 6 | Ver denuncias        | `AdminDenunciasPage`   | GET /api/Denuncia                                 |
-| 7 | Ver sugerencias      | `AdminSugerenciasPage` | GET /api/Sugerencia                               |
-| 8 | Gestionar sanciones  | `AdminSancionesPage`   | CRUD /api/Sancion                                 |
-| 9 | Estadísticas         | `AdminStatsPage`       | Endpoints agregados                               |
+| # | Caso de Uso           | Pantalla Flutter         | Endpoint                            |
+| - | --------------------- | ------------------------ | ----------------------------------- |
+| 1 | Dashboard admin       | `AdminDashboardPage`   | Estadísticas generales             |
+| 2 | Gestionar usuarios    | `AdminUsersPage`       | GET/POST/PATCH/DELETE /api/Usuarios |
+| 3 | Gestionar libros      | `AdminBooksPage`       | GET/POST/PATCH/DELETE /api/Libros   |
+| 4 | Subir libro           | `AdminUploadBookPage`  | POST /api/Libros/upload             |
+| 5 | Gestionar categorías | `AdminCategoriesPage`  | CRUD /api/Categorias                |
+| 6 | Ver denuncias         | `AdminDenunciasPage`   | GET/DELETE /api/Denuncia            |
+| 7 | Ver sugerencias       | `AdminSugerenciasPage` | GET/DELETE /api/Sugerencia          |
+| 8 | Gestionar sanciones   | `AdminSancionesPage`   | CRUD /api/Sancion                   |
 
 ---
 
 ## 6. LECTOR EPUB (Funcionalidades)
 
-Basándose en el código React existente, estas son las funcionalidades a implementar:
-
-### 6.1 Estados del Reader
-```dart
-class ReaderState {
-  final String? bookId;
-  final EpubManifest? manifest;
-  final int currentIndex;
-  final String? currentContent;
-  final ReaderStatus status; // idle, loading, succeeded, failed
-  final String? error;
-  final Map<String, String> resourceCache;
-}
-```
-
-### 6.2 Settings (persistidos localmente)
-| Setting    | Valores              | Default |
-|------------|----------------------|---------|
-| fontSize   | 80-200%              | 100%    |
-| lineHeight | 1.2, 1.5, 1.8, 2.0   | 1.6     |
-| marginMode | narrow, normal, wide | normal  |
-| theme      | light, dark, sepia   | light   |
-
-### 6.3 Funcionalidades
 - [ ] **Manifest**: Cargar índice del libro (readingOrder + TOC)
 - [ ] **Navegación**: Siguiente/anterior capítulo, ir a índice
 - [ ] **TOC Sidebar**: Mostrar tabla de contenidos
@@ -473,13 +338,6 @@ class ReaderState {
 - [ ] **Footer**: Indicador de progreso + slider
 - [ ] **Caché**: Guardar capítulos descargados para offline
 - [ ] **Progreso**: Sincronizar con backend (historial)
-
-### 6.4 Colores de Resaltado
-- Amarillo: `#FFEB3B`
-- Verde: `#4CAF50`
-- Azul: `#2196F3`
-- Rosa: `#E91E63`
-- Naranja: `#FF9800`
 
 ---
 
@@ -561,7 +419,7 @@ Transforma los nodos HTML en widgets Flutter equivalentes.
 Ejemplo de mapeo inicial:
 
 | HTML       | Flutter               |
-|------------|-----------------------|
+| ---------- | --------------------- |
 | p          | Text                  |
 | h1-h6      | Text con estilos      |
 | img        | Image                 |
@@ -1090,6 +948,7 @@ SIGNALR_URL=http://localhost:7080/Hub/NotificacionesHub
 ```
 
 ### Implementación
+
 ```dart
 // lib/core/environment/env.dart
 class Env {
@@ -1113,6 +972,7 @@ class Env {
 ## 8. ESTRATEGIA OFFLINE (Solo Lectura Descargada)
 
 ### SQLite Tables
+
 ```sql
 -- Reader cache
 CREATE TABLE reader_cache (
@@ -1143,139 +1003,145 @@ CREATE TABLE highlights (
 
 ---
 
-## 9. ESTRATEGIA DE NOTIFICACIONES
+## 9. ESTRATEGIA DE NOTIFICACIONES ✅ COMPLETADA
 
-### SignalR (Backend)
-```dart
-// services/signalr_service.dart
-class SignalRService {
-  HubConnection? _hub;
-  
-  Future<void> connect(String token) async {
-    _hub = HubConnectionBuilder()
-      .withUrl('${Env().signalrUrl}')
-      .withAutomaticReconnect()
-      .build();
-    
-    await _hub!.start();
-    
-    _hub!.on('Notificacion', (message) {
-      // Handle notification
-    });
-  }
-}
-```
+### Implementación
 
-### Notificaciones Locales
-Usar Flutter Local Notifications para:
-- Recordatorio de lectura
-- Notificaciones desde SignalR
+Ver código existente en:
 
-### Casos de Uso
-| Notificación              | Origen  | Tipo       |
-|---------------------------|---------|------------|
-| Nueva sanción             | SignalR | Push       |
-| Nueva sugerencia aceptada | SignalR | Push       |
-| Recordatorio de lectura   | Local   | Programada |
+- `lib/shared/services/signalr_service.dart` - Conexión SignalR
+- `lib/features/notifications/data/models/app_notification.dart` - Modelo
+- `lib/features/notifications/logic/cubit/notification_cubit.dart` - Estado
+- `lib/features/notifications/ui/widgets/notification_popup.dart` - Popup animado
+- `lib/features/notifications/ui/pages/notifications_page.dart` - Página de listado
+
+### Funcionalidades Implementadas
+
+- SignalR Service con reconexión automática
+- Popup animado al recibir notificación (slide-down)
+- Página de listado de notificaciones
+- Badge con contador en avatar de perfil
+- Integración con temas (light/dark/sepia)
+- Conexión al login, desconexión al logout
+
+### Casos de Uso Soportados
+
+| Notificación             | Origen  | Tipo                   |
+| ------------------------- | ------- | ---------------------- |
+| Nueva sanción            | SignalR | Push                   |
+| Nueva sugerencia aceptada | SignalR | Push                   |
+| Recordatorio de lectura   | Local   | Programada (pendiente) |
 
 ---
 
 ## 10. PLAN DE DESARROLLO (FASES)
 
-### Fase 1: Setup (Semana 1)
-- [ ] Proyecto Flutter creado
-- [ ] Dependencias configuradas
-- [ ] Estructura Feature-First
-- [ ] Variables de entorno (.env)
-- [ ] Theme base (light/dark)
-- [ ] Routing con GoRouter
-- [ ] Inyección de dependencias (GetIt)
+### Fase 1: Setup ✅ COMPLETADA
 
-### Fase 2: Autenticación (Semana 1-2)
-- [ ] Modelos Auth
-- [ ] API Client con interceptors
-- [ ] Login + Registro + Recuperación
-- [ ] Persistencia JWT (SecureStorage)
-- [ ] Auth Cubit/Bloc
-- [ ] Guards de ruta
+Proyecto Flutter creado, dependencias configuradas, estructura Feature-First, variables de entorno (.env), theme base (light/dark), routing con GoRouter, inyección de dependencias (GetIt).
 
-### Fase 3: Catálogo de Libros (Semana 2-3)
-- [ ] Modelos Libro
-- [ ] API: Lista, búsqueda, filtros
-- [ ] Home Page con grid
-- [ ] Search Page
-- [ ] Book Detail Page
-- [ ] Valoraciones + Reseñas
+### Fase 2: Autenticación ✅ COMPLETADA
 
-### Fase 4: Biblioteca + Perfil (Semana 3)
-- [ ] Agregar/Quitar de biblioteca
-- [ ] Mi Biblioteca
-- [ ] Historial de lectura
-- [ ] Perfil de usuario
-- [ ] Editar perfil
+Modelos Auth, API Client con interceptors, Login + Registro + Recuperación, persistencia JWT (SecureStorage), Auth Cubit, guards de ruta.
 
-### Fase 5: LECTOR EPUB - CORE (Semana 4)
-- [ ] Estructura de carpetas feature reader
-- [ ] Modelos: EpubManifest, ReaderSettings
-- [ ] Data layer: EpubDataSource, EpubRepository
-- [ ] ReaderCubit: carga manifest, navegación capítulos
-- [ ] ReaderSettingsCubit: configuraciones
-- [ ] Parser HTML → Widgets (soporte: p, h1-h6, img, strong, em, blockquote, a)
-- [ ] ReaderPage básica con PageView
-- [ ] Navegación: siguiente/anterior capítulo
+### Fase 3: Catálogo de Libros ✅ COMPLETADA
 
-### Fase 5.1: LECTOR EPUB - UI COMPLETA (Semana 4)
-- [ ] Header: título libro, botón TOC, botón settings
-- [ ] TOC Sidebar: tabla de contenidos
-- [ ] Settings Panel: fontSize (80-200%), lineHeight (1.2-2.0), marginMode (narrow/normal/wide), theme (light/dark/sepia)
-- [ ] Reader Footer: indicador de progreso + slider
-- [ ] Tocar centro para mostrar/ocultar UI
-- [ ] Gesture horizontal para cambiar página
+Modelos Libro, API: Lista, búsqueda, filtros, Home Page con grid, Search Page, Book Detail Page, Valoraciones + Reseñas.
 
-### Fase 5.2: LECTOR EPUB - AVANZADO (Semana 5)
-- [ ] Resolución de rutas relativas (../images/)
-- [x] Cache en memoria de capítulos
-- [x] Precarga de siguiente capítulo
-- [ ] Layout incremental (generación dinámica de páginas)
-- [ ] Recalculo de páginas al cambiar settings
+### Fase 4: Biblioteca + Perfil ✅ COMPLETADA
 
-### Fase 5.3: LECTOR EPUB - BOOKMARKS (Semana 5)
-- [x] Modelo Bookmark
-- [x] Crear marcador desde capítulo actual
-- [x] Sidebar de marcadores (integrado con índice)
-- [x] Eliminar marcador
-- [x] Navegar a marcador
-- [x] Persistencia de marcadores
+Agregar/Quitar de biblioteca, Mi Biblioteca, Historial de lectura, Perfil de usuario, Editar perfil.
 
-### Fase 5.4: LECTOR EPUB - HIGHLIGHTS (Semana 5)
-- [ ] Modelo Highlight
-- [ ] Colores: Amarillo, Verde, Azul, Rosa, Naranja
-- [ ] Guardar highlight con color
-- [ ] Mostrar highlights en texto
-- [ ] Eliminar highlight
-- [ ] Persistencia SQLite de highlights
+### Fase 5: LECTOR EPUB
 
-### Fase 6: Notificaciones (Semana 5)
-- [ ] SignalR Service
-- [ ] Conexión en background
-- [ ] Manejo de notificaciones
-- [ ] Notificaciones locales
+#### Fase 5.0: LECTOR EPUB - CORE ✅ COMPLETADA
 
-### Fase 7: Flujo Administrador (Semana 5-6)
-- [ ] Dashboard Admin
-- [ ] Gestión de usuarios
-- [ ] Gestión de libros (upload)
-- [ ] Gestión de categorías
-- [ ] Denuncias y sugerencias
-- [ ] Sanciones
+Estructura de carpetas feature reader, modelos: EpubManifest, ReaderSettings, data layer: EpubDataSource, EpubRepository, ReaderCubit: carga manifest, navegación capítulos, ReaderSettingsCubit: configuraciones, Parser HTML → Widgets (soporte: p, h1-h6, img, strong, em, blockquote, a), ReaderPage básica con PageView, navegación: siguiente/anterior capítulo.
 
-### Fase 8: Offline + Testing (Semana 6)
-- [ ] SQLite setup
-- [ ] Cache lectura offline (capítulos)
-- [ ] Unit tests
-- [ ] Widget tests
-- [ ] Integration tests
-- [ ] Optimizaciones
+#### Fase 5.1: LECTOR EPUB - UI COMPLETA ✅ COMPLETADA
+
+Header: título libro, botón TOC, botón settings, TOC Sidebar: tabla de contenidos, Settings Panel: fontSize (80-200%), lineHeight (1.2-2.0), marginMode (narrow/normal/wide), theme (light/dark/sepia), Reader Footer: indicador de progreso + slider, tocar centro para mostrar/ocultar UI, gesture horizontal para cambiar página.
+
+#### Fase 5.2: LECTOR EPUB - AVANZADO ⚠️ PARCIAL
+
+- ✅ Resolución de rutas relativas (../images/)
+- ✅ Cache en memoria de capítulos
+- ✅ Precarga de siguiente capítulo
+- ⏳ Layout incremental (generación dinámica de páginas) - **Pendiente por implementación**
+- ⏳ Recalculo de páginas al cambiar settings - **Pendiente por implementación**
+
+#### Fase 5.3: LECTOR EPUB - BOOKMARKS ✅ COMPLETADA
+
+Modelo Bookmark, crear marcador desde capítulo actual, sidebar de marcadores (integrado con índice), eliminar marcador, navegar a marcador, persistencia de marcadores.
+
+#### Fase 5.4: LECTOR EPUB - HIGHLIGHTS ✅ COMPLETADA
+
+Modelo Highlight, colores: Amarillo, Verde, Azul, Rosa, Naranja, guardar highlight con color, mostrar highlights en texto, eliminar highlight, persistencia SQLite de highlights.
+
+#### Apartados Pendientes del Reader ⚠️
+
+Los siguientes apartados del reader requieren implementación adicional:
+
+- Cache de capítulos para offline
+- Layout/Renderizado por bloques (generación dinámica de páginas)
+- Recalculo de páginas al cambiar settings
+
+### Fase 6: Notificaciones ✅ COMPLETADA
+
+SignalR Service, conexión en background, manejo de notificaciones, popup animado con integración de temas.
+
+### Fase 7: Flujo Administrador ⏳ PENDIENTE
+
+#### Fase 7.0: Admin Core ⏳ PENDIENTE
+
+- Estructura de carpetas `features/admin/`
+- AdminGuard (protección de rutas por rol)
+- Dashboard principal con gráficos/estadísticas
+
+#### Fase 7.1: Gestión de Usuarios ⏳ PENDIENTE
+
+- Lista paginada con búsqueda
+- Crear usuario (formulario)
+- Editar usuario (modal/diálogo)
+- Eliminar usuario (confirmación)
+- Ver sanciones del usuario
+- Crear sanción desde perfil
+
+#### Fase 7.2: Gestión de Libros ⏳ PENDIENTE
+
+- Dashboard de estadísticas
+- Upload EPUB (form-data: título, autor, descripción, portada, archivo, categorías)
+- Editar libro (datos + portada)
+- Eliminar libro (confirmación)
+
+#### Fase 7.3: Gestión de Categorías ⏳ PENDIENTE
+
+- Lista de categorías
+- Crear categoría
+- Editar categoría
+- Eliminar categoría
+
+#### Fase 7.4: Denuncias y Sugerencias ⏳ PENDIENTE
+
+- Lista con tabs (Denuncias | Sugerencias)
+- Ver detalle completo de cada item
+- Eliminar item
+- Filtros: fecha, estado
+
+#### Fase 7.5: Sistema de Sanciones ⏳ PENDIENTE
+
+- Lista de sanciones activas
+- Crear sanción (desde perfil de usuario)
+- Eliminar sanción (al expirar o manual)
+
+### Fase 8: Offline + Testing ⏳ PENDIENTE
+
+- SQLite setup
+- Cache lectura offline (capítulos)
+- Unit tests
+- Widget tests
+- Integration tests
+- Optimizaciones
 
 ---
 
@@ -1294,10 +1160,12 @@ dependencies:
   equatable: ^2.0.5           # Comparación de estados
   sqflite: ^2.3.0            # SQLite (offline)
   path_provider: ^2.1.1      # Rutas de archivos
-  flutter_local_notifications: ^14.0.0  # Notificaciones locales
+  flutter_local_notifications: ^18.0.0  # Notificaciones locales
   connectivity_plus: ^5.0.0  # Estado de red
   html: ^0.15.4             # Parser HTML para EPUB Reader
-  
+  signalr_netcore: ^1.0.0   # Cliente SignalR
+  fl_chart: ^0.66.0         # Gráficos para Dashboard Admin
+   
 dev_dependencies:
   build_runner: ^2.4.6
   json_serializable: ^6.7.1
@@ -1308,302 +1176,71 @@ dev_dependencies:
 
 ## 12. PLAN DETALLADO FASE 5: LECTOR EPUB
 
-### Fase 5.0: CORE - Estructura Base
+### Fase 5.0: CORE - Estructura Base ✅ COMPLETADA
 
-#### Archivos a crear:
-```
-lib/features/reader/
-├── data/
-│   ├── models/
-│   │   ├── epub_manifest.dart
-│   │   └── reader_settings.dart
-│   ├── datasources/
-│   │   └── epub_datasource.dart
-│   └── repositories/
-│       └── epub_repository.dart
-├── logic/
-│   └── cubit/
-│       ├── reader_cubit.dart
-│       └── reader_settings_cubit.dart
-└── ui/
-    ├── pages/
-    │   └── reader_page.dart
-    └── widgets/
-        └── chapter_content.dart
-```
+Ver implementación en código existente:
 
-#### Implementación:
+- `lib/features/reader/data/models/epub_manifest.dart`
+- `lib/features/reader/data/models/reader_settings.dart`
+- `lib/features/reader/data/datasources/epub_datasource.dart`
+- `lib/features/reader/data/repositories/epub_repository.dart`
+- `lib/features/reader/logic/cubit/reader_cubit.dart`
+- `lib/features/reader/logic/cubit/reader_settings_cubit.dart`
+- `lib/features/reader/ui/pages/reader_page.dart`
+- `lib/features/reader/ui/widgets/epub_parser.dart`
 
-**1. epub_manifest.dart**
-```dart
-class EpubManifest {
-  final String titulo;
-  final String autor;
-  final List<TocItem> toc;
-  final List<String> readingOrder;
-}
+### Fase 5.1: UI COMPLETA ✅ COMPLETADA
 
-class TocItem {
-  final String titulo;
-  final String href;
-}
-```
+Ver implementación en código existente:
 
-**2. reader_settings.dart**
-```dart
-class ReaderSettings {
-  final double fontSize;     // 0.8 - 2.0 (80% - 200%)
-  final double lineHeight;    // 1.2, 1.5, 1.8, 2.0
-  final String marginMode;   // narrow, normal, wide
-  final String theme;        // light, dark, sepia
-  
-  // Valores por defecto
-  static const defaultSettings = ReaderSettings(
-    fontSize: 1.0,
-    lineHeight: 1.6,
-    marginMode: 'normal',
-    theme: 'light',
-  );
-}
-```
+- Header con título, TOC y settings
+- TOC Sidebar con navegación
+- Settings Panel con fontSize, lineHeight, marginMode, theme
+- Reader Footer con progreso
+- Gesture horizontal y tap central
 
-**3. epub_datasource.dart**
-```dart
-class EpubDataSource {
-  // GET /api/Libros/{id}/epub/manifest
-  Future<EpubManifest> getManifest(int libroId);
-  
-  // GET /api/Libros/{id}/epub/resource?path={path}
-  Future<String> getResource(int libroId, String path);
-}
-```
+### Fase 5.2: AVANZADO ⚠️ PARCIAL
 
-**4. reader_cubit.dart**
-```dart
-// Estados
-- ReaderInitial
-- ReaderLoading  
-- ReaderLoaded(manifest, currentIndex, content)
-- ReaderError(message)
+- ✅ Resolución de rutas relativas
+- ✅ Cache en memoria de capítulos
+- ✅ Precarga de siguiente capítulo
+- ⏳ Layout incremental (generación dinámica de páginas)
+- ⏳ Recalculo de páginas al cambiar settings
 
-// Métodos
-- cargarLibro(libroId)
-- cargarCapitulo(index)
-- siguienteCapitulo()
-- capituloAnterior()
-- irACapitulo(index)
-```
+### Fase 5.3: BOOKMARKS ✅ COMPLETADA
 
-**5. epub_parser.dart**
-```dart
-class EpubParser {
-  // Convierte HTML → List<ReaderBlock>
-  // Soporte: p, h1-h6, img, strong, em, blockquote, a
-  List<ReaderBlock> parse(String html);
-}
+Ver implementación en código existente:
 
-class ReaderBlock {
-  final String type;  // p, h1, h2, img, etc.
-  final dynamic content;
-}
-```
+- `lib/features/reader/data/models/bookmark.dart`
+- `lib/features/reader/data/datasources/bookmark_datasource.dart`
+- `lib/features/reader/logic/cubit/bookmark_cubit.dart`
+- Sidebar integrada en reader
 
-**6. reader_page.dart**
-```dart
-// PageView con paginación
-// Carga manifest al iniciar
-// Muestra capítulo actual
-// Gesture horizontal para navegación
-```
+### Fase 5.4: HIGHLIGHTS ✅ COMPLETADA
 
----
+Ver implementación en código existente:
 
-### Fase 5.1: UI COMPLETA
+- `lib/features/reader/data/models/highlight.dart`
+- `lib/features/reader/data/datasources/highlight_datasource.dart`
+- `lib/features/reader/logic/cubit/highlight_cubit.dart`
+- `lib/features/reader/ui/widgets/highlight_menu.dart`
+- `lib/features/reader/ui/widgets/epub_parser.dart` (actualizado con renderizado de highlights)
 
-#### Archivos a crear/actualizar:
-```
-lib/features/reader/
-├── ui/
-│   ├── pages/
-│   │   └── reader_page.dart        (actualizar)
-│   └── widgets/
-│       ├── reader_header.dart      (nuevo)
-│       ├── toc_sidebar.dart       (nuevo)
-│       ├── settings_panel.dart    (nuevo)
-│       └── reader_footer.dart     (nuevo)
-```
+### Apartados Pendientes del Reader ⚠️
 
-#### Implementación:
+Los siguientes apartados requieren implementación adicional:
 
-**1. reader_header.dart**
-- Título del libro
-- Botón TOC (abre sidebar)
-- Botón Settings (abre bottom sheet)
-- Botón volver
+#### 1. Cache de Capítulos para Offline
 
-**2. toc_sidebar.dart**
-- Slide-in desde izquierda
-- Lista de capítulos (del manifest.toc)
-- Al tocar → navegar a capítulo
+Permitir que los capítulos descargados estén disponibles sin conexión.
 
-**3. settings_panel.dart**
-- Bottom sheet con:
-  - **FontSize**: Slider 80%-200%
-  - **LineHeight**: Opción (1.2, 1.5, 1.8, 2.0)
-  - **Margin**: Opción (narrow, normal, wide)
-  - **Theme**: Opción (light, dark, sepia)
-- Persiste en SharedPreferences
+#### 2. Layout/Renderizado por Bloques
 
-**4. reader_footer.dart**
-- "Capítulo X de Y"
-- Slider de progreso
-- Al cambiar → navegar a capítulo
+Generación dinámica de páginas basada en el tamaño del viewport, optimizando el rendimiento para capítulos grandes.
 
-**5. reader_page.dart (actualizar)**
-- Integrar header, content, footer
-- Tocar centro → mostrar/ocultar UI
-- Gesture horizontal → siguiente/anterior página
+#### 3. Recalculo de Páginas al Cambiar Settings
 
----
-
-### Fase 5.2: AVANZADO
-
-#### Mejoras técnicas:
-
-**1. Resolución de rutas relativas**
-```dart
-// Transforma: ../images/img1.jpg
-// Hacia: api/Libros/{id}/epub/resource?path=images/img1.jpg
-String resolveRelativePath(String relativePath, String currentPath);
-```
-
-**2. Cache en memoria**
-```dart
-class ChapterCache {
-  final Map<String, String> _cache = {};
-  
-  String? get(String path);
-  void put(String path, String content);
-  void clear();
-}
-```
-
-**3. Precarga de capítulo**
-```dart
-// Mientras lee capítulo actual, descarga siguiente en background
-Future<void> precargarSiguiente();
-```
-
-**4. Layout incremental**
-```dart
-// Genera páginas dinámicamente
-// Solo construye las visibles en viewport
-class PageGenerator {
-  List<Widget> generatePages(List<ReaderBlock> blocks, Size viewport);
-}
-```
-
-**5. Recalculo de páginas**
-```dart
-// Cuando cambia settings → recalcular páginas
-void onSettingsChanged(ReaderSettings settings);
-```
-
----
-
-### Fase 5.3: BOOKMARKS
-
-#### Modelo:
-```dart
-class Bookmark {
-  final int id;
-  final int bookId;
-  final int chapterIndex;
-  final String title;
-  final DateTime createdAt;
-}
-```
-
-#### Implementación:
-
-**1. SQLite Table**
-```sql
-CREATE TABLE bookmarks (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  book_id INTEGER,
-  chapter_index INTEGER,
-  title TEXT,
-  created_at INTEGER
-);
-```
-
-**2. ReaderCubit (agregar métodos)**
-```dart
-- crearBookmark(titulo)
-- eliminarBookmark(id)
-- getBookmarks(bookId)
-- navegarABookmark(bookmark)
-```
-
-**3. bookmarks_sidebar.dart**
-- Lista de marcadores del libro actual
-- Al tocar → navegar al capítulo
-- Swipe para eliminar
-
----
-
-### Fase 5.4: HIGHLIGHTS
-
-#### Modelo:
-```dart
-class Highlight {
-  final int id;
-  final int bookId;
-  final int chapterIndex;
-  final String text;
-  final String color;  // #FFEB3B, #4CAF50, #2196F3, #E91E63, #FF9800
-  final DateTime createdAt;
-}
-```
-
-#### Colores disponibles:
-| Color   | Hex       |
-|---------|-----------|
-| Amarillo | #FFEB3B |
-| Verde   | #4CAF50  |
-| Azul    | #2196F3  |
-| Rosa    | #E91E63  |
-| Naranja | #FF9800  |
-
-#### Implementación:
-
-**1. SQLite Table**
-```sql
-CREATE TABLE highlights (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  book_id INTEGER,
-  chapter_index INTEGER,
-  text TEXT,
-  color TEXT,
-  created_at INTEGER
-);
-```
-
-**2. ReaderCubit (agregar métodos)**
-```dart
-- crearHighlight(texto, color)
-- eliminarHighlight(id)
-- getHighlights(bookId, chapterIndex)
-```
-
-**3. highlight_menu.dart**
-- Al seleccionar texto → mostrar menú
-- Elegir color
-- Guardar highlight
-
-**4. chapter_content.dart (actualizar)**
-- Renderizar highlights con BackgroundColor
-- Al tocar highlight → opciones (eliminar)
+Cuando el usuario modifica fontSize, lineHeight, márgenes u orientación, las páginas deben recalcularse automáticamente manteniendo la posición de lectura.
 
 ---
 

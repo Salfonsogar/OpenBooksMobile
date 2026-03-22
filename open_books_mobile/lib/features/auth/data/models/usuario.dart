@@ -55,5 +55,5 @@ class Usuario {
     };
   }
 
-  bool get isAdmin => nombreRol == 'Administrador';
+  bool get isAdmin => rolId == 1 || nombreRol.toLowerCase() == 'administrador';
 }
