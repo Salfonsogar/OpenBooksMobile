@@ -61,7 +61,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
       appBar: CloseHeader(onClose: () => context.go('/home')),
       body: BlocConsumer<LibroDetalleCubit, LibroDetalleState>(
         listener: (context, state) {
-          if (state is ValoracionSuccess || state is ResenaSuccess) {
+          if (state is LibroDetalleLoaded && 
+              (state.isValoracionSuccess || state.isResenaSuccess)) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Operación realizada con éxito')),
             );
@@ -93,26 +94,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
             );
           }
 
-          if (state is LibroDetalleLoaded ||
-              state is ValoracionSuccess ||
-              state is ResenaSuccess) {
-            final libro = state is LibroDetalleLoaded
-                ? state.libro
-                : state is ValoracionSuccess
-                ? state.libro
-                : (state as ResenaSuccess).libro;
-
-            final portadaBase64 = state is LibroDetalleLoaded
-                ? state.portadaBase64
-                : state is ValoracionSuccess
-                ? state.portadaBase64
-                : (state as ResenaSuccess).portadaBase64;
-
-            final estaEnBiblioteca = state is LibroDetalleLoaded
-                ? state.estaEnBiblioteca
-                : state is ValoracionSuccess
-                ? state.estaEnBiblioteca
-                : (state as ResenaSuccess).estaEnBiblioteca;
+          if (state is LibroDetalleLoaded) {
+            final libro = state.libro;
+            final portadaBase64 = state.portadaBase64;
+            final estaEnBiblioteca = state.estaEnBiblioteca;
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),

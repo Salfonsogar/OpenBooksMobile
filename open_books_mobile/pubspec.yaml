@@ -36,6 +36,7 @@ dependencies:
   # UI
   cached_network_image: ^3.3.0
   image_picker: ^1.0.7
+  file_picker: ^8.0.0
   
   # JSON
   json_annotation: ^4.8.1

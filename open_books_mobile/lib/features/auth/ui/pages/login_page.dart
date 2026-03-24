@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/core/constants/app_constants.dart';
-import '../../../../shared/core/session/session_cubit.dart';
 import '../../logic/cubit/auth_cubit.dart';
 import '../../logic/cubit/auth_state.dart';
 
@@ -42,7 +41,6 @@ class _LoginPageState extends State<LoginPage> {
       body: BlocListener<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthLoginSuccess) {
-            context.read<SessionCubit>();
             context.go('/home');
           } else if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(

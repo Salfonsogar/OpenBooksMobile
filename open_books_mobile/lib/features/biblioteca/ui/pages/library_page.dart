@@ -57,99 +57,103 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<BibliotecaCubit, BibliotecaState>(
-      listener: (context, state) {},
-      child: BlocBuilder<BibliotecaCubit, BibliotecaState>(
-        builder: (context, state) {
-          if (state is BibliotecaLoading || state is BibliotecaInitial) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/library/upload'),
+        icon: const Icon(Icons.add),
+        label: const Text('Subir Libro'),
+      ),
+      body: BlocBuilder<BibliotecaCubit, BibliotecaState>(
+          builder: (context, state) {
+            if (state is BibliotecaLoading || state is BibliotecaInitial) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (state is BibliotecaError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    state.message,
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                    onPressed: () =>
-                        context.read<BibliotecaCubit>().cargarBiblioteca(),
-                    child: const Text('Reintentar'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          if (state is BibliotecaLoaded) {
-            if (state.libros.isEmpty) {
+            if (state is BibliotecaError) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.library_books_outlined,
-                      size: 80,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      Icons.error_outline,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.error,
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Tu biblioteca está vacía',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
+                      state.message,
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Agrega libros desde el catálogo',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       ),
-                      onPressed: () => context.go('/home'),
-                      child: const Text('Explorar libros'),
+                      onPressed: () =>
+                          context.read<BibliotecaCubit>().cargarBiblioteca(),
+                      child: const Text('Reintentar'),
                     ),
                   ],
                 ),
               );
             }
 
-            return RefreshIndicator(
-              onRefresh: () => context.read<BibliotecaCubit>().refresh(),
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: state.libros.length,
-                itemBuilder: (context, index) {
-                  final libro = state.libros[index];
-                  return _buildLibroItem(libro);
-                },
-              ),
-            );
-          }
+            if (state is BibliotecaLoaded) {
+              if (state.libros.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.library_books_outlined,
+                        size: 80,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Tu biblioteca está vacía',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Agrega libros desde el catálogo',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        onPressed: () => context.go('/home'),
+                        child: const Text('Explorar libros'),
+                      ),
+                    ],
+                  ),
+                );
+              }
 
-          return const Center(child: CircularProgressIndicator());
-        },
-      ),
+              return RefreshIndicator(
+                onRefresh: () => context.read<BibliotecaCubit>().refresh(),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: state.libros.length,
+                  itemBuilder: (context, index) {
+                    final libro = state.libros[index];
+                    return _buildLibroItem(libro);
+                  },
+                ),
+              );
+            }
+
+            return const Center(child: CircularProgressIndicator());
+          },
+        ),
     );
   }
 

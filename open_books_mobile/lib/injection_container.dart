@@ -11,6 +11,7 @@ import 'features/libros/logic/cubit/cubit.dart';
 import 'features/biblioteca/data/datasources/biblioteca_datasource.dart';
 import 'features/biblioteca/data/repositories/biblioteca_repository.dart';
 import 'features/biblioteca/logic/cubit/biblioteca_cubit.dart';
+import 'features/biblioteca/logic/cubit/upload_libro_cubit.dart';
 import 'features/perfil/data/datasources/perfil_datasource.dart';
 import 'features/perfil/data/repositories/perfil_repository.dart';
 import 'features/perfil/logic/cubit/perfil_cubit.dart';
@@ -47,6 +48,7 @@ import 'features/admin/moderacion/logic/cubit/admin_roles_cubit.dart';
 import 'features/admin/sugerencias/data/datasources/admin_sugerencias_datasource.dart';
 import 'features/admin/sugerencias/data/repositories/admin_sugerencias_repository.dart';
 import 'features/admin/sugerencias/logic/cubit/admin_sugerencias_cubit.dart';
+import 'features/notifications/logic/cubit/notification_cubit.dart';
 import 'shared/core/network/api_client.dart';
 import 'shared/core/session/session_cubit.dart';
 
@@ -58,6 +60,9 @@ Future<void> setupDependencies() async {
 
   // Session
   getIt.registerLazySingleton<SessionCubit>(() => SessionCubit());
+
+  // Notifications
+  getIt.registerLazySingleton<NotificationCubit>(() => NotificationCubit());
 
   // Auth
   getIt.registerLazySingleton<AuthDataSource>(
@@ -145,6 +150,11 @@ Future<void> setupDependencies() async {
       repository: getIt<BibliotecaRepository>(),
       sessionCubit: getIt<SessionCubit>(),
     ),
+  );
+
+  // Biblioteca - Upload Libro
+  getIt.registerFactory<UploadLibroCubit>(
+    () => UploadLibroCubit(),
   );
 
   // Perfil - singleton que escucha SessionCubit

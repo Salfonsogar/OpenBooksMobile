@@ -24,7 +24,10 @@ class AdminPage extends StatelessWidget {
     return Scaffold(
       body: Column(
         children: [
-          _AdminHeader(title: moduleTitle),
+          SafeArea(
+            bottom: false,
+            child: _AdminHeader(title: moduleTitle),
+          ),
           Expanded(child: child),
         ],
       ),
@@ -38,10 +41,37 @@ class _AdminHeader extends StatelessWidget {
 
   const _AdminHeader({required this.title});
 
+  Widget _buildAvatar(BuildContext context, SessionState state) {
+    if (state is SessionAuthenticated) {
+      if (state.fotoPerfilBase64 != null && state.fotoPerfilBase64!.isNotEmpty) {
+        try {
+          return CircleAvatar(
+            radius: 18,
+            backgroundImage: MemoryImage(
+              base64Decode(state.fotoPerfilBase64!),
+            ),
+          );
+        } catch (_) {}
+      }
+      return CircleAvatar(
+        radius: 18,
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        child: Text(
+          state.userName.isNotEmpty ? state.userName[0].toUpperCase() : '?',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
@@ -67,36 +97,16 @@ class _AdminHeader extends StatelessWidget {
                   ),
             ),
           ),
-          GestureDetector(
-            onTap: () => context.push('/profile'),
-            child: BlocBuilder<SessionCubit, SessionState>(
-              builder: (context, state) {
-                if (state is SessionAuthenticated) {
-                  if (state.fotoPerfilBase64 != null && state.fotoPerfilBase64!.isNotEmpty) {
-                    try {
-                      return CircleAvatar(
-                        radius: 18,
-                        backgroundImage: MemoryImage(
-                          base64Decode(state.fotoPerfilBase64!),
-                        ),
-                      );
-                    } catch (_) {}
-                  }
-                  return CircleAvatar(
-                    radius: 18,
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                    child: Text(
-                      state.userName.isNotEmpty ? state.userName[0].toUpperCase() : '?',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
+          BlocBuilder<SessionCubit, SessionState>(
+            builder: (context, state) {
+              return InkWell(
+                onTap: () {
+                  context.go('/profile');
+                },
+                borderRadius: BorderRadius.circular(18),
+                child: _buildAvatar(context, state),
+              );
+            },
           ),
         ],
       ),

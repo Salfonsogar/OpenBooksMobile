@@ -20,6 +20,7 @@ import 'features/admin/moderacion/logic/cubit/admin_denuncias_cubit.dart';
 import 'features/admin/moderacion/logic/cubit/admin_sanciones_cubit.dart';
 import 'features/admin/moderacion/logic/cubit/admin_roles_cubit.dart';
 import 'features/admin/sugerencias/logic/cubit/admin_sugerencias_cubit.dart';
+import 'features/biblioteca/logic/cubit/upload_libro_cubit.dart';
 import 'shared/core/session/session_cubit.dart';
 import 'shared/core/theme/app_theme.dart';
 import 'routing/app_router.dart';
@@ -61,6 +62,7 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
   late final AdminSancionesCubit _adminSancionesCubit;
   late final AdminRolesCubit _adminRolesCubit;
   late final AdminSugerenciasCubit _adminSugerenciasCubit;
+  late final UploadLibroCubit _uploadLibroCubit;
 
   @override
   void initState() {
@@ -73,7 +75,7 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
     _historialCubit = getIt<HistorialCubit>();
     _bibliotecaCubit = getIt<BibliotecaCubit>();
     _perfilCubit = getIt<PerfilCubit>();
-    _notificationCubit = NotificationCubit();
+    _notificationCubit = getIt<NotificationCubit>();
     _sessionCubit.setNotificationCubit(_notificationCubit);
     _settingsCubit = getIt<ReaderSettingsCubit>();
     _adminDashboardCubit = getIt<AdminDashboardCubit>();
@@ -84,6 +86,7 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
     _adminSancionesCubit = getIt<AdminSancionesCubit>();
     _adminRolesCubit = getIt<AdminRolesCubit>();
     _adminSugerenciasCubit = getIt<AdminSugerenciasCubit>();
+    _uploadLibroCubit = getIt<UploadLibroCubit>();
     _appRouter = AppRouter(sessionCubit: _sessionCubit);
 
     _sessionCubit.checkSession();
@@ -129,6 +132,7 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
         BlocProvider<AdminSancionesCubit>.value(value: _adminSancionesCubit),
         BlocProvider<AdminRolesCubit>.value(value: _adminRolesCubit),
         BlocProvider<AdminSugerenciasCubit>.value(value: _adminSugerenciasCubit),
+        BlocProvider<UploadLibroCubit>.value(value: _uploadLibroCubit),
       ],
       child: BlocBuilder<ReaderSettingsCubit, ReaderSettings>(
         builder: (context, settings) {

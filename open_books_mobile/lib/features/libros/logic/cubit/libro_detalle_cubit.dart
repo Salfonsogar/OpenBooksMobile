@@ -7,6 +7,8 @@ import '../../../../shared/core/session/session_cubit.dart';
 import '../../../../shared/core/session/session_state.dart';
 import '../../../biblioteca/data/datasources/biblioteca_datasource.dart';
 
+enum OperationType { valoracion, resena }
+
 abstract class LibroDetalleState extends Equatable {
   const LibroDetalleState();
 
@@ -22,25 +24,33 @@ class LibroDetalleLoaded extends LibroDetalleState {
   final LibroDetalle libro;
   final String? portadaBase64;
   final bool estaEnBiblioteca;
+  final OperationType? operationType;
 
   const LibroDetalleLoaded({
     required this.libro,
     this.portadaBase64,
     this.estaEnBiblioteca = false,
+    this.operationType,
   });
 
   @override
-  List<Object?> get props => [libro, portadaBase64, estaEnBiblioteca];
+  List<Object?> get props => [libro, portadaBase64, estaEnBiblioteca, operationType];
+
+  bool get isValoracionSuccess => operationType == OperationType.valoracion;
+  bool get isResenaSuccess => operationType == OperationType.resena;
 
   LibroDetalleLoaded copyWith({
     LibroDetalle? libro,
     String? portadaBase64,
     bool? estaEnBiblioteca,
+    OperationType? operationType,
+    bool clearOperationType = false,
   }) {
     return LibroDetalleLoaded(
       libro: libro ?? this.libro,
       portadaBase64: portadaBase64 ?? this.portadaBase64,
       estaEnBiblioteca: estaEnBiblioteca ?? this.estaEnBiblioteca,
+      operationType: clearOperationType ? null : (operationType ?? this.operationType),
     );
   }
 }
@@ -52,36 +62,6 @@ class LibroDetalleError extends LibroDetalleState {
 
   @override
   List<Object> get props => [message];
-}
-
-class ValoracionSuccess extends LibroDetalleState {
-  final LibroDetalle libro;
-  final String? portadaBase64;
-  final bool estaEnBiblioteca;
-
-  const ValoracionSuccess({
-    required this.libro,
-    this.portadaBase64,
-    this.estaEnBiblioteca = false,
-  });
-
-  @override
-  List<Object?> get props => [libro, portadaBase64, estaEnBiblioteca];
-}
-
-class ResenaSuccess extends LibroDetalleState {
-  final LibroDetalle libro;
-  final String? portadaBase64;
-  final bool estaEnBiblioteca;
-
-  const ResenaSuccess({
-    required this.libro,
-    this.portadaBase64,
-    this.estaEnBiblioteca = false,
-  });
-
-  @override
-  List<Object?> get props => [libro, portadaBase64, estaEnBiblioteca];
 }
 
 class LibroDetalleCubit extends Cubit<LibroDetalleState> {
@@ -166,10 +146,11 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
     try {
       await _repository.crearValoracion(_libroId!, puntuacion);
       final libro = await _repository.getLibroDetalle(_libroId!);
-      emit(ValoracionSuccess(
+      emit(LibroDetalleLoaded(
         libro: libro,
         portadaBase64: _portadaBase64,
         estaEnBiblioteca: _estaEnBiblioteca,
+        operationType: OperationType.valoracion,
       ));
     } catch (e) {
       emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
@@ -185,10 +166,11 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
     try {
       await _repository.actualizarValoracion(_libroId!, puntuacion);
       final libro = await _repository.getLibroDetalle(_libroId!);
-      emit(ValoracionSuccess(
+      emit(LibroDetalleLoaded(
         libro: libro,
         portadaBase64: _portadaBase64,
         estaEnBiblioteca: _estaEnBiblioteca,
+        operationType: OperationType.valoracion,
       ));
     } catch (e) {
       emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
@@ -204,10 +186,11 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
     try {
       await _repository.eliminarValoracion(_libroId!);
       final libro = await _repository.getLibroDetalle(_libroId!);
-      emit(ValoracionSuccess(
+      emit(LibroDetalleLoaded(
         libro: libro,
         portadaBase64: _portadaBase64,
         estaEnBiblioteca: _estaEnBiblioteca,
+        operationType: OperationType.valoracion,
       ));
     } catch (e) {
       emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
@@ -223,10 +206,11 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
     try {
       await _repository.crearResena(_libroId!, texto);
       final libro = await _repository.getLibroDetalle(_libroId!);
-      emit(ResenaSuccess(
+      emit(LibroDetalleLoaded(
         libro: libro,
         portadaBase64: _portadaBase64,
         estaEnBiblioteca: _estaEnBiblioteca,
+        operationType: OperationType.resena,
       ));
     } catch (e) {
       emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
@@ -245,19 +229,7 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
       
       final currentState = state;
       if (currentState is LibroDetalleLoaded) {
-        emit(currentState.copyWith(estaEnBiblioteca: true));
-      } else if (currentState is ValoracionSuccess) {
-        emit(ValoracionSuccess(
-          libro: currentState.libro,
-          portadaBase64: _portadaBase64,
-          estaEnBiblioteca: true,
-        ));
-      } else if (currentState is ResenaSuccess) {
-        emit(ResenaSuccess(
-          libro: currentState.libro,
-          portadaBase64: _portadaBase64,
-          estaEnBiblioteca: true,
-        ));
+        emit(currentState.copyWith(estaEnBiblioteca: true, clearOperationType: true));
       }
     } catch (e) {
       emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));

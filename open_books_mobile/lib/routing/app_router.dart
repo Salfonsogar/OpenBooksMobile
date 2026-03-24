@@ -12,6 +12,7 @@ import '../features/libros/ui/pages/home_page.dart';
 import '../features/libros/ui/pages/search_page.dart';
 import '../features/libros/ui/pages/book_detail_page.dart';
 import '../features/biblioteca/ui/pages/library_page.dart';
+import '../features/biblioteca/ui/pages/upload_libro_page.dart';
 import '../features/perfil/ui/pages/profile_page.dart';
 import '../features/perfil/ui/pages/edit_profile_page.dart';
 import '../features/historial/ui/pages/history_page.dart';
@@ -63,7 +64,11 @@ class AppRouter {
       }
 
       if (!isAdminRoute && isAdmin) {
-        return '/admin';
+        final exemptRoutes = ['/profile', '/settings', '/notifications', '/search', '/book', '/reader', '/library', '/history'];
+        final isExempt = exemptRoutes.any((route) => state.matchedLocation.startsWith(route));
+        if (!isExempt) {
+          return '/admin';
+        }
       }
 
       return null;
@@ -100,6 +105,10 @@ class AppRouter {
             builder: (context, state) => const LibraryPage(),
           ),
           GoRoute(
+            path: '/library/upload',
+            builder: (context, state) => const UploadLibroPage(),
+          ),
+          GoRoute(
             path: '/history',
             builder: (context, state) => const HistoryPage(),
           ),
@@ -128,6 +137,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/profile',
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ProfilePage(),
         routes: [
           GoRoute(
