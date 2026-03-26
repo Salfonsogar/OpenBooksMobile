@@ -7,7 +7,7 @@ import '../../../../shared/core/session/session_cubit.dart';
 import '../../../../shared/core/session/session_state.dart';
 import '../../../biblioteca/data/datasources/biblioteca_datasource.dart';
 
-enum OperationType { valoracion, resena }
+enum OperationType { valoracion, resena, denuncia }
 
 abstract class LibroDetalleState extends Equatable {
   const LibroDetalleState();
@@ -38,6 +38,7 @@ class LibroDetalleLoaded extends LibroDetalleState {
 
   bool get isValoracionSuccess => operationType == OperationType.valoracion;
   bool get isResenaSuccess => operationType == OperationType.resena;
+  bool get isDenunciaSuccess => operationType == OperationType.denuncia;
 
   LibroDetalleLoaded copyWith({
     LibroDetalle? libro,
@@ -239,6 +240,35 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
   void recargar() {
     if (_libroId != null) {
       cargarDetalle(_libroId!);
+    }
+  }
+
+  Future<void> denunciarResena({
+    required int idDenunciante,
+    required int idDenunciado,
+    required int idResena,
+    required String motivo,
+    String? comentario,
+  }) async {
+    if (_libroId == null) return;
+
+    final currentState = state;
+    if (currentState is! LibroDetalleLoaded) return;
+
+    try {
+      await _repository.crearDenunciaResena(
+        idDenunciante: idDenunciante,
+        idDenunciado: idDenunciado,
+        idResena: idResena,
+        motivo: motivo,
+        comentario: comentario,
+      );
+      emit(currentState.copyWith(
+        operationType: OperationType.denuncia,
+        clearOperationType: false,
+      ));
+    } catch (e) {
+      emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
     }
   }
 }

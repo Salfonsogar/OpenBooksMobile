@@ -4,3 +4,4 @@ export 'categoria.dart';
 export 'valoracion.dart';
 export 'resena.dart';
 export 'paged_result.dart';
+export 'denuncia_resena.dart';

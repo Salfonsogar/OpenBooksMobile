@@ -5,9 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/models.dart';
-import '../../logic/cubit/libro_detalle_cubit.dart';
+import '../../logic/cubit/libro_detalle_cubit.dart' show OperationType, LibroDetalleCubit, LibroDetalleState, LibroDetalleLoaded, LibroDetalleError, LibroDetalleLoading;
 import '../widgets/review_dialog.dart';
+import '../widgets/denuncia_resena_dialog.dart';
 import '../../../../shared/ui/widgets/close_header.dart';
+import '../../../../shared/core/session/session_cubit.dart';
+import '../../../../shared/core/session/session_state.dart';
 
 class BookDetailPage extends StatefulWidget {
   final int libroId;
@@ -61,16 +64,28 @@ class _BookDetailPageState extends State<BookDetailPage> {
       appBar: CloseHeader(onClose: () => context.go('/home')),
       body: BlocConsumer<LibroDetalleCubit, LibroDetalleState>(
         listener: (context, state) {
-          if (state is LibroDetalleLoaded && 
-              (state.isValoracionSuccess || state.isResenaSuccess)) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Operación realizada con éxito')),
-            );
+          if (state is LibroDetalleLoaded && state.operationType != null) {
+            if (state.operationType == OperationType.denuncia) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Denuncia enviada correctamente')),
+              );
+            } else if (state.operationType == OperationType.valoracion || 
+                       state.operationType == OperationType.resena) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Operación realizada con éxito')),
+              );
+            }
           } else if (state is LibroDetalleError) {
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(state.message)));
           }
+        },
+        listenWhen: (previous, current) {
+          if (previous is LibroDetalleLoaded && current is LibroDetalleLoaded) {
+            return current.operationType != previous.operationType;
+          }
+          return true;
         },
         builder: (context, state) {
           if (state is LibroDetalleLoading) {
@@ -478,12 +493,59 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     ],
                   ),
                 ),
+                _buildDenunciaButton(resena),
               ],
             ),
             const SizedBox(height: 8),
             Text(resena.texto),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDenunciaButton(Resena resena) {
+    return Builder(
+      builder: (context) {
+        return IconButton(
+          icon: const Icon(Icons.flag_outlined, size: 20),
+          onPressed: () => _showDenunciaDialog(resena),
+          tooltip: 'Denunciar reseña',
+          color: Theme.of(context).colorScheme.error,
+        );
+      },
+    );
+  }
+
+  void _showDenunciaDialog(Resena resena) {
+    final sessionState = context.read<SessionCubit>().state;
+    if (sessionState is! SessionAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debes iniciar sesión para denunciar una reseña')),
+      );
+      return;
+    }
+
+    if (sessionState.userId == resena.usuarioId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No puedes denunciar tu propia reseña')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => DenunciaResenaDialog(
+        resena: resena,
+        onSubmit: (motivo, comentario) {
+          context.read<LibroDetalleCubit>().denunciarResena(
+            idDenunciante: sessionState.userId,
+            idDenunciado: resena.usuarioId,
+            idResena: resena.id,
+            motivo: motivo,
+            comentario: comentario,
+          );
+        },
       ),
     );
   }
