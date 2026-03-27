@@ -65,7 +65,7 @@ class AdminLibrosDataSource {
     
     if (data is List) {
       return PagedLibros(
-        items: data.map((e) => AdminLibro.fromJson(e as Map<String, dynamic>)).toList(),
+        items: data.map((e) => AdminLibro.fromJson(e)).toList(),
         pageNumber: 1,
         pageSize: data.length,
         totalCount: data.length,
@@ -80,7 +80,7 @@ class AdminLibrosDataSource {
     final List<dynamic> dataList = json['data'] as List? ?? json['results'] as List? ?? json['items'] as List? ?? [];
     
     return PagedLibros(
-      items: dataList.map((e) => AdminLibro.fromJson(e as Map<String, dynamic>)).toList(),
+        items: dataList.map((e) => AdminLibro.fromJson(e)).toList(),
       pageNumber: json['page'] ?? json['currentPage'] ?? json['pageNumber'] ?? 1,
       pageSize: json['pageSize'] ?? 10,
       totalCount: json['total'] ?? json['totalRecords'] ?? json['totalCount'] ?? dataList.length,

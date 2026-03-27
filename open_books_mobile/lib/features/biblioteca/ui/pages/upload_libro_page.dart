@@ -27,7 +27,6 @@ class _UploadLibroPageState extends State<UploadLibroPage> {
   String? _portadaBase64;
   String? _archivoBase64;
   String? _nombreArchivo;
-  String? _portadaFileName;
   bool _isLoading = false;
 
   @override
@@ -52,7 +51,6 @@ class _UploadLibroPageState extends State<UploadLibroPage> {
       final bytes = await File(image.path).readAsBytes();
       setState(() {
         _portadaBase64 = base64Encode(bytes);
-        _portadaFileName = image.path.split('/').last;
       });
     }
   }

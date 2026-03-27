@@ -1,27 +1,14 @@
-import 'package:dio/dio.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 import '../models/rol.dart';
+import '../../../../shared/core/network/api_client.dart';
 
 class RolesDataSource {
-  late final Dio _dio;
+  final ApiClient _apiClient;
 
-  RolesDataSource() {
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:5201',
-        connectTimeout: const Duration(seconds: 30),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
-  }
+  RolesDataSource(this._apiClient);
 
   Future<Rol?> getRol(int rolId) async {
     try {
-      final response = await _dio.get('/api/Rols/$rolId');
+      final response = await _apiClient.get('/api/Rols/$rolId');
       
       if (response.statusCode == 200 && response.data != null) {
         return Rol.fromJson(response.data);
@@ -35,7 +22,7 @@ class RolesDataSource {
 
   Future<List<Rol>> getRoles() async {
     try {
-      final response = await _dio.get('/api/Rols');
+      final response = await _apiClient.get('/api/Rols');
       
       if (response.statusCode == 200 && response.data != null) {
         final List<dynamic> data = response.data;

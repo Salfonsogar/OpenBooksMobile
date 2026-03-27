@@ -69,7 +69,7 @@ Future<void> setupDependencies() async {
     () => AuthDataSource(getIt<ApiClient>()),
   );
   getIt.registerLazySingleton<RolesDataSource>(
-    () => RolesDataSource(),
+    () => RolesDataSource(getIt<ApiClient>()),
   );
   getIt.registerLazySingleton<AuthRepository>(
     () => AuthRepository(getIt<AuthDataSource>()),

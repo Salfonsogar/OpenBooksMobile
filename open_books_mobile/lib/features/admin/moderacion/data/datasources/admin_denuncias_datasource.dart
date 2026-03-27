@@ -51,7 +51,7 @@ class AdminDenunciasDataSource {
     
     if (data is List) {
       return PagedDenuncias(
-        items: data.map((e) => AdminDenuncia.fromJson(e as Map<String, dynamic>)).toList(),
+        items: data.map((e) => AdminDenuncia.fromJson(e)).toList(),
         pageNumber: 1,
         pageSize: data.length,
         totalCount: data.length,
@@ -66,7 +66,7 @@ class AdminDenunciasDataSource {
     if (json.containsKey('results')) {
       final results = json['results'] as List? ?? [];
       return PagedDenuncias(
-        items: results.map((e) => AdminDenuncia.fromJson(e as Map<String, dynamic>)).toList(),
+        items: results.map((e) => AdminDenuncia.fromJson(e)).toList(),
         pageNumber: json['currentPage'] ?? json['pageNumber'] ?? 1,
         pageSize: json['pageSize'] ?? results.length,
         totalCount: json['totalRecords'] ?? json['totalCount'] ?? results.length,
@@ -77,7 +77,7 @@ class AdminDenunciasDataSource {
     if (json.containsKey('items')) {
       final items = json['items'] as List? ?? [];
       return PagedDenuncias(
-        items: items.map((e) => AdminDenuncia.fromJson(e as Map<String, dynamic>)).toList(),
+        items: items.map((e) => AdminDenuncia.fromJson(e)).toList(),
         pageNumber: json['currentPage'] ?? json['pageNumber'] ?? 1,
         pageSize: json['pageSize'] ?? items.length,
         totalCount: json['totalRecords'] ?? json['totalCount'] ?? items.length,
