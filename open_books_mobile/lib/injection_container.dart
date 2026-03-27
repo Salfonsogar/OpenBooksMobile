@@ -51,10 +51,20 @@ import 'features/admin/sugerencias/logic/cubit/admin_sugerencias_cubit.dart';
 import 'features/notifications/logic/cubit/notification_cubit.dart';
 import 'shared/core/network/api_client.dart';
 import 'shared/core/session/session_cubit.dart';
+import 'shared/services/network_info.dart';
+import 'shared/services/local_database.dart';
 
 final getIt = GetIt.instance;
 
 Future<void> setupDependencies() async {
+  // Network Info
+  getIt.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl());
+
+  // Local Database - init before registering
+  final localDatabase = LocalDatabase();
+  await localDatabase.init();
+  getIt.registerLazySingleton<LocalDatabase>(() => localDatabase);
+
   // Core
   getIt.registerLazySingleton<ApiClient>(() => ApiClient());
 
