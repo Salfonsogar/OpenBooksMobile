@@ -1,6 +1,7 @@
 import '../datasources/perfil_datasource.dart';
 import '../../../auth/data/models/usuario.dart';
 import '../models/update_perfil_request.dart';
+import '../models/sugerencia.dart';
 
 class PerfilRepository {
   final PerfilDataSource _dataSource;
@@ -21,5 +22,9 @@ class PerfilRepository {
 
   Future<void> cambiarContrasena(int usuarioId, String contrasenaActual, String nuevaContrasena) {
     return _dataSource.cambiarContrasena(usuarioId, contrasenaActual, nuevaContrasena);
+  }
+
+  Future<Sugerencia> crearSugerencia(String comentario) {
+    return _dataSource.crearSugerencia(comentario);
   }
 }

@@ -279,6 +279,13 @@ ReaderPage → ReaderCubit.load() → EpubRepository → ReaderPage
 
 - Verificar rol en backend para operaciones sensibles
 
+### Tema de la Aplicación
+
+- La app soporta temas claro, oscuro y sistema
+- Todas las páginas y widgets deben usar `Theme.of(context)` para colores, textos y estilos
+- Los diálogos, formularios y botones deben adaptarse automáticamente al tema activo
+- Validar que nuevas funcionalidades consideren el tema en su implementación
+
 ### Descarga de EPUB
 
 - Cancelar descargas si el usuario sale de la página

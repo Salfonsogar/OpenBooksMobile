@@ -177,9 +177,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.help_outline,
                         title: 'Ayuda y comentarios',
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Próximamente')),
-                          );
+                          context.push('/ayuda-comentarios');
                         },
                       ),
                     ],

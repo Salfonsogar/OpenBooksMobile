@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../shared/core/network/api_client.dart';
 import '../../../auth/data/models/usuario.dart';
+import '../models/sugerencia.dart';
 
 class PerfilDataSource {
   final ApiClient _apiClient;
@@ -66,5 +67,17 @@ class PerfilDataSource {
       return Exception(message ?? 'Error en la solicitud');
     }
     return Exception('Error de conexión. Intenta más tarde.');
+  }
+
+  Future<Sugerencia> crearSugerencia(String comentario) async {
+    try {
+      final response = await _apiClient.post(
+        '/api/Sugerencia',
+        data: {'comentario': comentario},
+      );
+      return Sugerencia.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
   }
 }

@@ -15,6 +15,7 @@ import '../features/biblioteca/ui/pages/library_page.dart';
 import '../features/biblioteca/ui/pages/upload_libro_page.dart';
 import '../features/perfil/ui/pages/profile_page.dart';
 import '../features/perfil/ui/pages/edit_profile_page.dart';
+import '../features/perfil/ui/pages/ayuda_comentarios_page.dart';
 import '../features/historial/ui/pages/history_page.dart';
 import '../features/reader/ui/pages/reader_page.dart';
 import '../features/settings/ui/pages/settings_page.dart';
@@ -64,7 +65,7 @@ class AppRouter {
       }
 
       if (!isAdminRoute && isAdmin) {
-        final exemptRoutes = ['/profile', '/settings', '/notifications', '/search', '/book', '/reader', '/library', '/history'];
+        final exemptRoutes = ['/profile', '/settings', '/notifications', '/search', '/book', '/reader', '/library', '/history', '/ayuda-comentarios'];
         final isExempt = exemptRoutes.any((route) => state.matchedLocation.startsWith(route));
         if (!isExempt) {
           return '/admin';
@@ -156,6 +157,10 @@ class AppRouter {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationsPage(),
+      ),
+      GoRoute(
+        path: '/ayuda-comentarios',
+        builder: (context, state) => const AyudaComentariosPage(),
       ),
       ShellRoute(
         builder: (context, state, child) {
