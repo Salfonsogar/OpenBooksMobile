@@ -25,6 +25,90 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscureConfirmPassword = true;
   final int _rolId = 2;
 
+  String? _nombreUsuarioError;
+  String? _nombreCompletoError;
+  String? _emailError;
+  String? _passwordError;
+  String? _confirmPasswordError;
+  String? _registerError;
+
+  static final _emailRegex = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+  );
+
+  static final _passwordRegex = RegExp(
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$',
+  );
+
+  void _validateNombreUsuario() {
+    final value = _nombreUsuarioController.text;
+    setState(() {
+      if (value.isEmpty) {
+        _nombreUsuarioError = 'Ingresa tu nombre de usuario';
+      } else if (value.length < 3) {
+        _nombreUsuarioError = 'El nombre de usuario debe tener al menos 3 caracteres';
+      } else {
+        _nombreUsuarioError = null;
+      }
+    });
+  }
+
+  void _validateNombreCompleto() {
+    final value = _nombreCompletoController.text;
+    setState(() {
+      if (value.isEmpty) {
+        _nombreCompletoError = 'Ingresa tu nombre completo';
+      } else {
+        _nombreCompletoError = null;
+      }
+    });
+  }
+
+  void _validateEmail() {
+    final value = _emailController.text;
+    setState(() {
+      if (value.isEmpty) {
+        _emailError = 'Ingresa tu correo electrónico';
+      } else if (!_emailRegex.hasMatch(value)) {
+        _emailError = 'Ingresa un correo electrónico válido';
+      } else {
+        _emailError = null;
+      }
+    });
+  }
+
+  void _validatePassword() {
+    final value = _passwordController.text;
+    setState(() {
+      if (value.isEmpty) {
+        _passwordError = 'Ingresa una contraseña';
+      } else if (!_passwordRegex.hasMatch(value)) {
+        _passwordError = 'Mínimo 8 caracteres, mayúscula, minúscula y carácter especial';
+      } else {
+        _passwordError = null;
+      }
+    });
+  }
+
+  void _validateConfirmPassword() {
+    final value = _confirmPasswordController.text;
+    setState(() {
+      if (value.isEmpty) {
+        _confirmPasswordError = 'Confirma tu contraseña';
+      } else if (value != _passwordController.text) {
+        _confirmPasswordError = 'Las contraseñas no coinciden';
+      } else {
+        _confirmPasswordError = null;
+      }
+    });
+  }
+
+  void _clearErrors() {
+    setState(() {
+      _registerError = null;
+    });
+  }
+
   @override
   void dispose() {
     _nombreUsuarioController.dispose();
@@ -36,6 +120,22 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _onRegister() {
+    _validateNombreUsuario();
+    _validateNombreCompleto();
+    _validateEmail();
+    _validatePassword();
+    _validateConfirmPassword();
+
+    if (_nombreUsuarioError != null ||
+        _nombreCompletoError != null ||
+        _emailError != null ||
+        _passwordError != null ||
+        _confirmPasswordError != null) {
+      return;
+    }
+
+    _clearErrors();
+
     if (_formKey.currentState!.validate()) {
       context.read<AuthCubit>().register(
             nombreUsuario: _nombreUsuarioController.text.trim(),
@@ -45,6 +145,39 @@ class _RegisterPageState extends State<RegisterPage> {
             nombreCompleto: _nombreCompletoController.text.trim(),
           );
     }
+  }
+
+  Widget _buildErrorWidget(String message) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.error.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: AppColors.error,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: AppColors.error,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -67,12 +200,9 @@ class _RegisterPageState extends State<RegisterPage> {
             context.read<SessionCubit>();
             context.go('/home');
           } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
-            );
+            setState(() {
+              _registerError = state.message;
+            });
           }
         },
         child: SafeArea(
@@ -86,6 +216,8 @@ class _RegisterPageState extends State<RegisterPage> {
                   TextFormField(
                     controller: _nombreUsuarioController,
                     textInputAction: TextInputAction.next,
+                    onChanged: (_) => _validateNombreUsuario(),
+                    onEditingComplete: () => _validateNombreUsuario(),
                     style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       labelText: 'Nombre de usuario',
@@ -97,21 +229,16 @@ class _RegisterPageState extends State<RegisterPage> {
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Ingresa tu nombre de usuario';
-                      }
-                      if (value.length < 3) {
-                        return 'El nombre de usuario debe tener al menos 3 caracteres';
-                      }
-                      return null;
-                    },
+                    validator: (value) => null,
                   ),
+                  if (_nombreUsuarioError != null) _buildErrorWidget(_nombreUsuarioError!),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _nombreCompletoController,
                     textInputAction: TextInputAction.next,
                     textCapitalization: TextCapitalization.words,
+                    onChanged: (_) => _validateNombreCompleto(),
+                    onEditingComplete: () => _validateNombreCompleto(),
                     style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       labelText: 'Nombre completo',
@@ -123,18 +250,16 @@ class _RegisterPageState extends State<RegisterPage> {
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Ingresa tu nombre completo';
-                      }
-                      return null;
-                    },
+                    validator: (value) => null,
                   ),
+                  if (_nombreCompletoError != null) _buildErrorWidget(_nombreCompletoError!),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
+                    onChanged: (_) => _validateEmail(),
+                    onEditingComplete: () => _validateEmail(),
                     style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       labelText: 'Correo electrónico',
@@ -146,21 +271,16 @@ class _RegisterPageState extends State<RegisterPage> {
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Ingresa tu correo electrónico';
-                      }
-                      if (!value.contains('@') || !value.contains('.')) {
-                        return 'Ingresa un correo válido';
-                      }
-                      return null;
-                    },
+                    validator: (value) => null,
                   ),
+                  if (_emailError != null) _buildErrorWidget(_emailError!),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.next,
+                    onChanged: (_) => _validatePassword(),
+                    onEditingComplete: () => _validatePassword(),
                     style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       labelText: 'Contraseña',
@@ -185,21 +305,16 @@ class _RegisterPageState extends State<RegisterPage> {
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Ingresa una contraseña';
-                      }
-                      if (value.length < 6) {
-                        return 'La contraseña debe tener al menos 6 caracteres';
-                      }
-                      return null;
-                    },
+                    validator: (value) => null,
                   ),
+                  if (_passwordError != null) _buildErrorWidget(_passwordError!),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirmPassword,
                     textInputAction: TextInputAction.done,
+                    onChanged: (_) => _validateConfirmPassword(),
+                    onEditingComplete: () => _validateConfirmPassword(),
                     onFieldSubmitted: (_) => _onRegister(),
                     style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
@@ -225,16 +340,13 @@ class _RegisterPageState extends State<RegisterPage> {
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Confirma tu contraseña';
-                      }
-                      if (value != _passwordController.text) {
-                        return 'Las contraseñas no coinciden';
-                      }
-                      return null;
-                    },
+                    validator: (value) => null,
                   ),
+                  if (_confirmPasswordError != null) _buildErrorWidget(_confirmPasswordError!),
+                  if (_registerError != null) ...[
+                    const SizedBox(height: 16),
+                    _buildErrorWidget(_registerError!),
+                  ],
                   const SizedBox(height: 24),
                   BlocBuilder<AuthCubit, AuthState>(
                     builder: (context, state) {

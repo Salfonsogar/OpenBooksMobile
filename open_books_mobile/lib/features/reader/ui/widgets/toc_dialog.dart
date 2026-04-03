@@ -124,6 +124,7 @@ class _TocDialogContentState extends State<_TocDialogContent> with SingleTickerP
             ),
           ),
           TabBar(
+            controller: _tabController,
             labelColor: widget.colors.accent,
             unselectedLabelColor: widget.colors.text,
             indicatorColor: widget.colors.accent,

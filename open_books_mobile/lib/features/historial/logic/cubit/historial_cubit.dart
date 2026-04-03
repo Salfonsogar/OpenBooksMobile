@@ -1,8 +1,11 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/repositories/historial_repository.dart';
+import '../../../../shared/core/session/session_cubit.dart';
+import '../../../../shared/core/session/session_state.dart';
 import '../../../libros/data/models/libro.dart';
+import '../../domain/usecases/get_historial_usecase.dart';
+import '../../domain/usecases/add_to_historial_usecase.dart';
 
 abstract class HistorialState extends Equatable {
   const HistorialState();
@@ -34,19 +37,50 @@ class HistorialError extends HistorialState {
 }
 
 class HistorialCubit extends Cubit<HistorialState> {
-  final HistorialRepository _repository;
+  final GetHistorialUseCase getHistorialUseCase;
+  final AddToHistorialUseCase addToHistorialUseCase;
+  final SessionCubit sessionCubit;
 
-  HistorialCubit({required HistorialRepository repository})
-      : _repository = repository,
-        super(HistorialInitial());
+  HistorialCubit({
+    required this.getHistorialUseCase,
+    required this.addToHistorialUseCase,
+    required this.sessionCubit,
+  }) : super(HistorialInitial());
 
   Future<void> cargarHistorial({int cantidad = 10}) async {
+    final sessionState = sessionCubit.state;
+    if (sessionState is! SessionAuthenticated) {
+      emit(HistorialLoaded(libros: []));
+      return;
+    }
+
     emit(HistorialLoading());
     try {
-      final libros = await _repository.getHistorial(cantidad: cantidad);
+      final entities = await getHistorialUseCase(sessionState.userId);
+      final libros = entities
+          .map((e) => Libro(
+                id: e.libroId,
+                titulo: e.titulo,
+                autor: e.autor ?? '',
+                descripcion: '',
+                portadaBase64: e.portadaBase64,
+                categorias: const [],
+              ))
+          .toList();
       emit(HistorialLoaded(libros: libros));
     } catch (e) {
       emit(HistorialError(e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> addToHistorial(Libro libro) async {
+    final sessionState = sessionCubit.state;
+    if (sessionState is! SessionAuthenticated) return;
+
+    try {
+      await addToHistorialUseCase(sessionState.userId, libro);
+    } catch (_) {
+      // Fire-and-forget: el sync puede fallar silenciosamente
     }
   }
 

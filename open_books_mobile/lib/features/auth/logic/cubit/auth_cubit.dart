@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/roles_repository.dart';
@@ -23,6 +24,7 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     try {
       final response = await _authRepository.login(correo, contrasena);
+      debugPrint('Login successful: ${response.usuario.userName}');
       
       String nombreRol = 'Usuario';
       try {
@@ -48,7 +50,9 @@ class AuthCubit extends Cubit<AuthState> {
         usuario: response.usuario,
         token: response.token,
       ));
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('AuthCubit login error: $e');
+      debugPrint('Stack trace: $stackTrace');
       emit(AuthError(e.toString().replaceAll('Exception: ', '')));
     }
   }

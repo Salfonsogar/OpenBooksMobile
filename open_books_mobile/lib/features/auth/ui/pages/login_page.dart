@@ -18,6 +18,51 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  String? _loginError;
+  String? _emailError;
+  String? _passwordError;
+
+  static final _emailRegex = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+  );
+
+  static final _passwordRegex = RegExp(
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$',
+  );
+
+  void _validateEmail() {
+    final value = _emailController.text;
+    setState(() {
+      if (value.isEmpty) {
+        _emailError = 'Ingresa tu correo electrónico';
+      } else if (!_emailRegex.hasMatch(value)) {
+        _emailError = 'Ingresa un correo electrónico válido';
+      } else {
+        _emailError = null;
+      }
+    });
+  }
+
+  void _validatePassword() {
+    final value = _passwordController.text;
+    setState(() {
+      if (value.isEmpty) {
+        _passwordError = 'Ingresa tu contraseña';
+      } else if (!_passwordRegex.hasMatch(value)) {
+        _passwordError = 'Mínimo 8 caracteres, mayúscula, minúscula y carácter especial';
+      } else {
+        _passwordError = null;
+      }
+    });
+  }
+
+  void _clearErrors() {
+    setState(() {
+      _loginError = null;
+      _emailError = null;
+      _passwordError = null;
+    });
+  }
 
   @override
   void dispose() {
@@ -27,12 +72,54 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onLogin() {
+    _validateEmail();
+    _validatePassword();
+    
+    if (_emailError != null || _passwordError != null) {
+      return;
+    }
+    
+    _clearErrors();
+    
     if (_formKey.currentState!.validate()) {
       context.read<AuthCubit>().login(
             _emailController.text.trim(),
             _passwordController.text,
           );
     }
+  }
+
+  Widget _buildErrorWidget(String message) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.error.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: AppColors.error,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: AppColors.error,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -43,12 +130,9 @@ class _LoginPageState extends State<LoginPage> {
           if (state is AuthLoginSuccess) {
             context.go('/home');
           } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
-            );
+            setState(() {
+              _loginError = state.message;
+            });
           }
         },
         child: SafeArea(
@@ -87,6 +171,8 @@ class _LoginPageState extends State<LoginPage> {
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
+                      onChanged: (_) => _validateEmail(),
+                      onEditingComplete: () => _validateEmail(),
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: 'Correo electrónico',
@@ -98,21 +184,16 @@ class _LoginPageState extends State<LoginPage> {
                         filled: true,
                         fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Ingresa tu correo electrónico';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Ingresa un correo válido';
-                        }
-                        return null;
-                      },
+                      validator: (value) => null,
                     ),
+                    if (_emailError != null) _buildErrorWidget(_emailError!),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       textInputAction: TextInputAction.done,
+                      onChanged: (_) => _validatePassword(),
+                      onEditingComplete: () => _validatePassword(),
                       onFieldSubmitted: (_) => _onLogin(),
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
@@ -138,16 +219,13 @@ class _LoginPageState extends State<LoginPage> {
                         filled: true,
                         fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Ingresa tu contraseña';
-                        }
-                        if (value.length < 6) {
-                          return 'La contraseña debe tener al menos 6 caracteres';
-                        }
-                        return null;
-                      },
+                      validator: (value) => null,
                     ),
+                    if (_passwordError != null) _buildErrorWidget(_passwordError!),
+                    if (_loginError != null) ...[
+                      const SizedBox(height: 8),
+                      _buildErrorWidget(_loginError!),
+                    ],
                     const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerRight,

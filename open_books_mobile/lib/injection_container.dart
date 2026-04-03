@@ -9,14 +9,19 @@ import 'features/libros/data/datasources/datasources.dart';
 import 'features/libros/data/repositories/libros_repository.dart';
 import 'features/libros/logic/cubit/cubit.dart';
 import 'features/biblioteca/data/datasources/biblioteca_datasource.dart';
-import 'features/biblioteca/data/repositories/biblioteca_repository.dart';
+import 'features/biblioteca/data/repositories/biblioteca_repository_impl.dart';
+import 'features/biblioteca/domain/usecases/get_biblioteca_usecase.dart';
+import 'features/biblioteca/domain/usecases/add_libro_biblioteca_usecase.dart';
+import 'features/biblioteca/domain/usecases/remove_libro_biblioteca_usecase.dart';
 import 'features/biblioteca/logic/cubit/biblioteca_cubit.dart';
 import 'features/biblioteca/logic/cubit/upload_libro_cubit.dart';
 import 'features/perfil/data/datasources/perfil_datasource.dart';
 import 'features/perfil/data/repositories/perfil_repository.dart';
 import 'features/perfil/logic/cubit/perfil_cubit.dart';
 import 'features/historial/data/datasources/historial_datasource.dart';
-import 'features/historial/data/repositories/historial_repository.dart';
+import 'features/historial/data/repositories/historial_repository_impl.dart';
+import 'features/historial/domain/usecases/get_historial_usecase.dart';
+import 'features/historial/domain/usecases/add_to_historial_usecase.dart';
 import 'features/historial/logic/cubit/historial_cubit.dart';
 import 'features/reader/data/datasources/bookmark_datasource.dart';
 import 'features/reader/data/datasources/epub_datasource.dart';
@@ -53,6 +58,8 @@ import 'shared/core/network/api_client.dart';
 import 'shared/core/session/session_cubit.dart';
 import 'shared/services/network_info.dart';
 import 'shared/services/local_database.dart';
+import 'shared/services/epub_local_storage_service.dart';
+import 'shared/services/sync_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -134,9 +141,6 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<BibliotecaDataSource>(
     () => BibliotecaDataSource(getIt<ApiClient>()),
   );
-  getIt.registerLazySingleton<BibliotecaRepository>(
-    () => BibliotecaRepository(getIt<BibliotecaDataSource>()),
-  );
 
   // Perfil
   getIt.registerLazySingleton<PerfilDataSource>(
@@ -150,14 +154,55 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<HistorialDataSource>(
     () => HistorialDataSource(getIt<ApiClient>()),
   );
-  getIt.registerLazySingleton<HistorialRepository>(
-    () => HistorialRepository(getIt<HistorialDataSource>()),
+
+  getIt.registerLazySingleton<HistorialRepositoryImpl>(
+    () => HistorialRepositoryImpl(
+      localDatabase: getIt<LocalDatabase>(),
+      remoteDataSource: getIt<HistorialDataSource>(),
+      networkInfo: getIt<NetworkInfo>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<GetHistorialUseCase>(
+    () => GetHistorialUseCase(getIt<HistorialRepositoryImpl>()),
+  );
+
+  getIt.registerLazySingleton<AddToHistorialUseCase>(
+    () => AddToHistorialUseCase(getIt<HistorialRepositoryImpl>()),
   );
 
   // Biblioteca - singleton que escucha SessionCubit
+  getIt.registerLazySingleton<BibliotecaRepositoryImpl>(
+    () => BibliotecaRepositoryImpl(
+      localDatabase: getIt<LocalDatabase>(),
+      remoteDataSource: getIt<BibliotecaDataSource>(),
+      networkInfo: getIt<NetworkInfo>(),
+      librosRepository: getIt<LibrosRepository>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<GetBibliotecaUseCase>(
+    () => GetBibliotecaUseCase(
+      getIt<BibliotecaRepositoryImpl>(),
+      getIt<BibliotecaRepositoryImpl>(),
+      getIt<LibrosRepository>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<AddLibroBibliotecaUseCase>(
+    () => AddLibroBibliotecaUseCase(getIt<BibliotecaRepositoryImpl>()),
+  );
+
+  getIt.registerLazySingleton<RemoveLibroBibliotecaUseCase>(
+    () => RemoveLibroBibliotecaUseCase(getIt<BibliotecaRepositoryImpl>()),
+  );
+
   getIt.registerLazySingleton<BibliotecaCubit>(
     () => BibliotecaCubit(
-      repository: getIt<BibliotecaRepository>(),
+      getBibliotecaUseCase: getIt<GetBibliotecaUseCase>(),
+      addLibroBibliotecaUseCase: getIt<AddLibroBibliotecaUseCase>(),
+      removeLibroBibliotecaUseCase: getIt<RemoveLibroBibliotecaUseCase>(),
+      epubLocalStorageService: getIt<EpubLocalStorageService>(),
       sessionCubit: getIt<SessionCubit>(),
     ),
   );
@@ -176,8 +221,22 @@ Future<void> setupDependencies() async {
   );
 
   // Historial
-  getIt.registerFactory<HistorialCubit>(
-    () => HistorialCubit(repository: getIt<HistorialRepository>()),
+  getIt.registerLazySingleton<HistorialCubit>(
+    () => HistorialCubit(
+      getHistorialUseCase: getIt<GetHistorialUseCase>(),
+      addToHistorialUseCase: getIt<AddToHistorialUseCase>(),
+      sessionCubit: getIt<SessionCubit>(),
+    ),
+  );
+
+  // Sync Service
+  getIt.registerLazySingleton<SyncService>(
+    () => SyncService(
+      localDatabase: getIt<LocalDatabase>(),
+      bibliotecaRepository: getIt<BibliotecaRepositoryImpl>(),
+      historialRepository: getIt<HistorialRepositoryImpl>(),
+      networkInfo: getIt<NetworkInfo>(),
+    ),
   );
 
   // Reader
@@ -186,6 +245,13 @@ Future<void> setupDependencies() async {
   );
   getIt.registerLazySingleton<EpubRepository>(
     () => EpubRepository(getIt<EpubDataSource>()),
+  );
+  getIt.registerLazySingleton<EpubLocalStorageService>(
+    () => EpubLocalStorageService(
+      localDatabase: getIt<LocalDatabase>(),
+      epubDataSource: getIt<EpubDataSource>(),
+      networkInfo: getIt<NetworkInfo>(),
+    ),
   );
   getIt.registerLazySingleton<ReaderSettingsCubit>(
     () => ReaderSettingsCubit(),

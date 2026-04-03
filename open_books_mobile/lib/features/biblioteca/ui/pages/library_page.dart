@@ -164,7 +164,7 @@ class _LibraryPageState extends State<LibraryPage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () => context.pushReplacement('/book/${libro.id}'),
+        onTap: () => context.pushReplacement('/reader/${libro.id}'),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),

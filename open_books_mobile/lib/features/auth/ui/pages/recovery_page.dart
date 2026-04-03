@@ -16,6 +16,31 @@ class RecoveryPage extends StatefulWidget {
 class _RecoveryPageState extends State<RecoveryPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  String? _emailError;
+  String? _apiError;
+
+  static final _emailRegex = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+  );
+
+  void _validateEmail() {
+    final value = _emailController.text;
+    setState(() {
+      if (value.isEmpty) {
+        _emailError = 'Ingresa tu correo electrónico';
+      } else if (!_emailRegex.hasMatch(value)) {
+        _emailError = 'Ingresa un correo electrónico válido';
+      } else {
+        _emailError = null;
+      }
+    });
+  }
+
+  void _clearErrors() {
+    setState(() {
+      _apiError = null;
+    });
+  }
 
   @override
   void dispose() {
@@ -24,11 +49,52 @@ class _RecoveryPageState extends State<RecoveryPage> {
   }
 
   void _onSubmit() {
+    _validateEmail();
+    
+    if (_emailError != null) {
+      return;
+    }
+    
+    _clearErrors();
+    
     if (_formKey.currentState!.validate()) {
       context.read<AuthCubit>().solicitarRecuperacion(
             _emailController.text.trim(),
           );
     }
+  }
+
+  Widget _buildErrorWidget(String message) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.error.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: AppColors.error,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: AppColors.error,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -56,12 +122,9 @@ class _RecoveryPageState extends State<RecoveryPage> {
             );
             context.pop();
           } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
-            );
+            setState(() {
+              _apiError = state.message;
+            });
           }
         },
         child: SafeArea(
@@ -98,6 +161,8 @@ class _RecoveryPageState extends State<RecoveryPage> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.done,
+                    onChanged: (_) => _validateEmail(),
+                    onEditingComplete: () => _validateEmail(),
                     onFieldSubmitted: (_) => _onSubmit(),
                     style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
@@ -110,16 +175,13 @@ class _RecoveryPageState extends State<RecoveryPage> {
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Ingresa tu correo electrónico';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Ingresa un correo válido';
-                      }
-                      return null;
-                    },
+                    validator: (value) => null,
                   ),
+                  if (_emailError != null) _buildErrorWidget(_emailError!),
+                  if (_apiError != null) ...[
+                    const SizedBox(height: 8),
+                    _buildErrorWidget(_apiError!),
+                  ],
                   const SizedBox(height: 24),
                   BlocBuilder<AuthCubit, AuthState>(
                     builder: (context, state) {

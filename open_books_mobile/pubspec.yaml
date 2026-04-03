@@ -50,6 +50,11 @@ dependencies:
   # HTML Parser 
   html: ^0.15.4
   
+  # Audio / TTS
+  flutter_tts: ^4.2.0
+  audio_service: ^0.18.17
+  just_audio: ^0.9.43
+  
   # Environment
   flutter_dotenv: ^5.1.0
 

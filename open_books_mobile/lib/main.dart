@@ -23,6 +23,7 @@ import 'features/admin/sugerencias/logic/cubit/admin_sugerencias_cubit.dart';
 import 'features/biblioteca/logic/cubit/upload_libro_cubit.dart';
 import 'shared/core/session/session_cubit.dart';
 import 'shared/core/theme/app_theme.dart';
+import 'shared/services/sync_service.dart';
 import 'routing/app_router.dart';
 
 void main() async {
@@ -42,7 +43,7 @@ class OpenBooksApp extends StatefulWidget {
   State<OpenBooksApp> createState() => _OpenBooksAppState();
 }
 
-class _OpenBooksAppState extends State<OpenBooksApp> {
+class _OpenBooksAppState extends State<OpenBooksApp> with WidgetsBindingObserver {
   late final SessionCubit _sessionCubit;
   late final AuthCubit _authCubit;
   late final LibrosCubit _librosCubit;
@@ -63,10 +64,13 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
   late final AdminRolesCubit _adminRolesCubit;
   late final AdminSugerenciasCubit _adminSugerenciasCubit;
   late final UploadLibroCubit _uploadLibroCubit;
+  late final SyncService _syncService;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    
     _sessionCubit = getIt<SessionCubit>();
     _authCubit = getIt<AuthCubit>();
     _librosCubit = getIt<LibrosCubit>();
@@ -87,14 +91,17 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
     _adminRolesCubit = getIt<AdminRolesCubit>();
     _adminSugerenciasCubit = getIt<AdminSugerenciasCubit>();
     _uploadLibroCubit = getIt<UploadLibroCubit>();
+    _syncService = getIt<SyncService>();
     _appRouter = AppRouter(sessionCubit: _sessionCubit);
 
     _sessionCubit.checkSession();
     _settingsCubit.cargarSettings();
+    _syncService.onAppInit();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _bibliotecaCubit.close();
     _perfilCubit.close();
     _historialCubit.close();
@@ -107,7 +114,15 @@ class _OpenBooksAppState extends State<OpenBooksApp> {
     _adminSancionesCubit.close();
     _adminRolesCubit.close();
     _adminSugerenciasCubit.close();
+    _syncService.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncService.onAppResumed();
+    }
   }
 
   @override
