@@ -47,12 +47,10 @@ class SignalRService {
       await _hubConnection!.start();
       _isConnected = true;
       _isConnecting = false;
-      debugPrint('SignalR: Conectado exitosamente');
       onConnected?.call();
     } catch (e) {
       _isConnecting = false;
       _isConnected = false;
-      debugPrint('SignalR: Error al conectar - $e');
       onError?.call(e is Exception ? e : Exception(e.toString()));
     }
   }
@@ -70,10 +68,9 @@ class SignalRService {
         leida: false,
       );
 
-      debugPrint('SignalR: Notificación recibida - ${notification.titulo}');
       onNotificationReceived?.call(notification);
     } catch (e) {
-      debugPrint('SignalR: Error al procesar notificación - $e');
+      // Silent fail for notification processing
     }
   }
 
@@ -81,9 +78,8 @@ class SignalRService {
     if (_hubConnection != null) {
       try {
         await _hubConnection!.stop();
-        debugPrint('SignalR: Desconectado');
       } catch (e) {
-        debugPrint('SignalR: Error al desconectar - $e');
+        // Silent fail on disconnect
       }
       _hubConnection = null;
     }

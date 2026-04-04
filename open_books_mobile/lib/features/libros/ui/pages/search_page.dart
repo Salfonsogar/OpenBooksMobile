@@ -22,7 +22,10 @@ class _SearchPageState extends State<SearchPage> {
   final _searchFocusNode = FocusNode();
   Timer? _debounce;
   bool _showFilters = false;
+  bool _hasSearched = false;
   String? _selectedAutor;
+  List<int> _selectedCategorias = [];
+  int? _selectedCategoriaId;
 
   @override
   void initState() {
@@ -32,12 +35,13 @@ class _SearchPageState extends State<SearchPage> {
     if (widget.autorInicial != null && widget.autorInicial!.isNotEmpty) {
       _searchController.text = widget.autorInicial!;
       _selectedAutor = widget.autorInicial;
+      setState(() {
+        _hasSearched = true;
+      });
       context.read<LibrosCubit>().buscarLibrosConFiltros(
         '',
         autor: widget.autorInicial,
       );
-    } else {
-      context.read<LibrosCubit>().cargarLibros();
     }
   }
 
@@ -52,8 +56,28 @@ class _SearchPageState extends State<SearchPage> {
   void _onSearchChanged(String query) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      context.read<LibrosCubit>().buscarLibros(query);
+      _performSearch(query);
     });
+  }
+
+  void _performSearch(String query, {List<int>? categorias, String? autor}) {
+    final hasFilters = (categorias != null && categorias.isNotEmpty) || 
+                       (autor != null && autor.isNotEmpty) ||
+                       query.isNotEmpty;
+    
+    setState(() {
+      _hasSearched = hasFilters;
+    });
+
+    if (hasFilters) {
+      context.read<LibrosCubit>().buscarLibrosConFiltros(
+        query,
+        categorias: categorias ?? _selectedCategorias,
+        autor: autor ?? _selectedAutor,
+      );
+    } else {
+      context.read<LibrosCubit>().cargarLibros();
+    }
   }
 
   void _toggleFilters() {
@@ -62,11 +86,40 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
-  void _applyFilters(List<int> categorias, String? autor) {
+  void _onCategoriaToggled(int categoriaId) {
+    setState(() {
+      _selectedCategoriaId = categoriaId;
+      _selectedCategorias = [categoriaId];
+      _hasSearched = true;
+    });
     context.read<LibrosCubit>().buscarLibrosConFiltros(
       _searchController.text,
-      categorias: categorias,
-      autor: autor,
+      categorias: _selectedCategorias,
+      autor: _selectedAutor,
+    );
+  }
+
+  void _onAutorSubmitted(String? autor) {
+    setState(() {
+      _selectedAutor = autor;
+      _hasSearched = true;
+    });
+    context.read<LibrosCubit>().buscarLibrosConFiltros(
+      _searchController.text,
+      categorias: _selectedCategorias,
+      autor: _selectedAutor,
+    );
+  }
+
+  void _onClearCategoria() {
+    setState(() {
+      _selectedCategoriaId = null;
+      _selectedCategorias = [];
+    });
+    context.read<LibrosCubit>().buscarLibrosConFiltros(
+      _searchController.text,
+      categorias: [],
+      autor: _selectedAutor,
     );
   }
 
@@ -91,23 +144,29 @@ Widget _buildSearchBar() {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: Icon(
+              Icons.arrow_back,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             onPressed: () => context.go('/home'),
           ),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextField(
                 controller: _searchController,
                 focusNode: _searchFocusNode,
-                decoration: const InputDecoration(
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                decoration: InputDecoration(
                   hintText: 'Buscar libros...',
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 onChanged: (value) {
@@ -157,19 +216,21 @@ Widget _buildSearchBar() {
               ),
               const SizedBox(height: 4),
               TextField(
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                 decoration: InputDecoration(
                   hintText: 'Buscar por autor...',
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   isDense: true,
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 onSubmitted: (value) {
-                  _applyFilters(
-                    [],
-                    value.isNotEmpty ? value : null,
-                  );
+                  _onAutorSubmitted(value.isNotEmpty ? value : null);
                 },
               ),
               const SizedBox(height: 12),
@@ -186,18 +247,53 @@ Widget _buildSearchBar() {
                   child: Center(child: CircularProgressIndicator()),
                 )
               else if (state is CategoriasLoaded)
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: state.categorias.map((categoria) {
-                    return FilterChip(
-                      label: Text(categoria.nombre),
-                      selected: false,
-                      onSelected: (selected) {
-                        _applyFilters([categoria.id], _selectedAutor);
-                      },
-                    );
-                  }).toList(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButton<int>(
+                          isExpanded: true,
+                          value: _selectedCategoriaId,
+                          hint: Text(
+                            'Seleccionar categoría',
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          ),
+                          underline: const SizedBox(),
+                          dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          items: state.categorias.map((categoria) {
+                            return DropdownMenuItem<int>(
+                              value: categoria.id,
+                              child: Text(
+                                categoria.nombre,
+                                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (categoriaId) {
+                            if (categoriaId != null) {
+                              _onCategoriaToggled(categoriaId);
+                            }
+                          },
+                        ),
+                      ),
+                      if (_selectedCategoriaId != null)
+                        IconButton(
+                          icon: Icon(
+                            Icons.clear,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            size: 20,
+                          ),
+                          onPressed: _onClearCategoria,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                    ],
+                  ),
                 )
               else if (state is CategoriasError)
                 Text(
@@ -215,6 +311,28 @@ Widget _buildSearchBar() {
   }
 
   Widget _buildResults() {
+    if (!_hasSearched) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Ingresa un término de búsqueda',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return BlocBuilder<LibrosCubit, LibrosState>(
       builder: (context, state) {
         if (state is LibrosLoading) {

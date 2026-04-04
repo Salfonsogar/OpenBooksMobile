@@ -55,6 +55,30 @@ class ResenasDataSource {
     }
   }
 
+  Future<DenunciaResena> crearDenunciaResena({
+    required int idDenunciante,
+    required int idDenunciado,
+    required int idResena,
+    required String motivo,
+    String? comentario,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/api/Denuncia',
+        data: {
+          'idDenunciante': idDenunciante,
+          'idDenunciado': idDenunciado,
+          'idResena': idResena,
+          'motivo': motivo,
+          'comentario': comentario ?? '',
+        },
+      );
+      return DenunciaResena.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Exception _handleError(DioException e) {
     if (e.response?.statusCode == 400) {
       final message = e.response?.data?['message'] ?? e.response?.data?['error'];

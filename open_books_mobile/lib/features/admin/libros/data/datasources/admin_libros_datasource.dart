@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../models/admin_libro.dart';
@@ -65,7 +66,7 @@ class AdminLibrosDataSource {
     
     if (data is List) {
       return PagedLibros(
-        items: data.map((e) => AdminLibro.fromJson(e as Map<String, dynamic>)).toList(),
+        items: data.map((e) => AdminLibro.fromJson(e)).toList(),
         pageNumber: 1,
         pageSize: data.length,
         totalCount: data.length,
@@ -75,16 +76,14 @@ class AdminLibrosDataSource {
     
     if (data is! Map<String, dynamic>) return PagedLibros.empty();
     
-    final json = data as Map<String, dynamic>;
-    
-    final List<dynamic> dataList = json['data'] as List? ?? json['results'] as List? ?? json['items'] as List? ?? [];
+    final List<dynamic> dataList = data['data'] as List? ?? data['results'] as List? ?? data['items'] as List? ?? [];
     
     return PagedLibros(
-      items: dataList.map((e) => AdminLibro.fromJson(e as Map<String, dynamic>)).toList(),
-      pageNumber: json['page'] ?? json['currentPage'] ?? json['pageNumber'] ?? 1,
-      pageSize: json['pageSize'] ?? 10,
-      totalCount: json['total'] ?? json['totalRecords'] ?? json['totalCount'] ?? dataList.length,
-      totalPages: json['totalPages'] ?? 1,
+        items: dataList.map((e) => AdminLibro.fromJson(e)).toList(),
+      pageNumber: data['page'] ?? data['currentPage'] ?? data['pageNumber'] ?? 1,
+      pageSize: data['pageSize'] ?? 10,
+      totalCount: data['total'] ?? data['totalRecords'] ?? data['totalCount'] ?? dataList.length,
+      totalPages: data['totalPages'] ?? 1,
     );
   }
 

@@ -42,6 +42,10 @@ class PerfilError extends PerfilState {
   List<Object> get props => [message];
 }
 
+class SugerenciaSending extends PerfilState {}
+
+class SugerenciaSuccess extends PerfilState {}
+
 class PerfilCubit extends Cubit<PerfilState> {
   final PerfilRepository _repository;
   final SessionCubit _sessionCubit;
@@ -144,6 +148,25 @@ class PerfilCubit extends Cubit<PerfilState> {
 
   Future<void> refresh() async {
     await cargarPerfil();
+  }
+
+  Future<void> enviarSugerencia(String comentario) async {
+    final sessionState = _sessionCubit.state;
+    if (sessionState is! SessionAuthenticated) {
+      emit(const PerfilError('Debes iniciar sesión para enviar una sugerencia'));
+      return;
+    }
+
+    emit(SugerenciaSending());
+    try {
+      await _repository.crearSugerencia(comentario);
+      emit(SugerenciaSuccess());
+      await Future.delayed(const Duration(seconds: 2));
+      await cargarPerfil();
+    } catch (e) {
+      emit(PerfilError(e.toString().replaceAll('Exception: ', '')));
+      await cargarPerfil();
+    }
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/network/api_client.dart';
+import '../../../../shared/core/utils/error_utils.dart';
 import '../../../libros/data/models/libro.dart';
 
 class HistorialDataSource {
@@ -24,9 +25,6 @@ class HistorialDataSource {
   }
 
   Exception _handleError(DioException e) {
-    if (e.response?.statusCode == 404) {
-      return Exception('Historial no encontrado');
-    }
-    return Exception('Error de conexión. Intenta más tarde.');
+    return handleDioError(e);
   }
 }

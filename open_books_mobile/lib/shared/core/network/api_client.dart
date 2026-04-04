@@ -83,23 +83,19 @@ class ApiClient {
     ProgressCallback? onReceiveProgress,
     CancelToken? cancelToken,
   }) async {
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:5201',
-        receiveTimeout: const Duration(minutes: 5),
-        followRedirects: true,
-        validateStatus: (status) => true,
-        headers: {
-          'Accept': '*/*',
-        },
-      ),
+    final downloadOptions = Options(
+      responseType: ResponseType.bytes,
+      followRedirects: true,
+      validateStatus: (status) => true,
+      headers: {
+        'Accept': '*/*',
+      },
     );
 
-    dio.interceptors.add(AuthInterceptor());
-
-    return dio.download(
+    return _dio.download(
       path,
       savePath,
+      options: downloadOptions,
       onReceiveProgress: onReceiveProgress,
       cancelToken: cancelToken,
     );

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/network/api_client.dart';
+import '../../../../shared/core/utils/error_utils.dart';
 import '../models/models.dart';
 
 class LibrosDataSource {
@@ -76,13 +77,6 @@ class LibrosDataSource {
   }
 
   Exception _handleError(DioException e) {
-    if (e.response?.statusCode == 404) {
-      return Exception('Libro no encontrado');
-    }
-    if (e.response?.statusCode == 400) {
-      final message = e.response?.data?['message'] ?? e.response?.data?['error'];
-      return Exception(message ?? 'Error en la solicitud');
-    }
-    return Exception('Error de conexión. Intenta más tarde.');
+    return handleDioError(e);
   }
 }

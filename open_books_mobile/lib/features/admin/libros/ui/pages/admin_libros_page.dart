@@ -7,6 +7,7 @@ import 'package:open_books_mobile/shared/core/session/session_cubit.dart';
 import 'package:open_books_mobile/shared/core/session/session_state.dart';
 import 'package:open_books_mobile/features/admin/libros/data/models/admin_libro.dart';
 import 'package:open_books_mobile/features/admin/libros/logic/cubit/admin_libros_cubit.dart';
+import 'package:open_books_mobile/features/admin/libros/logic/cubit/admin_libros_state.dart';
 import 'package:open_books_mobile/features/admin/libros/ui/widgets/libro_form_dialog.dart';
 import 'package:open_books_mobile/features/admin/libros/ui/widgets/libro_delete_dialog.dart';
 import 'package:open_books_mobile/features/admin/categorias/data/models/admin_categoria.dart';
@@ -74,24 +75,40 @@ class _AdminLibrosPageState extends State<AdminLibrosPage>
   }
 
   void _showLibroCreateDialog() {
+    final librosCubit = context.read<AdminLibrosCubit>();
+    final categoriasCubit = context.read<AdminCategoriasCubit>();
+    
     showDialog(
       context: context,
-      builder: (dialogContext) => LibroFormDialog(
-        onSave: (request) async {
-          return await context.read<AdminLibrosCubit>().createLibro(request);
-        },
+      builder: (dialogContext) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: categoriasCubit),
+        ],
+        child: LibroFormDialog(
+          onSave: (request) async {
+            return await librosCubit.createLibro(request);
+          },
+        ),
       ),
     );
   }
 
   void _showLibroEditDialog(AdminLibro libro) {
+    final librosCubit = context.read<AdminLibrosCubit>();
+    final categoriasCubit = context.read<AdminCategoriasCubit>();
+    
     showDialog(
       context: context,
-      builder: (dialogContext) => LibroFormDialog(
-        libro: libro,
-        onSave: (request) async {
-          return await context.read<AdminLibrosCubit>().updateLibro(libro.id, request);
-        },
+      builder: (dialogContext) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: categoriasCubit),
+        ],
+        child: LibroFormDialog(
+          libro: libro,
+          onSave: (request) async {
+            return await librosCubit.updateLibro(libro.id, request);
+          },
+        ),
       ),
     );
   }
@@ -145,25 +162,56 @@ class _AdminLibrosPageState extends State<AdminLibrosPage>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Libros'),
-            Tab(text: 'Categorías'),
+    return BlocConsumer<AdminLibrosCubit, AdminLibrosState>(
+      listener: (context, state) {
+        if (state is AdminLibrosCreated) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Libro creado exitosamente')),
+          );
+        } else if (state is AdminLibrosUpdated) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Libro actualizado exitosamente')),
+          );
+        } else if (state is AdminLibrosDeleted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Libro eliminado exitosamente')),
+          );
+        } else if (state is AdminLibrosCreateError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${state.message}')),
+          );
+        } else if (state is AdminLibrosUpdateError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${state.message}')),
+          );
+        } else if (state is AdminLibrosDeleteError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${state.message}')),
+          );
+        }
+      },
+      builder: (context, state) {
+        return Column(
+          children: [
+            TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'Libros'),
+                Tab(text: 'Categorías'),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildLibrosTab(),
+                  _buildCategoriasTab(),
+                ],
+              ),
+            ),
           ],
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildLibrosTab(),
-              _buildCategoriasTab(),
-            ],
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 

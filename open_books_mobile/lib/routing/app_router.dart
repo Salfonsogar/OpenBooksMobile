@@ -1,28 +1,46 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../injection_container.dart';
 import '../shared/core/session/session_cubit.dart';
 import '../shared/core/session/session_state.dart';
+import '../features/auth/logic/cubit/auth_cubit.dart';
 import '../features/auth/ui/pages/login_page.dart';
 import '../features/auth/ui/pages/register_page.dart';
 import '../features/auth/ui/pages/recovery_page.dart';
+import '../features/libros/logic/cubit/cubit.dart';
 import '../features/libros/ui/pages/home_page.dart';
 import '../features/libros/ui/pages/search_page.dart';
 import '../features/libros/ui/pages/book_detail_page.dart';
+import '../features/biblioteca/logic/cubit/biblioteca_cubit.dart';
+import '../features/biblioteca/logic/cubit/upload_libro_cubit.dart';
 import '../features/biblioteca/ui/pages/library_page.dart';
+import '../features/biblioteca/ui/pages/upload_libro_page.dart';
+import '../features/perfil/logic/cubit/perfil_cubit.dart';
 import '../features/perfil/ui/pages/profile_page.dart';
 import '../features/perfil/ui/pages/edit_profile_page.dart';
+import '../features/perfil/ui/pages/ayuda_comentarios_page.dart';
+import '../features/historial/logic/cubit/historial_cubit.dart';
 import '../features/historial/ui/pages/history_page.dart';
 import '../features/reader/ui/pages/reader_page.dart';
 import '../features/settings/ui/pages/settings_page.dart';
 import '../features/notifications/ui/pages/notifications_page.dart';
 import '../features/admin/ui/pages/admin_page.dart';
+import '../features/admin/dashboard/logic/cubit/admin_dashboard_cubit.dart';
 import '../features/admin/dashboard/ui/pages/admin_dashboard_page.dart';
+import '../features/admin/libros/logic/cubit/admin_libros_cubit.dart';
+import '../features/admin/categorias/logic/cubit/admin_categorias_cubit.dart';
 import '../features/admin/libros/ui/pages/admin_libros_page.dart';
+import '../features/admin/moderacion/logic/cubit/admin_denuncias_cubit.dart';
+import '../features/admin/moderacion/logic/cubit/admin_sanciones_cubit.dart';
+import '../features/admin/moderacion/logic/cubit/admin_roles_cubit.dart';
 import '../features/admin/moderacion/ui/pages/admin_moderacion_page.dart';
+import '../features/admin/sugerencias/logic/cubit/admin_sugerencias_cubit.dart';
 import '../features/admin/sugerencias/ui/pages/admin_sugerencias_page.dart';
+import '../features/admin/usuarios/logic/cubit/admin_usuarios_cubit.dart';
 import '../features/admin/usuarios/ui/pages/admin_usuarios_page.dart';
 import '../shared/ui/widgets/search_header.dart';
 import '../features/auth/data/models/usuario.dart';
@@ -63,7 +81,11 @@ class AppRouter {
       }
 
       if (!isAdminRoute && isAdmin) {
-        return '/admin';
+        final exemptRoutes = ['/profile', '/settings', '/notifications', '/search', '/book', '/reader', '/library', '/history', '/ayuda-comentarios'];
+        final isExempt = exemptRoutes.any((route) => state.matchedLocation.startsWith(route));
+        if (!isExempt) {
+          return '/admin';
+        }
       }
 
       return null;
@@ -75,11 +97,17 @@ class AppRouter {
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => const LoginPage(),
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<AuthCubit>(),
+          child: const LoginPage(),
+        ),
       ),
       GoRoute(
         path: '/register',
-        builder: (context, state) => const RegisterPage(),
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<AuthCubit>(),
+          child: const RegisterPage(),
+        ),
       ),
       GoRoute(
         path: '/recovery',
@@ -93,15 +121,34 @@ class AppRouter {
         routes: [
           GoRoute(
             path: '/home',
-            builder: (context, state) => const HomePage(),
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider(create: (_) => getIt<LibrosCubit>()),
+                BlocProvider(create: (_) => getIt<CategoriasCubit>()),
+              ],
+              child: const HomePage(),
+            ),
           ),
           GoRoute(
             path: '/library',
-            builder: (context, state) => const LibraryPage(),
+            builder: (context, state) => BlocProvider(
+              create: (_) => getIt<BibliotecaCubit>(),
+              child: const LibraryPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/library/upload',
+            builder: (context, state) => BlocProvider(
+              create: (_) => getIt<UploadLibroCubit>(),
+              child: const UploadLibroPage(),
+            ),
           ),
           GoRoute(
             path: '/history',
-            builder: (context, state) => const HistoryPage(),
+            builder: (context, state) => BlocProvider(
+              create: (_) => getIt<HistorialCubit>(),
+              child: const HistoryPage(),
+            ),
           ),
         ],
       ),
@@ -109,14 +156,25 @@ class AppRouter {
         path: '/search',
         builder: (context, state) {
           final autor = state.uri.queryParameters['autor'];
-          return SearchPage(autorInicial: autor);
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => getIt<LibrosCubit>()),
+              BlocProvider(create: (_) => getIt<CategoriasCubit>()),
+            ],
+            child: SearchPage(autorInicial: autor),
+          );
         },
       ),
       GoRoute(
         path: '/book/:id',
         builder: (context, state) {
           final id = int.parse(state.pathParameters['id']!);
-          return BookDetailPage(libroId: id);
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => getIt<LibroDetalleCubit>()),
+            ],
+            child: BookDetailPage(libroId: id),
+          );
         },
       ),
       GoRoute(
@@ -128,16 +186,20 @@ class AppRouter {
       ),
       GoRoute(
         path: '/profile',
-        builder: (context, state) => const ProfilePage(),
-        routes: [
-          GoRoute(
-            path: 'edit',
-            builder: (context, state) {
-              final usuario = state.extra as Usuario;
-              return EditProfilePage(usuario: usuario);
-            },
-          ),
-        ],
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<PerfilCubit>(),
+          child: const ProfilePage(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        builder: (context, state) {
+          final usuario = state.extra as Usuario;
+          return BlocProvider(
+            create: (_) => getIt<PerfilCubit>(),
+            child: EditProfilePage(usuario: usuario),
+          );
+        },
       ),
       GoRoute(
         path: '/settings',
@@ -146,6 +208,13 @@ class AppRouter {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationsPage(),
+      ),
+      GoRoute(
+        path: '/ayuda-comentarios',
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<PerfilCubit>(),
+          child: const AyudaComentariosPage(),
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) {
@@ -160,23 +229,47 @@ class AppRouter {
         routes: [
           GoRoute(
             path: '/admin',
-            builder: (context, state) => const AdminDashboardPage(),
+            builder: (context, state) => BlocProvider(
+              create: (_) => getIt<AdminDashboardCubit>(),
+              child: const AdminDashboardPage(),
+            ),
           ),
           GoRoute(
             path: '/admin/usuarios',
-            builder: (context, state) => const AdminUsuariosPage(),
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider(create: (_) => getIt<AdminUsuariosCubit>()),
+                BlocProvider(create: (_) => getIt<AdminRolesCubit>()),
+              ],
+              child: const AdminUsuariosPage(),
+            ),
           ),
           GoRoute(
             path: '/admin/libros',
-            builder: (context, state) => const AdminLibrosPage(),
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider(create: (_) => getIt<AdminLibrosCubit>()),
+                BlocProvider(create: (_) => getIt<AdminCategoriasCubit>()),
+              ],
+              child: const AdminLibrosPage(),
+            ),
           ),
           GoRoute(
             path: '/admin/moderacion',
-            builder: (context, state) => const AdminModeracionPage(),
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider(create: (_) => getIt<AdminDenunciasCubit>()),
+                BlocProvider(create: (_) => getIt<AdminSancionesCubit>()),
+              ],
+              child: const AdminModeracionPage(),
+            ),
           ),
           GoRoute(
             path: '/admin/sugerencias',
-            builder: (context, state) => const AdminSugerenciasPage(),
+            builder: (context, state) => BlocProvider(
+              create: (_) => getIt<AdminSugerenciasCubit>(),
+              child: const AdminSugerenciasPage(),
+            ),
           ),
         ],
       ),

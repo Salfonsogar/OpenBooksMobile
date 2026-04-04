@@ -57,7 +57,7 @@ class AdminUsuariosDataSource {
     
     if (data is List) {
       return PagedUsuarios(
-        items: data.map((e) => AdminUsuario.fromJson(e as Map<String, dynamic>)).toList(),
+        items: data.map((e) => AdminUsuario.fromJson(e)).toList(),
         pageNumber: 1,
         pageSize: data.length,
         totalCount: data.length,
@@ -67,27 +67,25 @@ class AdminUsuariosDataSource {
     
     if (data is! Map<String, dynamic>) return PagedUsuarios.empty();
     
-    final json = data as Map<String, dynamic>;
-    
-    if (json.containsKey('results')) {
-      final results = json['results'] as List? ?? [];
+    if (data.containsKey('results')) {
+      final results = data['results'] as List? ?? [];
       return PagedUsuarios(
-        items: results.map((e) => AdminUsuario.fromJson(e as Map<String, dynamic>)).toList(),
-        pageNumber: json['currentPage'] ?? json['pageNumber'] ?? 1,
-        pageSize: json['pageSize'] ?? results.length,
-        totalCount: json['totalRecords'] ?? json['totalCount'] ?? results.length,
-        totalPages: json['totalPages'] ?? 1,
+        items: results.map((e) => AdminUsuario.fromJson(e)).toList(),
+        pageNumber: data['currentPage'] ?? data['pageNumber'] ?? 1,
+        pageSize: data['pageSize'] ?? results.length,
+        totalCount: data['totalRecords'] ?? data['totalCount'] ?? results.length,
+        totalPages: data['totalPages'] ?? 1,
       );
     }
     
-    if (json.containsKey('items')) {
-      final items = json['items'] as List? ?? [];
+    if (data.containsKey('items')) {
+      final items = data['items'] as List? ?? [];
       return PagedUsuarios(
-        items: items.map((e) => AdminUsuario.fromJson(e as Map<String, dynamic>)).toList(),
-        pageNumber: json['currentPage'] ?? json['pageNumber'] ?? 1,
-        pageSize: json['pageSize'] ?? items.length,
-        totalCount: json['totalRecords'] ?? json['totalCount'] ?? items.length,
-        totalPages: json['totalPages'] ?? 1,
+        items: items.map((e) => AdminUsuario.fromJson(e)).toList(),
+        pageNumber: data['currentPage'] ?? data['pageNumber'] ?? 1,
+        pageSize: data['pageSize'] ?? items.length,
+        totalCount: data['totalRecords'] ?? data['totalCount'] ?? items.length,
+        totalPages: data['totalPages'] ?? 1,
       );
     }
 

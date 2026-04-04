@@ -20,9 +20,31 @@ class CategoriasDataSource {
           'pageSize': pageSize,
         },
       );
-      return PagedResult.fromJson(
-        response.data as Map<String, dynamic>,
-        Categoria.fromJson,
+
+      Map<String, dynamic> responseData;
+      if (response.data is Map<String, dynamic>) {
+        responseData = response.data as Map<String, dynamic>;
+      } else {
+        throw Exception('Formato de respuesta inválido');
+      }
+
+      List<dynamic> resultsList = [];
+      if (responseData.containsKey('results')) {
+        resultsList = responseData['results'] as List<dynamic>? ?? [];
+      } else if (responseData.containsKey('items')) {
+        resultsList = responseData['items'] as List<dynamic>? ?? [];
+      } else if (responseData.containsKey('data')) {
+        resultsList = responseData['data'] as List<dynamic>? ?? [];
+      }
+
+      return PagedResult(
+        page: responseData['currentPage'] ?? responseData['pageNumber'] ?? pageNumber,
+        pageSize: responseData['pageSize'] ?? pageSize,
+        total: responseData['totalRecords'] ?? responseData['totalCount'] ?? resultsList.length,
+        totalPages: responseData['totalPages'] ?? 1,
+        data: resultsList
+            .map((e) => Categoria.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
     } on DioException catch (e) {
       throw _handleError(e);

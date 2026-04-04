@@ -80,4 +80,20 @@ class LibrosRepository {
     libros.shuffle();
     return libros.take(limit).toList();
   }
+
+  Future<DenunciaResena> crearDenunciaResena({
+    required int idDenunciante,
+    required int idDenunciado,
+    required int idResena,
+    required String motivo,
+    String? comentario,
+  }) {
+    return _resenasDataSource.crearDenunciaResena(
+      idDenunciante: idDenunciante,
+      idDenunciado: idDenunciado,
+      idResena: idResena,
+      motivo: motivo,
+      comentario: comentario,
+    );
+  }
 }

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../shared/core/network/api_client.dart';
+import '../../../../shared/core/utils/error_utils.dart';
 import '../models/libro_biblioteca.dart';
 
 class BibliotecaDataSource {
@@ -61,16 +62,12 @@ class BibliotecaDataSource {
   }
 
   Exception _handleError(DioException e) {
-    if (e.response?.statusCode == 404) {
-      return Exception('Recurso no encontrado');
-    }
-    if (e.response?.statusCode == 400) {
-      final message = e.response?.data?['message'] ?? e.response?.data?['error'];
-      return Exception(message ?? 'Error en la solicitud');
-    }
-    if (e.response?.statusCode == 409) {
+    final statusCode = e.response?.statusCode;
+    
+    if (statusCode == 409) {
       return Exception('El libro ya está en tu biblioteca');
     }
-    return Exception('Error de conexión. Intenta más tarde.');
+    
+    return handleDioError(e);
   }
 }

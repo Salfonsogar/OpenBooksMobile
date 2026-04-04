@@ -16,6 +16,11 @@ import '../../logic/cubit/highlight_state.dart';
 import '../../logic/cubit/reader_cubit.dart';
 import '../../logic/cubit/reader_settings_cubit.dart';
 import '../widgets/epub_parser.dart';
+import '../widgets/reader_colors.dart';
+import '../widgets/reader_header.dart';
+import '../widgets/reader_footer.dart';
+import '../widgets/toc_dialog.dart';
+import '../widgets/search_dialog.dart';
 import '../widgets/reader_settings.dart';
 
 class ReaderPage extends StatefulWidget {
@@ -77,80 +82,59 @@ class _ReaderPageState extends State<ReaderPage> {
         ],
         child: BlocBuilder<ReaderSettingsCubit, ReaderSettings>(
           builder: (context, settings) {
-            return _buildScaffold(settings);
+            final themeType = _parseThemeType(settings.theme);
+            final colors = ReaderColors.fromTheme(themeType);
+
+            return Scaffold(
+              backgroundColor: colors.background,
+              body: BlocConsumer<ReaderCubit, ReaderState>(
+                listener: (context, state) {
+                  if (state is ReaderLoaded) {
+                    setState(() {
+                      _chapters = state.manifest.readingOrder;
+                      _currentIndex = state.currentChapterIndex;
+                    });
+                    if (_pageController.hasClients) {
+                      _pageController.jumpToPage(state.currentChapterIndex);
+                    }
+                  }
+                },
+                builder: (context, state) {
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showUi = !_showUi;
+                      });
+                    },
+                    child: Stack(
+                      children: [
+                        _buildContent(state, settings, colors),
+                        if (_showUi) _buildHeader(state, colors),
+                        if (_showUi) _buildFooter(state, colors),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            );
           },
         ),
       ),
     );
   }
 
-  Widget _buildScaffold(ReaderSettings settings) {
-    final themeColors = _getThemeColors(settings.theme);
-
-    return Scaffold(
-      backgroundColor: themeColors['background'],
-      body: BlocConsumer<ReaderCubit, ReaderState>(
-        listener: (context, state) {
-          if (state is ReaderLoaded) {
-            setState(() {
-              _chapters = state.manifest.readingOrder;
-              _currentIndex = state.currentChapterIndex;
-            });
-            if (_pageController.hasClients) {
-              _pageController.jumpToPage(state.currentChapterIndex);
-            }
-          }
-        },
-        builder: (context, state) {
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _showUi = !_showUi;
-              });
-            },
-            child: Stack(
-              children: [
-                _buildContent(state, settings),
-                if (_showUi) _buildHeader(state, settings),
-                if (_showUi) _buildFooter(state, settings),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Map<String, Color> _getThemeColors(String theme) {
+  ReaderThemeType _parseThemeType(String theme) {
     switch (theme) {
       case 'sepia':
-        return {
-          'background': const Color(0xFFF4ECD8),
-          'text': const Color(0xFF5B4636),
-          'header': const Color(0xFFF4ECD8),
-          'icon': const Color(0xFF5B4636),
-          'accent': const Color(0xFF8B4513),
-        };
+        return ReaderThemeType.sepia;
       case 'dark':
-        return {
-          'background': Colors.grey[900]!,
-          'text': Colors.grey[300]!,
-          'header': Colors.black,
-          'icon': Colors.white,
-          'accent': Colors.white,
-        };
+        return ReaderThemeType.dark;
       default:
-        return {
-          'background': Colors.white,
-          'text': Colors.black87,
-          'header': Colors.white,
-          'icon': Colors.black87,
-          'accent': const Color(0xFF2196F3),
-        };
+        return ReaderThemeType.light;
     }
   }
 
-  Widget _buildContent(ReaderState state, ReaderSettings settings) {
+  Widget _buildContent(ReaderState state, ReaderSettings settings, ReaderColors colors) {
     if (state is ReaderLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -182,8 +166,6 @@ class _ReaderPageState extends State<ReaderPage> {
       if (_chapters.isEmpty) {
         return const Center(child: Text('No hay capítulos'));
       }
-
-      final themeColors = _getThemeColors(settings.theme);
 
       return PageView.builder(
         controller: _pageController,
@@ -241,8 +223,8 @@ class _ReaderPageState extends State<ReaderPage> {
                               fontSize: settings.fontSize,
                               lineHeight: settings.lineHeight,
                               horizontalMargin: 0,
-                              textColor: themeColors['text']!,
-                              backgroundColor: themeColors['background']!,
+                              textColor: colors.text,
+                              backgroundColor: colors.background,
                               fontFamily: settings.fontFamily,
                               highlights: highlights,
                               onTextSelected: (text, start, end, color) {
@@ -275,152 +257,49 @@ class _ReaderPageState extends State<ReaderPage> {
     return const Center(child: CircularProgressIndicator());
   }
 
-  Widget _buildHeader(ReaderState state, ReaderSettings settings) {
+  Widget _buildHeader(ReaderState state, ReaderColors colors) {
     String titulo = 'Cargando...';
     if (state is ReaderLoaded) {
       titulo = state.manifest.titulo;
     }
 
-    final themeColors = _getThemeColors(settings.theme);
-
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        color: themeColors['header'],
-        padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 4,
-          left: 12,
-          right: 12,
-          bottom: 12,
-        ),
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.arrow_back, color: themeColors['icon'], size: 28),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            Expanded(
-              child: Text(
-                titulo,
-                style: TextStyle(
-                  color: themeColors['icon'],
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            IconButton(
-              icon: Icon(Icons.search, color: themeColors['icon'], size: 28),
-              onPressed: () => _showSearchDialog(context, state, settings),
-            ),
-            IconButton(
-              icon: Icon(Icons.list, color: themeColors['icon'], size: 28),
-              onPressed: () => _showTocDialog(context, state, settings),
-            ),
-            IconButton(
-              icon: Icon(Icons.settings, color: themeColors['icon'], size: 28),
-              onPressed: () => _showSettingsSheet(context),
-            ),
-          ],
-        ),
-      ),
+    return ReaderHeader(
+      title: titulo,
+      colors: colors,
+      topPadding: MediaQuery.of(context).padding.top,
+      onBack: () => Navigator.of(context).pop(),
+      onSearch: () => _showSearch(state, colors),
+      onToc: () => _showToc(state, colors),
+      onSettings: () => _showSettings(),
     );
   }
 
-  Widget _buildFooter(ReaderState state, ReaderSettings settings) {
-    if (_chapters.isEmpty) {
-      return const SizedBox();
-    }
-
-    final totalChapters = _chapters.length;
-    final progress = ((_currentIndex + 1) / totalChapters * 100).toInt();
-    final chapterName = _currentIndex < totalChapters
-        ? 'Capítulo ${_currentIndex + 1}'
-        : 'Capítulo ${_currentIndex + 1}';
-
-    final themeColors = _getThemeColors(settings.theme);
-
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        color: themeColors['header'],
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).padding.bottom + 12,
-          left: 16,
-          right: 16,
-          top: 12,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '$chapterName ($progress%)',
-                  style: TextStyle(
-                    color: themeColors['icon'],
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  '${_currentIndex + 1}/$totalChapters',
-                  style: TextStyle(
-                    color: themeColors['icon'],
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTapUp: (details) {
-                final width = MediaQuery.of(context).size.width - 32;
-                final tapPosition = details.localPosition.dx;
-                final percentage = tapPosition / width;
-                final targetPage = (percentage * totalChapters).round().clamp(0, totalChapters - 1);
-                _pageController.jumpToPage(targetPage);
-              },
-              onHorizontalDragUpdate: (details) {
-                final width = MediaQuery.of(context).size.width - 32;
-                final position = (details.localPosition.dx / width).clamp(0.0, 1.0);
-                final targetPage = (position * (totalChapters - 1)).round();
-                setState(() {
-                  _currentIndex = targetPage.clamp(0, totalChapters - 1);
-                });
-              },
-              onHorizontalDragEnd: (details) {
-                _pageController.jumpToPage(_currentIndex);
-              },
-              child: Container(
-                height: 40,
-                color: Colors.transparent,
-                child: Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: (_currentIndex + 1) / totalChapters,
-                      backgroundColor: themeColors['text']!.withValues(alpha: 0.3),
-                      valueColor: AlwaysStoppedAnimation<Color>(themeColors['text']!),
-                      minHeight: 12,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildFooter(ReaderState state, ReaderColors colors) {
+    return ReaderFooter(
+      currentIndex: _currentIndex,
+      totalChapters: _chapters.length,
+      colors: colors,
+      bottomPadding: MediaQuery.of(context).padding.bottom,
+      onPageSelected: (index) {
+        _pageController.jumpToPage(index);
+        setState(() {
+          _currentIndex = index;
+        });
+      },
+      onPrevious: () {
+        if (_currentIndex > 0) {
+          _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+        }
+      },
+      onNext: () {
+        if (_currentIndex < _chapters.length - 1) {
+          _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+        }
+      },
     );
   }
 
-  void _showSettingsSheet(BuildContext context) {
+  void _showSettings() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -439,7 +318,7 @@ class _ReaderPageState extends State<ReaderPage> {
     );
   }
 
-  void _showTocDialog(BuildContext context, ReaderState state, ReaderSettings settings) {
+  void _showToc(ReaderState state, ReaderColors colors) {
     if (state is! ReaderLoaded) return;
 
     final toc = state.manifest.toc;
@@ -450,499 +329,88 @@ class _ReaderPageState extends State<ReaderPage> {
       return;
     }
 
-    final themeColors = _getThemeColors(settings.theme);
-    final bookTitle = state.manifest.titulo;
+    final bookmarkState = _bookmarkCubit.state;
+    final bookmarks = bookmarkState is BookmarkLoaded ? bookmarkState.bookmarks : <Bookmark>[];
 
-    showModalBottomSheet(
+    showTocDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => BlocProvider.value(
-        value: _bookmarkCubit,
-        child: Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          decoration: BoxDecoration(
-            color: themeColors['background'],
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.only(left: 16, right: 8, top: 12, bottom: 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        bookTitle,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: themeColors['text'],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close, color: themeColors['icon']),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: BlocBuilder<BookmarkCubit, BookmarkState>(
-                  builder: (context, bookmarkState) {
-                    final bookmarks = bookmarkState is BookmarkLoaded
-                        ? bookmarkState.bookmarks
-                        : <Bookmark>[];
-
-                    return DefaultTabController(
-                      length: 2,
-                      child: Column(
-                        children: [
-                          TabBar(
-                            labelColor: themeColors['accent'],
-                            unselectedLabelColor: themeColors['text'],
-                            indicatorColor: themeColors['accent'],
-                            dividerColor: themeColors['text']!.withValues(alpha: 0.2),
-                            tabs: [
-                              Tab(text: 'Índice (${toc.length})'),
-                              Tab(text: 'Marcadores (${bookmarks.length})'),
-                            ],
-                          ),
-                          Expanded(
-                            child: TabBarView(
-                              children: [
-                                _buildTocList(toc, themeColors),
-                                _buildBookmarksList(bookmarks, toc, themeColors),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+      colors: colors,
+      bookTitle: state.manifest.titulo,
+      toc: toc,
+      bookmarks: bookmarks,
+      currentChapterIndex: _currentIndex,
+      chapters: _chapters,
+      callbacks: TocDialogCallbacks(
+        onChapterTap: (chapterIndex) {
+          _pageController.jumpToPage(chapterIndex);
+          setState(() {
+            _currentIndex = chapterIndex;
+          });
+          _readerCubit.irACapitulo(chapterIndex);
+        },
+        onCreateBookmark: (title) {
+          _bookmarkCubit.crearBookmark(
+            bookId: widget.libroId,
+            chapterIndex: _currentIndex,
+            title: title,
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Marcador "$title" agregado')),
+          );
+        },
+        onUpdateBookmark: (id, title) {
+          _bookmarkCubit.actualizarBookmark(
+            id: id,
+            bookId: widget.libroId,
+            chapterIndex: _currentIndex,
+            title: title,
+          );
+        },
+        onDeleteBookmark: (id) {
+          _bookmarkCubit.eliminarBookmark(id, widget.libroId);
+        },
       ),
     );
   }
 
-  Widget _buildTocList(List<TocItem> toc, Map<String, Color> themeColors) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: toc.length,
-      itemBuilder: (context, index) {
-        final item = toc[index];
-        return ListTile(
-          title: Text(
-            item.titulo,
-            style: TextStyle(
-              fontWeight: index == _currentIndex
-                  ? FontWeight.bold
-                  : FontWeight.normal,
-              color: index == _currentIndex
-                  ? themeColors['accent']
-                  : themeColors['text'],
-            ),
-          ),
-          onTap: () {
-            Navigator.pop(context);
-            final chapterIndex = _chapters.indexWhere(
-              (c) => c.href == item.href,
-            );
-            if (chapterIndex >= 0) {
-              _pageController.jumpToPage(chapterIndex);
-              setState(() {
-                _currentIndex = chapterIndex;
-              });
-              _readerCubit.irACapitulo(chapterIndex);
-            }
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildBookmarksList(List<Bookmark> bookmarks, List<TocItem> toc, Map<String, Color> themeColors) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: () => _crearMarcador(toc, themeColors),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: themeColors['text']!.withValues(alpha: 0.2)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.add, color: themeColors['accent']),
-                const SizedBox(width: 12),
-                Text(
-                  'Agregar marcador en capítulo actual',
-                  style: TextStyle(
-                    color: themeColors['accent'],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Expanded(
-          child: bookmarks.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.bookmark_border,
-                        size: 64,
-                        color: themeColors['text']!.withValues(alpha: 0.3),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No hay marcadores',
-                        style: TextStyle(
-                          color: themeColors['text']!.withValues(alpha: 0.5),
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: bookmarks.length,
-                  itemBuilder: (context, index) {
-                    final bookmark = bookmarks[index];
-                    return ListTile(
-                      leading: Icon(
-                        Icons.bookmark,
-                        color: themeColors['accent'],
-                      ),
-                      title: Text(
-                        bookmark.title,
-                        style: TextStyle(
-                          fontWeight: bookmark.chapterIndex == _currentIndex
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: themeColors['text'],
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Capítulo ${bookmark.chapterIndex + 1}',
-                        style: TextStyle(
-                          color: themeColors['text']!.withValues(alpha: 0.6),
-                          fontSize: 12,
-                        ),
-                      ),
-                      trailing: PopupMenuButton<String>(
-                        icon: Icon(
-                          Icons.more_vert,
-                          color: themeColors['text'],
-                        ),
-                        color: themeColors['background'],
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _editarMarcador(bookmark, themeColors);
-                          } else if (value == 'delete') {
-                            _eliminarMarcador(bookmark, themeColors);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit, size: 20, color: themeColors['text']),
-                                const SizedBox(width: 8),
-                                Text('Editar', style: TextStyle(color: themeColors['text'])),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete, size: 20, color: themeColors['text']),
-                                const SizedBox(width: 8),
-                                Text('Eliminar', style: TextStyle(color: themeColors['text'])),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      onTap: () {
-                        Navigator.pop(context);
-                        _pageController.jumpToPage(bookmark.chapterIndex);
-                        setState(() {
-                          _currentIndex = bookmark.chapterIndex;
-                        });
-                        _readerCubit.irACapitulo(bookmark.chapterIndex);
-                      },
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  void _crearMarcador(List<TocItem> toc, Map<String, Color> themeColors) {
-    final currentTocItem = toc.isNotEmpty && _currentIndex < toc.length
-        ? toc[_currentIndex]
-        : null;
-
-    final defaultTitle = currentTocItem?.titulo ?? 'Capítulo ${_currentIndex + 1}';
-    final controller = TextEditingController(text: defaultTitle);
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: themeColors['background'],
-        title: Text(
-          'Agregar marcador',
-          style: TextStyle(color: themeColors['text']),
-        ),
-        content: TextField(
-          controller: controller,
-          style: TextStyle(color: themeColors['text']),
-          cursorColor: themeColors['text'],
-          decoration: InputDecoration(
-            labelText: 'Nombre del marcador',
-            labelStyle: TextStyle(color: themeColors['text']!.withValues(alpha: 0.7)),
-            filled: true,
-            fillColor: themeColors['text']!.withValues(alpha: 0.05),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: themeColors['text']!.withValues(alpha: 0.3)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: themeColors['accent']!, width: 2),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: themeColors['text']!.withValues(alpha: 0.3)),
-            ),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Cancelar', style: TextStyle(color: themeColors['text'])),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: themeColors['accent'],
-              foregroundColor: themeColors['background'],
-            ),
-            onPressed: () {
-              final title = controller.text.trim();
-              if (title.isNotEmpty) {
-                _bookmarkCubit.crearBookmark(
-                  bookId: widget.libroId,
-                  chapterIndex: _currentIndex,
-                  title: title,
-                );
-                Navigator.pop(dialogContext);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Marcador "$title" agregado', style: TextStyle(color: themeColors['text'])),
-                    backgroundColor: themeColors['background'],
-                    duration: const Duration(seconds: 2),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            child: const Text('Agregar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _editarMarcador(Bookmark bookmark, Map<String, Color> themeColors) {
-    final controller = TextEditingController(text: bookmark.title);
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: themeColors['background'],
-        title: Text(
-          'Editar marcador',
-          style: TextStyle(color: themeColors['text']),
-        ),
-        content: TextField(
-          controller: controller,
-          style: TextStyle(color: themeColors['text']),
-          cursorColor: themeColors['text'],
-          decoration: InputDecoration(
-            labelText: 'Nombre del marcador',
-            labelStyle: TextStyle(color: themeColors['text']!.withValues(alpha: 0.7)),
-            filled: true,
-            fillColor: themeColors['text']!.withValues(alpha: 0.05),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: themeColors['text']!.withValues(alpha: 0.3)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: themeColors['accent']!, width: 2),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: themeColors['text']!.withValues(alpha: 0.3)),
-            ),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Cancelar', style: TextStyle(color: themeColors['text'])),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: themeColors['accent'],
-              foregroundColor: themeColors['background'],
-            ),
-            onPressed: () {
-              final title = controller.text.trim();
-              if (title.isNotEmpty) {
-                _bookmarkCubit.actualizarBookmark(
-                  id: bookmark.id!,
-                  bookId: widget.libroId,
-                  chapterIndex: bookmark.chapterIndex,
-                  title: title,
-                );
-                Navigator.pop(dialogContext);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Marcador actualizado a "$title"', style: TextStyle(color: themeColors['text'])),
-                    backgroundColor: themeColors['background'],
-                    duration: const Duration(seconds: 2),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _eliminarMarcador(Bookmark bookmark, Map<String, Color> themeColors) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: themeColors['background'],
-        title: Text(
-          'Eliminar marcador',
-          style: TextStyle(color: themeColors['text']),
-        ),
-        content: Text(
-          '¿Eliminar el marcador "${bookmark.title}"?',
-          style: TextStyle(color: themeColors['text']),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Cancelar', style: TextStyle(color: themeColors['text'])),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              _bookmarkCubit.eliminarBookmark(bookmark.id!, widget.libroId);
-              Navigator.pop(dialogContext);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Marcador "${bookmark.title}" eliminado', style: TextStyle(color: themeColors['text'])),
-                  backgroundColor: themeColors['background'],
-                  duration: const Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSearchDialog(BuildContext context, ReaderState state, ReaderSettings settings) {
+  void _showSearch(ReaderState state, ReaderColors colors) {
     if (state is! ReaderLoaded) return;
 
-    final themeColors = _getThemeColors(settings.theme);
-
-    showModalBottomSheet(
+    showSearchDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (dialogContext) => Container(
-        height: MediaQuery.of(context).size.height * 0.9,
-        decoration: BoxDecoration(
-          color: themeColors['background'],
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: themeColors['text']!.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                style: TextStyle(color: themeColors['text']),
-                decoration: InputDecoration(
-                  hintText: 'Buscar en el libro...',
-                  hintStyle: TextStyle(color: themeColors['text']!.withValues(alpha: 0.5)),
-                  prefixIcon: Icon(Icons.search, color: themeColors['icon']),
-                  filled: true,
-                  fillColor: themeColors['text']!.withValues(alpha: 0.1),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-                onChanged: (query) {
-                  // TODO: Implement search logic
-                },
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: Text(
-                  'Escribe para buscar en el contenido',
-                  style: TextStyle(color: themeColors['text']!.withValues(alpha: 0.5)),
-                ),
-              ),
-            ),
-          ],
-        ),
+      colors: colors,
+      callbacks: SearchCallbacks(
+        onSearch: (query) async {
+          final results = <SearchResult>[];
+          final queryLower = query.toLowerCase();
+
+          for (var i = 0; i < _chapters.length; i++) {
+            final content = await _readerCubit.obtenerContenido(i);
+            if (content != null && content.toLowerCase().contains(queryLower)) {
+              final toc = state.manifest.toc;
+              String chapterTitle = 'Capítulo ${i + 1}';
+              if (i < toc.length) {
+                chapterTitle = toc[i].titulo;
+              }
+
+              results.add(SearchResult(
+                text: content,
+                chapterIndex: i,
+                chapterTitle: chapterTitle,
+              ));
+
+              if (results.length >= 10) break;
+            }
+          }
+
+          return results;
+        },
+        onResultTap: (chapterIndex, text) {
+          _pageController.jumpToPage(chapterIndex);
+          setState(() {
+            _currentIndex = chapterIndex;
+          });
+        },
       ),
     );
   }

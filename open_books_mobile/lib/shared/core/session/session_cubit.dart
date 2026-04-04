@@ -96,14 +96,8 @@ class SessionCubit extends Cubit<SessionState> {
 
     _signalRService = SignalRService(
       onNotificationReceived: _handleNotification,
-      onConnected: () {
-        // ignore: avoid_print
-        print('SignalR: Conectado');
-      },
-      onError: (error) {
-        // ignore: avoid_print
-        print('SignalR Error: $error');
-      },
+      onConnected: () {},
+      onError: (error) {},
     );
 
     _signalRService!.connect();

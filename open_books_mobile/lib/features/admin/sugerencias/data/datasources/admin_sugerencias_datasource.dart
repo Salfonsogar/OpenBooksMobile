@@ -53,7 +53,7 @@ class AdminSugerenciasDataSource {
     
     if (data is List) {
       return PagedSugerencias(
-        items: (data as List).map((e) => AdminSugerencia.fromJson(e as Map<String, dynamic>)).toList(),
+        items: (data).map((e) => AdminSugerencia.fromJson(e)).toList(),
         pageNumber: 1,
         pageSize: data.length,
         totalCount: data.length,
@@ -72,7 +72,7 @@ class AdminSugerenciasDataSource {
     } else if (json.containsKey('data') && json['data'] is List) {
       final listData = json['data'] as List;
       return PagedSugerencias(
-        items: listData.map((e) => AdminSugerencia.fromJson(e as Map<String, dynamic>)).toList(),
+        items: listData.map((e) => AdminSugerencia.fromJson(e)).toList(),
         pageNumber: json['pagina'] ?? 1,
         pageSize: json['tamanoPagina'] ?? listData.length,
         totalCount: json['totalCount'] ?? listData.length,
