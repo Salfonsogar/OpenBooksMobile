@@ -29,30 +29,6 @@ import 'features/reader/data/repositories/bookmark_repository.dart';
 import 'features/reader/data/repositories/epub_repository.dart';
 import 'features/reader/logic/cubit/bookmark_cubit.dart';
 import 'features/reader/logic/cubit/reader_settings_cubit.dart';
-import 'features/admin/dashboard/data/datasources/admin_dashboard_datasource.dart';
-import 'features/admin/dashboard/data/repositories/admin_dashboard_repository.dart';
-import 'features/admin/dashboard/logic/cubit/admin_dashboard_cubit.dart';
-import 'features/admin/usuarios/data/datasources/admin_usuarios_datasource.dart';
-import 'features/admin/usuarios/data/repositories/admin_usuarios_repository.dart';
-import 'features/admin/usuarios/logic/cubit/admin_usuarios_cubit.dart';
-import 'features/admin/libros/data/datasources/admin_libros_datasource.dart';
-import 'features/admin/libros/data/repositories/admin_libros_repository.dart';
-import 'features/admin/libros/logic/cubit/admin_libros_cubit.dart';
-import 'features/admin/categorias/data/datasources/admin_categorias_datasource.dart';
-import 'features/admin/categorias/data/repositories/admin_categorias_repository.dart';
-import 'features/admin/categorias/logic/cubit/admin_categorias_cubit.dart';
-import 'features/admin/moderacion/data/datasources/admin_denuncias_datasource.dart';
-import 'features/admin/moderacion/data/datasources/admin_sanciones_datasource.dart';
-import 'features/admin/moderacion/data/datasources/admin_roles_datasource.dart';
-import 'features/admin/moderacion/data/repositories/admin_denuncias_repository.dart';
-import 'features/admin/moderacion/data/repositories/admin_sanciones_repository.dart';
-import 'features/admin/moderacion/data/repositories/admin_roles_repository.dart';
-import 'features/admin/moderacion/logic/cubit/admin_denuncias_cubit.dart';
-import 'features/admin/moderacion/logic/cubit/admin_sanciones_cubit.dart';
-import 'features/admin/moderacion/logic/cubit/admin_roles_cubit.dart';
-import 'features/admin/sugerencias/data/datasources/admin_sugerencias_datasource.dart';
-import 'features/admin/sugerencias/data/repositories/admin_sugerencias_repository.dart';
-import 'features/admin/sugerencias/logic/cubit/admin_sugerencias_cubit.dart';
 import 'features/notifications/logic/cubit/notification_cubit.dart';
 import 'shared/core/network/api_client.dart';
 import 'shared/core/session/session_cubit.dart';
@@ -64,24 +40,18 @@ import 'shared/services/sync_service.dart';
 final getIt = GetIt.instance;
 
 Future<void> setupDependencies() async {
-  // Network Info
   getIt.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl());
 
-  // Local Database - init before registering
   final localDatabase = LocalDatabase();
   await localDatabase.init();
   getIt.registerLazySingleton<LocalDatabase>(() => localDatabase);
 
-  // Core
   getIt.registerLazySingleton<ApiClient>(() => ApiClient());
 
-  // Session
   getIt.registerLazySingleton<SessionCubit>(() => SessionCubit());
 
-  // Notifications
   getIt.registerLazySingleton<NotificationCubit>(() => NotificationCubit());
 
-  // Auth
   getIt.registerLazySingleton<AuthDataSource>(
     () => AuthDataSource(getIt<ApiClient>()),
   );
@@ -102,7 +72,6 @@ Future<void> setupDependencies() async {
     ),
   );
 
-  // Libros
   getIt.registerLazySingleton<LibrosDataSource>(
     () => LibrosDataSource(getIt<ApiClient>()),
   );
@@ -137,12 +106,10 @@ Future<void> setupDependencies() async {
     () => CategoriasCubit(getIt<LibrosRepository>()),
   );
 
-  // Biblioteca
   getIt.registerLazySingleton<BibliotecaDataSource>(
     () => BibliotecaDataSource(getIt<ApiClient>()),
   );
 
-  // Perfil
   getIt.registerLazySingleton<PerfilDataSource>(
     () => PerfilDataSource(getIt<ApiClient>()),
   );
@@ -150,7 +117,6 @@ Future<void> setupDependencies() async {
     () => PerfilRepository(getIt<PerfilDataSource>()),
   );
 
-  // Historial
   getIt.registerLazySingleton<HistorialDataSource>(
     () => HistorialDataSource(getIt<ApiClient>()),
   );
@@ -171,7 +137,6 @@ Future<void> setupDependencies() async {
     () => AddToHistorialUseCase(getIt<HistorialRepositoryImpl>()),
   );
 
-  // Biblioteca - singleton que escucha SessionCubit
   getIt.registerLazySingleton<BibliotecaRepositoryImpl>(
     () => BibliotecaRepositoryImpl(
       localDatabase: getIt<LocalDatabase>(),
@@ -207,12 +172,10 @@ Future<void> setupDependencies() async {
     ),
   );
 
-  // Biblioteca - Upload Libro
   getIt.registerFactory<UploadLibroCubit>(
     () => UploadLibroCubit(),
   );
 
-  // Perfil - singleton que escucha SessionCubit
   getIt.registerLazySingleton<PerfilCubit>(
     () => PerfilCubit(
       repository: getIt<PerfilRepository>(),
@@ -220,7 +183,6 @@ Future<void> setupDependencies() async {
     ),
   );
 
-  // Historial
   getIt.registerLazySingleton<HistorialCubit>(
     () => HistorialCubit(
       getHistorialUseCase: getIt<GetHistorialUseCase>(),
@@ -229,7 +191,6 @@ Future<void> setupDependencies() async {
     ),
   );
 
-  // Sync Service
   getIt.registerLazySingleton<SyncService>(
     () => SyncService(
       localDatabase: getIt<LocalDatabase>(),
@@ -239,7 +200,6 @@ Future<void> setupDependencies() async {
     ),
   );
 
-  // Reader
   getIt.registerLazySingleton<EpubDataSource>(
     () => EpubDataSource(getIt<ApiClient>()),
   );
@@ -264,93 +224,5 @@ Future<void> setupDependencies() async {
   );
   getIt.registerLazySingleton<BookmarkCubit>(
     () => BookmarkCubit(getIt<BookmarkRepository>()),
-  );
-
-  // Admin Dashboard
-  getIt.registerLazySingleton<AdminDashboardDataSource>(
-    () => AdminDashboardDataSource(),
-  );
-  getIt.registerLazySingleton<AdminDashboardRepository>(
-    () => AdminDashboardRepository(getIt<AdminDashboardDataSource>()),
-  );
-  getIt.registerFactory<AdminDashboardCubit>(
-    () => AdminDashboardCubit(getIt<AdminDashboardRepository>()),
-  );
-
-  // Admin Usuarios
-  getIt.registerLazySingleton<AdminUsuariosDataSource>(
-    () => AdminUsuariosDataSource(),
-  );
-  getIt.registerLazySingleton<AdminUsuariosRepository>(
-    () => AdminUsuariosRepository(getIt<AdminUsuariosDataSource>()),
-  );
-  getIt.registerFactory<AdminUsuariosCubit>(
-    () => AdminUsuariosCubit(getIt<AdminUsuariosRepository>()),
-  );
-
-  // Admin Libros
-  getIt.registerLazySingleton<AdminLibrosDataSource>(
-    () => AdminLibrosDataSource(),
-  );
-  getIt.registerLazySingleton<AdminLibrosRepository>(
-    () => AdminLibrosRepository(getIt<AdminLibrosDataSource>()),
-  );
-  getIt.registerFactory<AdminLibrosCubit>(
-    () => AdminLibrosCubit(getIt<AdminLibrosRepository>()),
-  );
-
-  // Admin Categorías
-  getIt.registerLazySingleton<AdminCategoriasDataSource>(
-    () => AdminCategoriasDataSource(),
-  );
-  getIt.registerLazySingleton<AdminCategoriasRepository>(
-    () => AdminCategoriasRepository(getIt<AdminCategoriasDataSource>()),
-  );
-  getIt.registerFactory<AdminCategoriasCubit>(
-    () => AdminCategoriasCubit(getIt<AdminCategoriasRepository>()),
-  );
-
-  // Admin Moderación (Denuncias)
-  getIt.registerLazySingleton<AdminDenunciasDataSource>(
-    () => AdminDenunciasDataSource(),
-  );
-  getIt.registerLazySingleton<AdminDenunciasRepository>(
-    () => AdminDenunciasRepository(getIt<AdminDenunciasDataSource>()),
-  );
-  getIt.registerFactory<AdminDenunciasCubit>(
-    () => AdminDenunciasCubit(getIt<AdminDenunciasRepository>()),
-  );
-
-  // Admin Moderación (Sanciones)
-  getIt.registerLazySingleton<AdminSancionesDataSource>(
-    () => AdminSancionesDataSource(),
-  );
-  getIt.registerLazySingleton<AdminSancionesRepository>(
-    () => AdminSancionesRepository(getIt<AdminSancionesDataSource>()),
-  );
-  getIt.registerFactory<AdminSancionesCubit>(
-    () => AdminSancionesCubit(getIt<AdminSancionesRepository>()),
-  );
-
-  // Admin Moderación (Roles)
-  getIt.registerLazySingleton<AdminRolesDataSource>(
-    () => AdminRolesDataSource(),
-  );
-  getIt.registerLazySingleton<AdminRolesRepository>(
-    () => AdminRolesRepository(getIt<AdminRolesDataSource>()),
-  );
-  getIt.registerFactory<AdminRolesCubit>(
-    () => AdminRolesCubit(getIt<AdminRolesRepository>()),
-  );
-
-  // Admin Sugerencias
-  getIt.registerLazySingleton<AdminSugerenciasDataSource>(
-    () => AdminSugerenciasDataSource(),
-  );
-  getIt.registerLazySingleton<AdminSugerenciasRepository>(
-    () => AdminSugerenciasRepository(getIt<AdminSugerenciasDataSource>()),
-  );
-  getIt.registerFactory<AdminSugerenciasCubit>(
-    () => AdminSugerenciasCubit(getIt<AdminSugerenciasRepository>()),
   );
 }

@@ -9,9 +9,95 @@ Guía técnica para agentes de código que operan en este repositorio.
 - **Framework**: Flutter 3.x / Dart 3.x
 - **Estado**: flutter_bloc (Cubit) ^8.x
 - **HTTP Client**: Dio ^5.x
-- **DI**: get_it ^7.x
+- **DI**: get_it ^7.x + Scoped DI
 - **Navegación**: go_router ^14.x
 - **Almacenamiento**: flutter_secure_storage ^9.x
+
+---
+
+## Arquitectura de Inyección de Dependencias
+
+### Estructura de Archivos
+
+```
+lib/
+├── main.dart                    # Entry point
+├── app_initializer.dart         # Inicialización (.env + DI)
+├── app.dart                    # Widget raíz (lifecycle)
+├── app_providers.dart          # Combinación de providers
+├── di/
+│   ├── app_injector.dart       # Dependencias globales (4 items)
+│   └── providers/
+│       ├── core_providers.dart
+│       ├── library_providers.dart
+│       ├── user_providers.dart
+│       └── reader_providers.dart
+├── routing/
+│   └── app_router.dart         # Router con BlocProviders scoped
+└── injection_container.dart    # Registro get_it
+```
+
+### Dependencias Globales (AppInjector)
+
+Solo estas 4 dependencias son globales:
+
+```dart
+class AppInjector {
+  final SyncService syncService;           // Sincronización offline
+  final SessionCubit sessionCubit;        // Estado auth global
+  final NotificationCubit notificationCubit; // Notificaciones
+  final ReaderSettingsCubit settingsCubit; // Configuración lector
+}
+```
+
+**Regla**: Todo lo demás debe ser **scoped** (creado en router o página).
+
+### Scoped DI en el Router
+
+Cada ruta define sus propios BlocProviders:
+
+```dart
+// Home con múltiples cubits
+GoRoute(
+  path: '/home',
+  builder: (context, state) => MultiBlocProvider(
+    providers: [
+      BlocProvider(create: (_) => getIt<LibrosCubit>()),
+      BlocProvider(create: (_) => getIt<CategoriasCubit>()),
+    ],
+    child: const HomePage(),
+  ),
+)
+
+// Biblioteca con un cubit
+GoRoute(
+  path: '/library',
+  builder: (context, state) => BlocProvider(
+    create: (_) => getIt<BibliotecaCubit>(),
+    child: const LibraryPage(),
+  ),
+)
+```
+
+### NO usar getIt en UI
+
+❌ **Incorrecto**:
+```dart
+final cubit = getIt<MiCubit>();
+```
+
+✅ **Correcto**:
+```dart
+// En router (scoped)
+BlocProvider(create: (_) => getIt<MiCubit>(), child: MiPage())
+
+// En página (si ya está provider arriba)
+context.read<MiCubit>()
+```
+
+### NO cerrar cubits manualmente
+
+Los cubits creados con `BlocProvider(create:)` se cierran automáticamente al dispose del widget. Solo cerrar si usas `BlocProvider.value()` con singletons.
 
 ---
 
@@ -142,4 +228,4 @@ blocTest<AuthCubit, AuthState>(
 
 ---
 
-*Última actualización: 2026-03-31*
+*Última actualización: 2026-04-04*

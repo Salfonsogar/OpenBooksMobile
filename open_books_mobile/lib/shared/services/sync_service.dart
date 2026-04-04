@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
-
 import 'local_database.dart';
 import 'network_info.dart';
 import 'models/sync_queue_model.dart';
@@ -16,7 +14,6 @@ class SyncService {
 
   static const int _maxRetryCount = 3;
   static const Duration _retryDelay = Duration(seconds: 30);
-  static const Duration _exponentialBackoff = Duration(minutes: 5);
 
   StreamSubscription<bool>? _connectivitySubscription;
   final StreamController<SyncEvent> _syncEventController = StreamController<SyncEvent>.broadcast();

@@ -131,7 +131,144 @@ El presente documento describe el sistema **Open Books Mobile**, una aplicación
 | Versión | Fecha | Descripción |
 |---------|-------|-------------|
 | 1.0.0 | 2026-03-31 | Versión inicial del documento técnico |
+| 1.1.0 | 2026-04-04 | Refactorización de inyección de dependencias - Implementación de Scoped DI |
 
 ---
 
-*Documento generado para el proyecto Open Books Mobile*
+## 4. ARQUITECTURA DE INYECCIÓN DE DEPENDENCIAS
+
+### 4.1 Descripción General
+
+A partir de la versión 1.1.0, la aplicación implementa **Scoped Dependency Injection** siguiendo las mejores prácticas de Flutter. Esta arquitectura reemplaza el patrón de singleton global por un enfoque donde cada pantalla tiene sus propias dependencias, mejorando la gestión de memoria y la testabilidad.
+
+### 4.2 Componentes Principales
+
+#### AppInjector (Dependencias Globales)
+
+El `AppInjector` es un contenedor que agrupa las únicas dependencias que deben persistir durante toda la vida útil de la aplicación:
+
+```dart
+class AppInjector {
+  final SyncService syncService;           // Servicio de sincronización offline
+  final SessionCubit sessionCubit;        // Estado de autenticación global
+  final NotificationCubit notificationCubit; // Gestión de notificaciones
+  final ReaderSettingsCubit settingsCubit; // Configuración del lector
+}
+```
+
+**Criterios para ser global:**
+- Servicios de infraestructura (SyncService)
+- Estado que afecta múltiples pantallas (SessionCubit)
+- Configuración que debe persistir entre navegaciones (ReaderSettings)
+
+#### Providers por Feature
+
+La aplicación utiliza providers organizados por dominio:
+
+| Provider | Descripción |
+|----------|-------------|
+| `CoreProviders` | SessionCubit, NotificationCubit |
+| `ReaderProviders` | ReaderSettingsCubit |
+| `LibraryProviders` | Vacío (scoped en router) |
+| `UserProviders` | Vacío (scoped en router) |
+
+### 4.3 Scoped DI en el Router
+
+Cada ruta del router define sus propios BlocProviders, creando un scope específico para cada pantalla:
+
+```dart
+// Ejemplo: Home Page con múltiples cubits
+GoRoute(
+  path: '/home',
+  builder: (context, state) => MultiBlocProvider(
+    providers: [
+      BlocProvider(create: (_) => getIt<LibrosCubit>()),
+      BlocProvider(create: (_) => getIt<CategoriasCubit>()),
+    ],
+    child: const HomePage(),
+  ),
+)
+
+// Ejemplo: Biblioteca con un solo cubit
+GoRoute(
+  path: '/library',
+  builder: (context, state) => BlocProvider(
+    create: (_) => getIt<BibliotecaCubit>(),
+    child: const LibraryPage(),
+  ),
+)
+```
+
+### 4.4 Administración de AdminCubits
+
+Los cubits del panel de administración se crean de forma lazy mediante `BlocProvider(create:)` en cada ruta admin correspondiente.
+
+### 4.5 Beneficios de la Arquitectura
+
+| Beneficio | Descripción |
+|-----------|-------------|
+| **Memoria** | Los cubits se eliminan al navegar fuera de la pantalla |
+| **Testabilidad** | Cada pantalla puede recibir sus dependencias de forma explícita |
+| **Mantenibilidad** | Separación clara entre lo global y lo local |
+| **Consistencia** | Todas las pantallas siguen el mismo patrón de DI |
+
+### 4.6 Estructura de Archivos
+
+```
+lib/
+├── main.dart                          # Entry point
+├── app_initializer.dart               # Inicialización de dependencias
+├── app.dart                           # Widget raíz con lifecycle
+├── app_providers.dart                 # Combinación de todos los providers
+├── di/
+│   ├── app_injector.dart              # Contenedor de dependencias globales
+│   └── providers/
+│       ├── core_providers.dart        # Providers core
+│       ├── library_providers.dart     # Providers library (vacío)
+│       ├── user_providers.dart        # Providers user (vacío)
+│       └── reader_providers.dart      # Providers reader
+├── routing/
+│   └── app_router.dart                # Router con scoped BlocProviders
+└── injection_container.dart           # Registro de dependencias get_it
+```
+
+---
+
+## 5. TABLA DE REQUISitos VS IMPLEMENTACIÓN
+
+| Código | Estado | Ubicación |
+|--------|--------|-----------|
+| RF-01 | ✅ Implementado | features/auth/ |
+| RF-02 | ✅ Implementado | features/auth/ + shared/core/session/ |
+| RF-03 | ✅ Implementado | features/auth/ |
+| RF-04 | ✅ Implementado | features/perfil/ |
+| RF-05 | ✅ Implementado | features/libros/ |
+| RF-06 | ✅ Implementado | features/libros/ |
+| RF-07 | ✅ Implementado | features/libros/ |
+| RF-08 | ✅ Implementado | features/libros/ (BookDetailPage) |
+| RF-09 | ✅ Implementado | features/libros/ |
+| RF-10 | ✅ Implementado | features/libros/ |
+| RF-11 | ✅ Implementado | features/libros/ |
+| RF-12 | ✅ Implementado | features/biblioteca/ |
+| RF-13 | ✅ Implementado | features/biblioteca/ |
+| RF-14 | ✅ Implementado | features/biblioteca/ |
+| RF-15 | ✅ Implementado | shared/services/ (EpubLocalStorageService) |
+| RF-16 | ✅ Implementado | features/reader/ |
+| RF-17 | ✅ Implementado | features/reader/ui/widgets/toc_dialog.dart |
+| RF-18 | ✅ Implementado | features/reader/ (BookmarkCubit) |
+| RF-19 | ✅ Implementado | features/reader/ (HighlightCubit) |
+| RF-20 | ✅ Implementado | features/reader/ui/widgets/search_dialog.dart |
+| RF-21 | ✅ Implementado | features/reader/logic/cubit/reader_settings_cubit.dart |
+| RF-22 | ✅ Implementado | features/historial/ |
+| RF-23 | ✅ Implementado | shared/services/signalr_service.dart |
+| RF-24 | ✅ Implementado | features/admin/dashboard/ |
+| RF-25 | ✅ Implementado | features/admin/libros/ |
+| RF-26 | ✅ Implementado | features/admin/usuarios/ |
+| RF-27 | ✅ Implementado | features/admin/categorias/ |
+| RF-28 | ✅ Implementado | features/admin/moderacion/ |
+| RF-29 | ✅ Implementado | features/admin/moderacion/ (AdminSancionesCubit) |
+| RF-30 | ✅ Implementado | features/admin/sugerencias/ |
+
+---
+
+*Documento actualizado para el proyecto Open Books Mobile v1.1.0*
