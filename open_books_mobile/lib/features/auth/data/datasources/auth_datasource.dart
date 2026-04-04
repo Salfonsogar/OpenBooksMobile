@@ -102,10 +102,7 @@ class AuthDataSource {
     final statusCode = e.response?.statusCode;
     final rawData = e.response?.data;
     
-    debugPrint('AuthDataSource error - statusCode: $statusCode, data: $rawData');
-    
     final message = getErrorMessage(rawData);
-    debugPrint('Extracted message: $message');
     
     if (statusCode == 401) {
       return Exception(message);

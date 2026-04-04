@@ -24,7 +24,6 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     try {
       final response = await _authRepository.login(correo, contrasena);
-      debugPrint('Login successful: ${response.usuario.userName}');
       
       String nombreRol = 'Usuario';
       try {
@@ -50,9 +49,7 @@ class AuthCubit extends Cubit<AuthState> {
         usuario: response.usuario,
         token: response.token,
       ));
-    } catch (e, stackTrace) {
-      debugPrint('AuthCubit login error: $e');
-      debugPrint('Stack trace: $stackTrace');
+    } catch (e) {
       emit(AuthError(e.toString().replaceAll('Exception: ', '')));
     }
   }

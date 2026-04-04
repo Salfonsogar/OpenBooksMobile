@@ -156,7 +156,13 @@ class AppRouter {
         path: '/search',
         builder: (context, state) {
           final autor = state.uri.queryParameters['autor'];
-          return SearchPage(autorInicial: autor);
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => getIt<LibrosCubit>()),
+              BlocProvider(create: (_) => getIt<CategoriasCubit>()),
+            ],
+            child: SearchPage(autorInicial: autor),
+          );
         },
       ),
       GoRoute(
@@ -180,20 +186,20 @@ class AppRouter {
       ),
       GoRoute(
         path: '/profile',
-        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => BlocProvider(
           create: (_) => getIt<PerfilCubit>(),
           child: const ProfilePage(),
         ),
-        routes: [
-          GoRoute(
-            path: 'edit',
-            builder: (context, state) {
-              final usuario = state.extra as Usuario;
-              return EditProfilePage(usuario: usuario);
-            },
-          ),
-        ],
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        builder: (context, state) {
+          final usuario = state.extra as Usuario;
+          return BlocProvider(
+            create: (_) => getIt<PerfilCubit>(),
+            child: EditProfilePage(usuario: usuario),
+          );
+        },
       ),
       GoRoute(
         path: '/settings',
@@ -205,7 +211,10 @@ class AppRouter {
       ),
       GoRoute(
         path: '/ayuda-comentarios',
-        builder: (context, state) => const AyudaComentariosPage(),
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<PerfilCubit>(),
+          child: const AyudaComentariosPage(),
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) {

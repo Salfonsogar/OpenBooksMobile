@@ -196,6 +196,15 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (libro.categorias.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  libro.categorias.first,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.tertiary,
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -208,7 +217,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
                 ],
               ),
               const SizedBox(height: 8),
-              Wrap(
+              if (libro.categorias.length > 1)
+                Wrap(
                 spacing: 4,
                 runSpacing: 4,
                 children: libro.categorias

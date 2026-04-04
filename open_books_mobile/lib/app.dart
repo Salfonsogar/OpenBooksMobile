@@ -7,6 +7,7 @@ import 'routing/app_router.dart';
 import 'theme_factory.dart';
 import 'features/reader/logic/cubit/reader_settings_cubit.dart';
 import 'features/reader/data/models/reader_settings.dart';
+import 'features/notifications/logic/cubit/notification_cubit.dart';
 import 'features/notifications/ui/widgets/notification_overlay_manager.dart';
 import 'shared/core/session/session_cubit.dart';
 
@@ -57,7 +58,12 @@ class _OpenBooksAppState extends State<OpenBooksApp>
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: AppProviders.build(widget.injector),
+      providers: [
+        BlocProvider<SessionCubit>.value(value: widget.injector.sessionCubit),
+        BlocProvider<NotificationCubit>.value(value: widget.injector.notificationCubit),
+        BlocProvider<ReaderSettingsCubit>.value(value: widget.injector.settingsCubit),
+        ...AppProviders.build(widget.injector),
+      ],
       child: BlocBuilder<ReaderSettingsCubit, ReaderSettings>(
         builder: (context, settings) {
           return NotificationOverlayManager(

@@ -99,34 +99,43 @@ class _LibroFormDialogState extends State<LibroFormDialog> {
 
     setState(() => _isLoading = true);
 
-    dynamic request;
-    if (isEditing) {
-      request = UpdateLibroRequest(
-        titulo: _tituloController.text,
-        autor: _autorController.text,
-        descripcion: _descripcionController.text.isNotEmpty ? _descripcionController.text : null,
-        categoriasIds: _selectedCategoriaIds.isNotEmpty ? _selectedCategoriaIds : null,
-        portadaBase64: _portadaBase64,
-        activo: _activo,
-      );
-    } else {
-      request = CreateLibroRequest(
-        titulo: _tituloController.text,
-        autor: _autorController.text,
-        descripcion: _descripcionController.text.isNotEmpty ? _descripcionController.text : null,
-        categoriasIds: _selectedCategoriaIds,
-        portadaBase64: _portadaBase64,
-        archivoBase64: _archivoBase64,
-        nombreArchivo: _nombreArchivo,
-      );
-    }
+    try {
+      dynamic request;
+      if (isEditing) {
+        request = UpdateLibroRequest(
+          titulo: _tituloController.text,
+          autor: _autorController.text,
+          descripcion: _descripcionController.text.isNotEmpty ? _descripcionController.text : null,
+          categoriasIds: _selectedCategoriaIds.isNotEmpty ? _selectedCategoriaIds : null,
+          portadaBase64: _portadaBase64,
+          activo: _activo,
+        );
+      } else {
+        request = CreateLibroRequest(
+          titulo: _tituloController.text,
+          autor: _autorController.text,
+          descripcion: _descripcionController.text.isNotEmpty ? _descripcionController.text : null,
+          categoriasIds: _selectedCategoriaIds,
+          portadaBase64: _portadaBase64,
+          archivoBase64: _archivoBase64,
+          nombreArchivo: _nombreArchivo,
+        );
+      }
 
-    final success = await widget.onSave(request);
+      final success = await widget.onSave(request);
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      if (success) {
-        Navigator.of(context).pop();
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (success) {
+          Navigator.of(context).pop();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
       }
     }
   }
