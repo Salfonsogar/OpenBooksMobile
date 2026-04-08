@@ -1,0 +1,1 @@
+enum ReaderMode { reading, audio, hybrid }
