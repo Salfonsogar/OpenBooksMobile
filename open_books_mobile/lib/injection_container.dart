@@ -256,8 +256,8 @@ Future<void> setupDependencies() async {
     () => BookmarkCubit(getIt<BookmarkRepository>()),
   );
 
-  getIt.registerFactory<AudioPlayerCubit>(
-    () => AudioPlayerCubit(getIt<TtsService>()),
+  getIt.registerFactoryParam<AudioPlayerCubit, int, void>(
+    (bookId, _) => AudioPlayerCubit(getIt<TtsService>(), bookId),
   );
 
   // Admin Dashboard

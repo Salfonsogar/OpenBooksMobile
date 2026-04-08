@@ -1,16 +1,30 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../shared/services/tts_service.dart';
 import '../../data/models/audio_player_state.dart';
 
 class AudioPlayerCubit extends Cubit<AudioPlaybackState> {
   final TtsService _ttsService;
+  final int bookId;
   List<String> _paragraphs = [];
   int _currentIndex = 0;
   StreamSubscription? _ttsSubscription;
   
-  AudioPlayerCubit(this._ttsService) : super(const AudioPlaybackState()) {
+  AudioPlayerCubit(this._ttsService, this.bookId) : super(const AudioPlaybackState()) {
     _ttsSubscription = _ttsService.events.listen(_handleTtsEvent);
+    _loadPosition();
+  }
+  
+  Future<void> _loadPosition() async {
+    final prefs = await SharedPreferences.getInstance();
+    final position = prefs.getInt('audio_position_$bookId') ?? 0;
+    _currentIndex = position;
+  }
+
+  Future<void> _savePosition() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('audio_position_$bookId', _currentIndex);
   }
   
   void _handleTtsEvent(TtsEvent event) {
@@ -76,6 +90,7 @@ class AudioPlayerCubit extends Cubit<AudioPlaybackState> {
     try {
       await _ttsService.pause();
       emit(state.copyWith(status: AudioStatus.paused));
+      await _savePosition();
     } catch (e) {
       emit(state.copyWith(status: AudioStatus.error, errorMessage: e.toString()));
     }
@@ -86,6 +101,7 @@ class AudioPlayerCubit extends Cubit<AudioPlaybackState> {
       await _ttsService.stop();
       _currentIndex = 0;
       emit(state.copyWith(status: AudioStatus.stopped, currentParagraphIndex: 0));
+      await _savePosition();
     } catch (e) {
       emit(state.copyWith(status: AudioStatus.error, errorMessage: e.toString()));
     }

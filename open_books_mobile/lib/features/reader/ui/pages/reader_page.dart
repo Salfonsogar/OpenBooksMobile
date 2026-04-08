@@ -62,7 +62,7 @@ class _ReaderPageState extends State<ReaderPage> {
     _settingsCubit = getIt<ReaderSettingsCubit>();
     _bookmarkCubit = getIt<BookmarkCubit>();
     _highlightCubit = HighlightCubit(_highlightDataSource);
-    _audioPlayerCubit = getIt<AudioPlayerCubit>();
+    _audioPlayerCubit = getIt<AudioPlayerCubit>(param1: widget.libroId);
     _settingsCubit.cargarSettings();
     _readerCubit.cargarLibro();
     _bookmarkCubit.cargarBookmarks(widget.libroId);
