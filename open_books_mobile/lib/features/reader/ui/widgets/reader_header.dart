@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../data/models/reader_mode.dart';
 import 'reader_colors.dart';
+import 'mode_toggle_widget.dart';
 
 class ReaderHeader extends StatelessWidget {
   final String title;
@@ -10,6 +12,8 @@ class ReaderHeader extends StatelessWidget {
   final VoidCallback onSearch;
   final VoidCallback onToc;
   final VoidCallback onSettings;
+  final ReaderMode currentMode;
+  final ValueChanged<ReaderMode>? onModeChanged;
 
   const ReaderHeader({
     super.key,
@@ -20,6 +24,8 @@ class ReaderHeader extends StatelessWidget {
     required this.onSearch,
     required this.onToc,
     required this.onSettings,
+    this.currentMode = ReaderMode.reading,
+    this.onModeChanged,
   });
 
   @override
@@ -62,6 +68,11 @@ class ReaderHeader extends StatelessWidget {
               icon: Icon(Icons.list, color: colors.icon, size: 28),
               onPressed: onToc,
             ),
+            if (onModeChanged != null)
+              ModeToggleWidget(
+                currentMode: currentMode,
+                onModeChanged: onModeChanged!,
+              ),
             IconButton(
               icon: Icon(Icons.settings, color: colors.icon, size: 28),
               onPressed: onSettings,
