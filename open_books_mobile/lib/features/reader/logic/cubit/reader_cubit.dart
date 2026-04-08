@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/chapter_cache.dart';
 import '../../data/models/epub_manifest.dart';
+import '../../data/models/reader_mode.dart';
 import '../../data/repositories/epub_repository.dart';
 
 abstract class ReaderState extends Equatable {
@@ -21,28 +22,32 @@ class ReaderLoaded extends ReaderState {
   final int currentChapterIndex;
   final String currentContent;
   final Set<int> cachedChapterIndices;
+  final ReaderMode mode;
 
   const ReaderLoaded({
     required this.manifest,
     required this.currentChapterIndex,
     required this.currentContent,
     this.cachedChapterIndices = const {},
+    this.mode = ReaderMode.reading,
   });
 
   @override
-  List<Object?> get props => [manifest, currentChapterIndex, currentContent, cachedChapterIndices];
+  List<Object?> get props => [manifest, currentChapterIndex, currentContent, cachedChapterIndices, mode];
 
   ReaderLoaded copyWith({
     EpubManifest? manifest,
     int? currentChapterIndex,
     String? currentContent,
     Set<int>? cachedChapterIndices,
+    ReaderMode? mode,
   }) {
     return ReaderLoaded(
       manifest: manifest ?? this.manifest,
       currentChapterIndex: currentChapterIndex ?? this.currentChapterIndex,
       currentContent: currentContent ?? this.currentContent,
       cachedChapterIndices: cachedChapterIndices ?? this.cachedChapterIndices,
+      mode: mode ?? this.mode,
     );
   }
 
@@ -62,6 +67,19 @@ class ReaderCubit extends Cubit<ReaderState> {
   final EpubRepository _repository;
   final int libroId;
   final ChapterCache _chapterCache = ChapterCache();
+  ReaderMode _currentMode = ReaderMode.reading;
+
+  ReaderMode get currentMode => _currentMode;
+
+  void setReaderMode(ReaderMode mode) {
+    _currentMode = mode;
+  }
+
+  void toggleMode() {
+    _currentMode = _currentMode == ReaderMode.reading 
+        ? ReaderMode.audio 
+        : ReaderMode.reading;
+  }
 
   ReaderCubit(this._repository, this.libroId) : super(ReaderInitial());
 
@@ -85,6 +103,7 @@ class ReaderCubit extends Cubit<ReaderState> {
         currentChapterIndex: 0,
         currentContent: content,
         cachedChapterIndices: {0},
+        mode: _currentMode,
       ));
 
       _precargarSiguienteCapitulo(0);
