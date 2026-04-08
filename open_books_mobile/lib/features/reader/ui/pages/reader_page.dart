@@ -149,6 +149,30 @@ class _ReaderPageState extends State<ReaderPage> {
     }
   }
 
+  Future<void> _goToChapter(int index) async {
+    if (index < 0 || index >= _chapters.length) return;
+
+    setState(() {
+      _currentIndex = index;
+      _paragraphs = [];
+    });
+
+    await _readerCubit.cargarCapitulo(index);
+    
+    if (_readerCubit.currentMode == ReaderMode.audio) {
+      final content = await _readerCubit.obtenerContenido(index);
+      if (content != null) {
+        final paragraphs = _extractParagraphs(content);
+        _paragraphs = paragraphs;
+        _audioPlayerCubit.loadParagraphs(paragraphs);
+      }
+    }
+
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(index);
+    }
+  }
+
   Widget _buildContent(ReaderState state, ReaderSettings settings, ReaderColors colors) {
     final currentMode = _readerCubit.currentMode;
 
@@ -189,10 +213,13 @@ class _ReaderPageState extends State<ReaderPage> {
           _paragraphs = _extractParagraphs(state.currentContent);
           _audioPlayerCubit.loadParagraphs(_paragraphs);
         }
+        final currentChapterPath = _chapters.isNotEmpty ? _chapters[_currentIndex].href : null;
         return ListeningView(
           paragraphs: _paragraphs,
           content: state.currentContent,
           currentParagraphIndex: _audioPlayerCubit.state.currentParagraphIndex,
+          libroId: widget.libroId,
+          chapterPath: currentChapterPath,
         );
       }
 
@@ -372,7 +399,7 @@ class _ReaderPageState extends State<ReaderPage> {
           context.go('/home');
         }
       },
-      onSearch: () {},
+      onSearch: () => _showSearch(state, colors),
       onSettings: () => _showSettings(),
       currentMode: _readerCubit.currentMode,
       onModeChanged: (mode) => _readerCubit.setReaderMode(mode),
@@ -387,12 +414,12 @@ class _ReaderPageState extends State<ReaderPage> {
         bottomPadding: MediaQuery.of(context).padding.bottom,
         onPreviousChapter: () {
           if (_currentIndex > 0) {
-            _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+            _goToChapter(_currentIndex - 1);
           }
         },
         onNextChapter: () {
           if (_currentIndex < _chapters.length - 1) {
-            _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+            _goToChapter(_currentIndex + 1);
           }
         },
       );
@@ -420,7 +447,7 @@ class _ReaderPageState extends State<ReaderPage> {
         }
       },
       onToc: () => _showToc(state, colors),
-      onSearch: () => _showSearch(state, colors),
+      onSettings: () => _showSettings(),
     );
   }
 

@@ -55,6 +55,11 @@ class AudioFooter extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: onPreviousChapter,
+                        iconSize: 32,
+                      ),
+                      IconButton(
                         icon: const Icon(Icons.skip_previous),
                         onPressed: () => context.read<AudioPlayerCubit>().previousParagraph(),
                         iconSize: 32,
@@ -71,6 +76,11 @@ class AudioFooter extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.skip_next),
                         onPressed: () => context.read<AudioPlayerCubit>().nextParagraph(),
+                        iconSize: 32,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: onNextChapter,
                         iconSize: 32,
                       ),
                     ],

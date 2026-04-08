@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path/path.dart' as p;
 import '../../logic/cubit/audio_player_cubit.dart';
 import '../../data/models/audio_player_state.dart';
 import '../widgets/epub_parser.dart';
@@ -9,6 +10,8 @@ class ListeningView extends StatefulWidget {
   final List<String> paragraphs;
   final String content;
   final int currentParagraphIndex;
+  final int libroId;
+  final String? chapterPath;
   final Function(int)? onParagraphChanged;
   
   const ListeningView({
@@ -16,6 +19,8 @@ class ListeningView extends StatefulWidget {
     required this.paragraphs,
     required this.content,
     required this.currentParagraphIndex,
+    required this.libroId,
+    this.chapterPath,
     this.onParagraphChanged,
   });
   
@@ -80,12 +85,35 @@ class _ListeningViewState extends State<ListeningView> {
             
             if (block.type == 'image') {
               final imageSrc = _getImageSrc(block);
+              if (imageSrc == null) return const SizedBox();
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Image.network(
-                  imageSrc ?? '',
+                  imageSrc,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 48),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      height: 200,
+                      color: Colors.grey[200],
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 100,
+                      color: Colors.grey[300],
+                      child: const Center(
+                        child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                      ),
+                    );
+                  },
                 ),
               );
             }
@@ -119,9 +147,23 @@ class _ListeningViewState extends State<ListeningView> {
 
   String? _getImageSrc(ReaderBlock block) {
     if (block.type == 'image') {
-      return block.attributes?['src'];
+      final relativePath = block.attributes?['src'];
+      if (relativePath == null) return null;
+      
+      final imagePath = _resolveImagePath(relativePath);
+      return 'http://10.0.2.2:5201/api/Libros/${widget.libroId}/epub/resource?path=${Uri.encodeComponent(imagePath)}';
     }
     return null;
+  }
+
+  String _resolveImagePath(String imagePath) {
+    if (widget.chapterPath == null) return imagePath;
+    
+    if (imagePath.startsWith('../')) {
+      final baseDir = p.dirname(widget.chapterPath!);
+      return p.normalize(p.join(baseDir, imagePath));
+    }
+    return imagePath;
   }
 }
 

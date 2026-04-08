@@ -64,8 +64,12 @@ class ReaderHeader extends StatelessWidget {
                 onModeChanged: onModeChanged!,
               ),
             IconButton(
-              icon: Icon(Icons.settings, color: colors.icon, size: 28),
-              onPressed: onSettings,
+              icon: Icon(
+                currentMode == ReaderMode.audio ? Icons.settings : Icons.search,
+                color: colors.icon,
+                size: 28,
+              ),
+              onPressed: currentMode == ReaderMode.audio ? onSettings : onSearch,
             ),
           ],
         ),

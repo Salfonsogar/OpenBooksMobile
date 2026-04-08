@@ -11,7 +11,7 @@ class ReaderFooter extends StatelessWidget {
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final VoidCallback? onToc;
-  final VoidCallback? onSearch;
+  final VoidCallback? onSettings;
 
   const ReaderFooter({
     super.key,
@@ -23,7 +23,7 @@ class ReaderFooter extends StatelessWidget {
     required this.onPrevious,
     required this.onNext,
     this.onToc,
-    this.onSearch,
+    this.onSettings,
   });
 
   @override
@@ -92,10 +92,10 @@ class ReaderFooter extends StatelessWidget {
                   ),
                 ),
                 GestureDetector(
-                  onTap: onSearch,
+                  onTap: onSettings,
                   child: Padding(
                     padding: const EdgeInsets.only(left: 8),
-                    child: Icon(Icons.search, color: colors.icon, size: 28),
+                    child: Icon(Icons.settings, color: colors.icon, size: 28),
                   ),
                 ),
               ],
