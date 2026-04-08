@@ -73,12 +73,20 @@ class ReaderCubit extends Cubit<ReaderState> {
 
   void setReaderMode(ReaderMode mode) {
     _currentMode = mode;
+    final currentState = state;
+    if (currentState is ReaderLoaded) {
+      emit(currentState.copyWith(mode: mode));
+    }
   }
 
   void toggleMode() {
     _currentMode = _currentMode == ReaderMode.reading 
         ? ReaderMode.audio 
         : ReaderMode.reading;
+    final currentState = state;
+    if (currentState is ReaderLoaded) {
+      emit(currentState.copyWith(mode: _currentMode));
+    }
   }
 
   ReaderCubit(this._repository, this.libroId) : super(ReaderInitial());

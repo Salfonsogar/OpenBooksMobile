@@ -3,14 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../logic/cubit/audio_player_cubit.dart';
 import '../../data/models/audio_player_state.dart';
+import '../widgets/epub_parser.dart';
 
 class ListeningView extends StatefulWidget {
   final List<String> paragraphs;
+  final String content;
+  final int currentParagraphIndex;
   final Function(int)? onParagraphChanged;
   
   const ListeningView({
     super.key, 
     required this.paragraphs,
+    required this.content,
+    required this.currentParagraphIndex,
     this.onParagraphChanged,
   });
   
@@ -53,6 +58,9 @@ class _ListeningViewState extends State<ListeningView> {
   
   @override
   Widget build(BuildContext context) {
+    final parser = EpubParser();
+    final blocks = parser.parse(widget.content);
+
     return BlocBuilder<AudioPlayerCubit, AudioPlaybackState>(
       buildWhen: (prev, curr) => 
         prev.currentParagraphIndex != curr.currentParagraphIndex ||
@@ -60,17 +68,60 @@ class _ListeningViewState extends State<ListeningView> {
       builder: (context, state) {
         return ListView.builder(
           controller: _scrollController,
-          itemCount: widget.paragraphs.length,
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + 60,
+            bottom: MediaQuery.of(context).padding.bottom + 150,
+            left: 16,
+            right: 16,
+          ),
+          itemCount: blocks.length,
           itemBuilder: (context, index) {
-            final isCurrent = index == state.currentParagraphIndex;
+            final block = blocks[index];
+            
+            if (block.type == 'image') {
+              final imageSrc = _getImageSrc(block);
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Image.network(
+                  imageSrc ?? '',
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 48),
+                ),
+              );
+            }
+            
+            final textIndex = _getTextIndex(blocks, index);
+            final isCurrent = textIndex == state.currentParagraphIndex && 
+                              state.status == AudioStatus.playing;
+            final text = block.content?.toString() ?? '';
+            
+            if (text.trim().isEmpty) return const SizedBox();
+            
             return _ParagraphWidget(
-              text: widget.paragraphs[index],
-              isCurrent: isCurrent && state.status == AudioStatus.playing,
+              text: text,
+              isCurrent: isCurrent,
             );
           },
         );
       },
     );
+  }
+
+  int _getTextIndex(List<ReaderBlock> blocks, int blockIndex) {
+    int textIndex = 0;
+        for (int i = 0; i < blockIndex; i++) {
+      if (blocks[i].type == 'text') {
+        textIndex++;
+      }
+    }
+    return textIndex;
+  }
+
+  String? _getImageSrc(ReaderBlock block) {
+    if (block.type == 'image') {
+      return block.attributes?['src'];
+    }
+    return null;
   }
 }
 

@@ -119,7 +119,10 @@ class _ReaderPageState extends State<ReaderPage> {
                       children: [
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 300),
-                          child: _buildContent(state, settings, colors),
+                          child: KeyedSubtree(
+                            key: ValueKey(_readerCubit.currentMode),
+                            child: _buildContent(state, settings, colors),
+                          ),
                         ),
                         if (_showUi) _buildHeader(state, colors),
                         if (_showUi) _buildFooter(state, colors),
@@ -188,6 +191,8 @@ class _ReaderPageState extends State<ReaderPage> {
         }
         return ListeningView(
           paragraphs: _paragraphs,
+          content: state.currentContent,
+          currentParagraphIndex: _audioPlayerCubit.state.currentParagraphIndex,
         );
       }
 
@@ -199,13 +204,29 @@ class _ReaderPageState extends State<ReaderPage> {
 
   List<String> _extractParagraphs(String content) {
     final paragraphs = <String>[];
-    final regex = RegExp(r'<p[^>]*>(.*?)</p>', dotAll: true);
-    final matches = regex.allMatches(content);
+    
+    if (content.isEmpty) return paragraphs;
+    
+    var cleanContent = content;
+    
+    cleanContent = cleanContent.replaceAll(RegExp(r'<script[^>]*>.*?</script>', dotAll: true), '');
+    cleanContent = cleanContent.replaceAll(RegExp(r'<style[^>]*>.*?</style>', dotAll: true), '');
+    
+    final blockTags = RegExp(r'<(p|div|span|h[1-6]|li|tr|blockquote)[^>]*>(.*?)</\1>', dotAll: true);
+    final matches = blockTags.allMatches(cleanContent);
     
     for (final match in matches) {
-      var text = match.group(1) ?? '';
-      text = text.replaceAll(RegExp(r'<[^>]+>'), '');
+      var text = match.group(2) ?? '';
+      
+      text = text.replaceAll(RegExp(r'<br\s*/?>'), ' ');
+      text = text.replaceAll(RegExp(r'<[^>]+>'), ' ');
+      text = text.replaceAll(RegExp(r'&nbsp;'), ' ');
+      text = text.replaceAll(RegExp(r'&amp;'), '&');
+      text = text.replaceAll(RegExp(r'&lt;'), '<');
+      text = text.replaceAll(RegExp(r'&gt;'), '>');
+      text = text.replaceAll(RegExp(r'&quot;'), '"');
       text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+      
       if (text.isNotEmpty) {
         paragraphs.add(text);
       }
@@ -215,6 +236,7 @@ class _ReaderPageState extends State<ReaderPage> {
       final lines = content.split(RegExp(r'\n'));
       for (var line in lines) {
         line = line.trim();
+        line = line.replaceAll(RegExp(r'<[^>]+>'), '').trim();
         if (line.isNotEmpty) {
           paragraphs.add(line);
         }
@@ -343,9 +365,14 @@ class _ReaderPageState extends State<ReaderPage> {
       title: titulo,
       colors: colors,
       topPadding: MediaQuery.of(context).padding.top,
-      onBack: () => Navigator.of(context).pop(),
-      onSearch: () => _showSearch(state, colors),
-      onToc: () => _showToc(state, colors),
+      onBack: () {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/home');
+        }
+      },
+      onSearch: () {},
       onSettings: () => _showSettings(),
       currentMode: _readerCubit.currentMode,
       onModeChanged: (mode) => _readerCubit.setReaderMode(mode),
@@ -357,6 +384,7 @@ class _ReaderPageState extends State<ReaderPage> {
 
     if (currentMode == ReaderMode.audio) {
       return AudioFooter(
+        bottomPadding: MediaQuery.of(context).padding.bottom,
         onPreviousChapter: () {
           if (_currentIndex > 0) {
             _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
@@ -391,6 +419,8 @@ class _ReaderPageState extends State<ReaderPage> {
           _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
         }
       },
+      onToc: () => _showToc(state, colors),
+      onSearch: () => _showSearch(state, colors),
     );
   }
 

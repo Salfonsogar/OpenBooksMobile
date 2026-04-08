@@ -10,7 +10,6 @@ class ReaderHeader extends StatelessWidget {
   final double topPadding;
   final VoidCallback onBack;
   final VoidCallback onSearch;
-  final VoidCallback onToc;
   final VoidCallback onSettings;
   final ReaderMode currentMode;
   final ValueChanged<ReaderMode>? onModeChanged;
@@ -22,7 +21,6 @@ class ReaderHeader extends StatelessWidget {
     required this.topPadding,
     required this.onBack,
     required this.onSearch,
-    required this.onToc,
     required this.onSettings,
     this.currentMode = ReaderMode.reading,
     this.onModeChanged,
@@ -59,14 +57,6 @@ class ReaderHeader extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-            ),
-            IconButton(
-              icon: Icon(Icons.search, color: colors.icon, size: 28),
-              onPressed: onSearch,
-            ),
-            IconButton(
-              icon: Icon(Icons.list, color: colors.icon, size: 28),
-              onPressed: onToc,
             ),
             if (onModeChanged != null)
               ModeToggleWidget(

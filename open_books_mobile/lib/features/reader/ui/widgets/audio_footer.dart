@@ -6,8 +6,14 @@ import '../../data/models/audio_player_state.dart';
 class AudioFooter extends StatelessWidget {
   final VoidCallback? onPreviousChapter;
   final VoidCallback? onNextChapter;
+  final double bottomPadding;
   
-  const AudioFooter({super.key, this.onPreviousChapter, this.onNextChapter});
+  const AudioFooter({
+    super.key,
+    this.onPreviousChapter,
+    this.onNextChapter,
+    this.bottomPadding = 0,
+  });
   
   @override
   Widget build(BuildContext context) {
@@ -18,34 +24,59 @@ class AudioFooter extends StatelessWidget {
       builder: (context, state) {
         final isPlaying = state.status == AudioStatus.playing;
         
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
-          ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _SpeedSelector(currentSpeed: state.speed),
-                const SizedBox(height: 12),
-                _ProgressIndicator(
-                  current: state.currentParagraphIndex,
-                  total: state.totalParagraphs,
-                ),
-                const SizedBox(height: 12),
-                _Controls(
-                  isPlaying: isPlaying,
-                  onPrevious: () => context.read<AudioPlayerCubit>().previousParagraph(),
-                  onPlayPause: () {
-                    final cubit = context.read<AudioPlayerCubit>();
-                    isPlaying ? cubit.pause() : cubit.play();
-                  },
-                  onNext: () => context.read<AudioPlayerCubit>().nextParagraph(),
-                ),
-              ],
+        return Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: EdgeInsets.only(
+              bottom: bottomPadding + 16,
+              left: 16,
+              right: 16,
+              top: 16,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              boxShadow: [const BoxShadow(color: Colors.black12, blurRadius: 8)],
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _SpeedSelector(currentSpeed: state.speed),
+                  const SizedBox(height: 12),
+                  _ProgressIndicator(
+                    current: state.currentParagraphIndex,
+                    total: state.totalParagraphs,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.skip_previous),
+                        onPressed: () => context.read<AudioPlayerCubit>().previousParagraph(),
+                        iconSize: 32,
+                      ),
+                      const SizedBox(width: 16),
+                      FloatingActionButton(
+                        onPressed: () {
+                          final cubit = context.read<AudioPlayerCubit>();
+                          isPlaying ? cubit.pause() : cubit.play();
+                        },
+                        child: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
+                      ),
+                      const SizedBox(width: 16),
+                      IconButton(
+                        icon: const Icon(Icons.skip_next),
+                        onPressed: () => context.read<AudioPlayerCubit>().nextParagraph(),
+                        iconSize: 32,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -100,45 +131,6 @@ class _ProgressIndicator extends StatelessWidget {
         Text(
           '${current + 1} / $total',
           style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ],
-    );
-  }
-}
-
-class _Controls extends StatelessWidget {
-  final bool isPlaying;
-  final VoidCallback onPrevious;
-  final VoidCallback onPlayPause;
-  final VoidCallback onNext;
-  
-  const _Controls({
-    required this.isPlaying,
-    required this.onPrevious,
-    required this.onPlayPause,
-    required this.onNext,
-  });
-  
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.skip_previous),
-          onPressed: onPrevious,
-          iconSize: 32,
-        ),
-        const SizedBox(width: 16),
-        FloatingActionButton(
-          onPressed: onPlayPause,
-          child: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
-        ),
-        const SizedBox(width: 16),
-        IconButton(
-          icon: const Icon(Icons.skip_next),
-          onPressed: onNext,
-          iconSize: 32,
         ),
       ],
     );
