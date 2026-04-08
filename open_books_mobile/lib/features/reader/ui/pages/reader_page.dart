@@ -19,7 +19,6 @@ import '../../logic/cubit/reader_cubit.dart';
 import '../../logic/cubit/reader_settings_cubit.dart';
 import '../widgets/audio_footer.dart';
 import '../widgets/epub_parser.dart';
-import '../widgets/listening_view.dart';
 import '../widgets/reader_colors.dart';
 import '../widgets/reader_header.dart';
 import '../widgets/reader_footer.dart';
@@ -213,14 +212,7 @@ class _ReaderPageState extends State<ReaderPage> {
           _paragraphs = _extractParagraphs(state.currentContent);
           _audioPlayerCubit.loadParagraphs(_paragraphs);
         }
-        final currentChapterPath = _chapters.isNotEmpty ? _chapters[_currentIndex].href : null;
-        return ListeningView(
-          paragraphs: _paragraphs,
-          content: state.currentContent,
-          currentParagraphIndex: _audioPlayerCubit.state.currentParagraphIndex,
-          libroId: widget.libroId,
-          chapterPath: currentChapterPath,
-        );
+        return _buildReadingView(state, settings, colors);
       }
 
       return _buildReadingView(state, settings, colors);
@@ -274,6 +266,9 @@ class _ReaderPageState extends State<ReaderPage> {
   }
 
   Widget _buildReadingView(ReaderLoaded state, ReaderSettings settings, ReaderColors colors) {
+    final isAudioMode = _readerCubit.currentMode == ReaderMode.audio;
+    final activeParagraphIndex = isAudioMode ? _audioPlayerCubit.state.currentParagraphIndex : null;
+    
     return PageView.builder(
       controller: _pageController,
       itemCount: _chapters.length,
@@ -334,6 +329,9 @@ class _ReaderPageState extends State<ReaderPage> {
                             settings,
                             colors,
                             highlights,
+                            activeParagraphIndex: isAudioMode && activeParagraphIndex != null 
+                                ? _getActiveTextBlockIndex(blocks, activeParagraphIndex) 
+                                : null,
                           );
                         },
                       ),
@@ -353,8 +351,9 @@ class _ReaderPageState extends State<ReaderPage> {
     String chapterPath,
     ReaderSettings settings,
     ReaderColors colors,
-    List<Highlight> highlights,
-  ) {
+    List<Highlight> highlights, {
+    int? activeParagraphIndex,
+  }) {
     return ChapterContent(
       blocks: blocks,
       libroId: widget.libroId,
@@ -366,6 +365,7 @@ class _ReaderPageState extends State<ReaderPage> {
       backgroundColor: colors.background,
       fontFamily: settings.fontFamily,
       highlights: highlights,
+      activeParagraphIndex: activeParagraphIndex,
       onTextSelected: (text, start, end, color) {
         _highlightCubit.crearHighlight(
           bookId: widget.libroId,
@@ -380,6 +380,19 @@ class _ReaderPageState extends State<ReaderPage> {
         _highlightCubit.eliminarHighlight(highlight.id!);
       },
     );
+  }
+
+  int _getActiveTextBlockIndex(List<ReaderBlock> blocks, int paragraphIndex) {
+    int textBlockIndex = 0;
+    for (int i = 0; i < blocks.length && textBlockIndex <= paragraphIndex; i++) {
+      if (blocks[i].type == 'text' || blocks[i].type == 'p') {
+        if (textBlockIndex == paragraphIndex) {
+          return i;
+        }
+        textBlockIndex++;
+      }
+    }
+    return -1;
   }
 
   Widget _buildHeader(ReaderState state, ReaderColors colors) {
