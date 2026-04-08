@@ -19,8 +19,6 @@ import '../../logic/cubit/reader_cubit.dart';
 import '../../logic/cubit/reader_settings_cubit.dart';
 import '../widgets/audio_footer.dart';
 import '../widgets/epub_parser.dart';
-import '../widgets/reading_footer.dart';
-import '../widgets/reading_view.dart';
 import '../widgets/listening_view.dart';
 import '../widgets/reader_colors.dart';
 import '../widgets/reader_header.dart';
