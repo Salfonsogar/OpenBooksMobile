@@ -60,6 +60,7 @@ import 'shared/services/network_info.dart';
 import 'shared/services/local_database.dart';
 import 'shared/services/epub_local_storage_service.dart';
 import 'shared/services/sync_service.dart';
+import 'shared/services/tts_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -223,6 +224,10 @@ Future<void> setupDependencies() async {
       networkInfo: getIt<NetworkInfo>(),
     ),
   );
+
+  final ttsService = TtsService();
+  await ttsService.init();
+  getIt.registerLazySingleton<TtsService>(() => ttsService);
 
   getIt.registerLazySingleton<EpubDataSource>(
     () => EpubDataSource(getIt<ApiClient>()),
