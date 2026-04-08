@@ -271,6 +271,8 @@ class _ReaderPageState extends State<ReaderPage> {
       onSearch: () => _showSearch(state, colors),
       onToc: () => _showToc(state, colors),
       onSettings: () => _showSettings(),
+      currentMode: _readerCubit.currentMode,
+      onModeChanged: (mode) => _readerCubit.setReaderMode(mode),
     );
   }
 
