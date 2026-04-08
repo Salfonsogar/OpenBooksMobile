@@ -28,6 +28,7 @@ import 'features/reader/data/datasources/epub_datasource.dart';
 import 'features/reader/data/repositories/bookmark_repository.dart';
 import 'features/reader/data/repositories/epub_repository.dart';
 import 'features/reader/logic/cubit/bookmark_cubit.dart';
+import 'features/reader/logic/cubit/audio_player_cubit.dart';
 import 'features/reader/logic/cubit/reader_settings_cubit.dart';
 import 'features/notifications/logic/cubit/notification_cubit.dart';
 import 'features/admin/dashboard/data/datasources/admin_dashboard_datasource.dart';
@@ -253,6 +254,10 @@ Future<void> setupDependencies() async {
   );
   getIt.registerLazySingleton<BookmarkCubit>(
     () => BookmarkCubit(getIt<BookmarkRepository>()),
+  );
+
+  getIt.registerFactory<AudioPlayerCubit>(
+    () => AudioPlayerCubit(getIt<TtsService>()),
   );
 
   // Admin Dashboard
