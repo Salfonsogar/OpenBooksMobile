@@ -21,7 +21,7 @@ class TtsService {
   
   Future<void> init() async {
     await _flutterTts.setLanguage('es-ES');
-    await _flutterTts.setSpeechRate(_speed);
+    await _flutterTts.setSpeechRate(0.5);
     await _flutterTts.setVolume(1.0);
     await _flutterTts.setPitch(1.0);
     
@@ -72,7 +72,8 @@ class TtsService {
   
   Future<void> setSpeed(double speed) async {
     _speed = speed;
-    await _flutterTts.setSpeechRate(speed);
+    final ttsSpeed = speed * 0.5;
+    await _flutterTts.setSpeechRate(ttsSpeed.clamp(0.0, 1.0));
   }
   
   void dispose() {

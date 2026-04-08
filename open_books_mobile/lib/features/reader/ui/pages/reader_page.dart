@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../injection_container.dart';
 import '../../data/datasources/highlight_datasource.dart';
+import '../../data/models/audio_player_state.dart';
 import '../../data/models/bookmark.dart';
 import '../../data/models/epub_manifest.dart';
 import '../../data/models/highlight.dart';
@@ -267,17 +268,40 @@ class _ReaderPageState extends State<ReaderPage> {
 
   Widget _buildReadingView(ReaderLoaded state, ReaderSettings settings, ReaderColors colors) {
     final isAudioMode = _readerCubit.currentMode == ReaderMode.audio;
-    final activeParagraphIndex = isAudioMode ? _audioPlayerCubit.state.currentParagraphIndex : null;
     
+    if (isAudioMode) {
+      return BlocBuilder<AudioPlayerCubit, AudioPlaybackState>(
+        buildWhen: (prev, curr) => prev.currentParagraphIndex != curr.currentParagraphIndex,
+        builder: (context, audioState) {
+          return _buildPageView(state, settings, colors, audioState.currentParagraphIndex, true);
+        },
+      );
+    }
+    
+    return _buildPageView(state, settings, colors, null, false);
+  }
+
+  Widget _buildPageView(ReaderLoaded state, ReaderSettings settings, ReaderColors colors, int? activeParagraphIndex, bool isAudioMode) {
     return PageView.builder(
       controller: _pageController,
       itemCount: _chapters.length,
-      onPageChanged: (index) {
+      onPageChanged: (index) async {
         setState(() {
           _currentIndex = index;
           _paragraphs = [];
         });
         _highlightCubit.cargarHighlightsPorCapitulo(index);
+        
+        if (_readerCubit.currentMode == ReaderMode.audio) {
+          final content = await _readerCubit.obtenerContenido(index);
+          if (content != null) {
+            final paragraphs = _extractParagraphs(content);
+            setState(() {
+              _paragraphs = paragraphs;
+            });
+            _audioPlayerCubit.loadParagraphs(paragraphs);
+          }
+        }
       },
       itemBuilder: (context, index) {
         final chapterPath = _chapters[index].href;
@@ -329,7 +353,7 @@ class _ReaderPageState extends State<ReaderPage> {
                             settings,
                             colors,
                             highlights,
-                            activeParagraphIndex: isAudioMode && activeParagraphIndex != null 
+                            activeParagraphIndex: activeParagraphIndex != null 
                                 ? _getActiveTextBlockIndex(blocks, activeParagraphIndex) 
                                 : null,
                           );
