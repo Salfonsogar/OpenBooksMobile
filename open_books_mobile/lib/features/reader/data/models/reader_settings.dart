@@ -6,6 +6,7 @@ class ReaderSettings extends Equatable {
   final String marginMode;
   final String theme;
   final String fontFamily;
+  final String appTheme;
 
   const ReaderSettings({
     this.fontSize = 16.0,
@@ -13,6 +14,7 @@ class ReaderSettings extends Equatable {
     this.marginMode = 'normal',
     this.theme = 'light',
     this.fontFamily = 'sans-serif',
+    this.appTheme = 'light',
   });
 
   static const defaultSettings = ReaderSettings();
@@ -23,6 +25,7 @@ class ReaderSettings extends Equatable {
     String? marginMode,
     String? theme,
     String? fontFamily,
+    String? appTheme,
   }) {
     return ReaderSettings(
       fontSize: fontSize ?? this.fontSize,
@@ -30,6 +33,7 @@ class ReaderSettings extends Equatable {
       marginMode: marginMode ?? this.marginMode,
       theme: theme ?? this.theme,
       fontFamily: fontFamily ?? this.fontFamily,
+      appTheme: appTheme ?? this.appTheme,
     );
   }
 
@@ -51,6 +55,7 @@ class ReaderSettings extends Equatable {
       'marginMode': marginMode,
       'theme': theme,
       'fontFamily': fontFamily,
+      'appTheme': appTheme,
     };
   }
 
@@ -61,9 +66,10 @@ class ReaderSettings extends Equatable {
       marginMode: json['marginMode'] as String? ?? 'normal',
       theme: json['theme'] as String? ?? 'light',
       fontFamily: json['fontFamily'] as String? ?? 'sans-serif',
+      appTheme: json['appTheme'] as String? ?? 'light',
     );
   }
 
   @override
-  List<Object?> get props => [fontSize, lineHeight, marginMode, theme, fontFamily];
+  List<Object?> get props => [fontSize, lineHeight, marginMode, theme, fontFamily, appTheme];
 }

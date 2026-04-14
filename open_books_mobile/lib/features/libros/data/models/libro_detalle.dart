@@ -40,7 +40,7 @@ class LibroDetalle {
               .toList() ??
           [],
       totalResenas: json['totalResenas'] as int? ?? 0,
-      portadaBase64: json['portadaBase64'] as String?,
+      portadaBase64: json['imagen'] as String?,
       categorias: (json['categorias'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
@@ -59,7 +59,7 @@ class LibroDetalle {
       'cantidadValoraciones': cantidadValoraciones,
       'resenas': resenas.map((e) => e.toJson()).toList(),
       'totalResenas': totalResenas,
-      'portadaBase64': portadaBase64,
+      'imagen': portadaBase64,
       'categorias': categorias,
       'numeroPaginas': numeroPaginas,
     };

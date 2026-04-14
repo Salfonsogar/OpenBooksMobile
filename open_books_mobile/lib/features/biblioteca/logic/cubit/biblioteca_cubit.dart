@@ -104,9 +104,10 @@ class BibliotecaCubit extends Cubit<BibliotecaState> {
               ))
           .toList();
 
+      final downloadedIds = await epubLocalStorageService.getAllDownloadedIds();
       final downloadedStatus = <int, bool>{};
       for (final libro in libros) {
-        downloadedStatus[libro.id] = await epubLocalStorageService.isDownloaded(libro.id);
+        downloadedStatus[libro.id] = downloadedIds.contains(libro.id);
       }
 
       emit(BibliotecaLoaded(libros: libros, downloadedStatus: downloadedStatus));

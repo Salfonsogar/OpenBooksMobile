@@ -62,6 +62,7 @@ class ReaderHeader extends StatelessWidget {
               ModeToggleWidget(
                 currentMode: currentMode,
                 onModeChanged: onModeChanged!,
+                colors: colors,
               ),
             IconButton(
               icon: Icon(

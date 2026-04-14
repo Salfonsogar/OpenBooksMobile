@@ -12,7 +12,7 @@ class ResenasDataSource {
     try {
       final response = await _apiClient.post(
         '/api/Resenas',
-        data: {'libroId': libroId, 'texto': texto},
+        data: {'IdLibro': libroId, 'texto': texto},
       );
       return Resena.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {

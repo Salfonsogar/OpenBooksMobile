@@ -46,6 +46,10 @@ class EpubLocalStorageService {
     return localDatabase.epubDownloadsDataSource.isDownloaded(libroId);
   }
 
+  Future<Set<int>> getAllDownloadedIds() async {
+    return localDatabase.epubDownloadsDataSource.getAllDownloadedIds();
+  }
+
   Future<void> queueDownload(int libroId) async {
     if (_downloadQueue.contains(libroId)) return;
 

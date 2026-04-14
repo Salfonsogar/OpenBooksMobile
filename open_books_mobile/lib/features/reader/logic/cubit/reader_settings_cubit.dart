@@ -54,6 +54,12 @@ class ReaderSettingsCubit extends Cubit<ReaderSettings> {
     await _guardarSettings(newSettings);
   }
 
+  Future<void> actualizarAppTheme(String theme) async {
+    final newSettings = state.copyWith(appTheme: theme);
+    emit(newSettings);
+    await _guardarSettings(newSettings);
+  }
+
   Future<void> _guardarSettings(ReaderSettings settings) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_settingsKey, jsonEncode(settings.toJson()));

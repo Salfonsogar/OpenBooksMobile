@@ -448,6 +448,7 @@ class _ReaderPageState extends State<ReaderPage> {
 
     if (currentMode == ReaderMode.audio) {
       return AudioFooter(
+        colors: colors,
         bottomPadding: MediaQuery.of(context).padding.bottom,
         onPreviousChapter: () {
           if (_currentIndex > 0) {

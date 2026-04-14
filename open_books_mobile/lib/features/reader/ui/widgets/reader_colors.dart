@@ -12,6 +12,7 @@ class ReaderColors {
   final Color header;
   final Color icon;
   final Color accent;
+  final Color surface;
 
   const ReaderColors({
     required this.background,
@@ -19,6 +20,7 @@ class ReaderColors {
     required this.header,
     required this.icon,
     required this.accent,
+    required this.surface,
   });
 
   static ReaderColors fromTheme(ReaderThemeType theme) {
@@ -30,6 +32,7 @@ class ReaderColors {
           header: Color(0xFFF4ECD8),
           icon: Color(0xFF5B4636),
           accent: Color(0xFF8B4513),
+          surface: Color(0xFFE8DFC8),
         );
       case ReaderThemeType.dark:
         return ReaderColors(
@@ -38,6 +41,7 @@ class ReaderColors {
           header: Colors.black,
           icon: Colors.white,
           accent: Colors.white,
+          surface: Colors.grey[800]!,
         );
       case ReaderThemeType.light:
         return const ReaderColors(
@@ -46,6 +50,7 @@ class ReaderColors {
           header: Colors.white,
           icon: Colors.black87,
           accent: Color(0xFF2196F3),
+          surface: Color(0xFFF1F5F9),
         );
     }
   }

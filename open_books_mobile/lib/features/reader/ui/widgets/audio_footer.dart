@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../logic/cubit/audio_player_cubit.dart';
 import '../../data/models/audio_player_state.dart';
+import 'reader_colors.dart';
 
 class AudioFooter extends StatelessWidget {
   final VoidCallback? onPreviousChapter;
   final VoidCallback? onNextChapter;
   final double bottomPadding;
+  final ReaderColors colors;
   
   const AudioFooter({
     super.key,
     this.onPreviousChapter,
     this.onNextChapter,
     this.bottomPadding = 0,
+    required this.colors,
   });
   
   @override
@@ -36,36 +39,39 @@ class AudioFooter extends StatelessWidget {
               top: 16,
             ),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [const BoxShadow(color: Colors.black12, blurRadius: 8)],
+              color: colors.surface,
+              boxShadow: [BoxShadow(color: colors.text.withValues(alpha: 0.1), blurRadius: 8)],
             ),
             child: SafeArea(
               top: false,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _SpeedSelector(currentSpeed: state.speed),
+                  _SpeedSelector(currentSpeed: state.speed, colors: colors),
                   const SizedBox(height: 12),
                   _ProgressIndicator(
                     current: state.currentParagraphIndex,
                     total: state.totalParagraphs,
+                    colors: colors,
                   ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.chevron_left),
+                        icon: Icon(Icons.chevron_left, color: colors.icon),
                         onPressed: onPreviousChapter,
                         iconSize: 32,
                       ),
                       IconButton(
-                        icon: const Icon(Icons.skip_previous),
+                        icon: Icon(Icons.skip_previous, color: colors.icon),
                         onPressed: () => context.read<AudioPlayerCubit>().previousParagraph(),
                         iconSize: 32,
                       ),
                       const SizedBox(width: 16),
                       FloatingActionButton(
+                        backgroundColor: colors.accent,
+                        foregroundColor: colors.background,
                         onPressed: () {
                           final cubit = context.read<AudioPlayerCubit>();
                           isPlaying ? cubit.pause() : cubit.play();
@@ -74,12 +80,12 @@ class AudioFooter extends StatelessWidget {
                       ),
                       const SizedBox(width: 16),
                       IconButton(
-                        icon: const Icon(Icons.skip_next),
+                        icon: Icon(Icons.skip_next, color: colors.icon),
                         onPressed: () => context.read<AudioPlayerCubit>().nextParagraph(),
                         iconSize: 32,
                       ),
                       IconButton(
-                        icon: const Icon(Icons.chevron_right),
+                        icon: Icon(Icons.chevron_right, color: colors.icon),
                         onPressed: onNextChapter,
                         iconSize: 32,
                       ),
@@ -97,8 +103,9 @@ class AudioFooter extends StatelessWidget {
 
 class _SpeedSelector extends StatelessWidget {
   final double currentSpeed;
+  final ReaderColors colors;
   
-  const _SpeedSelector({required this.currentSpeed});
+  const _SpeedSelector({required this.currentSpeed, required this.colors});
   
   @override
   Widget build(BuildContext context) {
@@ -113,8 +120,8 @@ class _SpeedSelector extends StatelessWidget {
             child: Text(
               '${speed}x',
               style: TextStyle(
-                color: isSelected ? Theme.of(context).colorScheme.primary : null,
-                fontWeight: isSelected ? FontWeight.bold : null,
+                color: isSelected ? colors.accent : colors.text,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ),
@@ -127,8 +134,9 @@ class _SpeedSelector extends StatelessWidget {
 class _ProgressIndicator extends StatelessWidget {
   final int current;
   final int total;
+  final ReaderColors colors;
   
-  const _ProgressIndicator({required this.current, required this.total});
+  const _ProgressIndicator({required this.current, required this.total, required this.colors});
   
   @override
   Widget build(BuildContext context) {
@@ -136,11 +144,13 @@ class _ProgressIndicator extends StatelessWidget {
       children: [
         LinearProgressIndicator(
           value: total > 0 ? (current + 1) / total : 0,
+          backgroundColor: colors.text.withValues(alpha: 0.2),
+          valueColor: AlwaysStoppedAnimation(colors.accent),
         ),
         const SizedBox(height: 4),
         Text(
           '${current + 1} / $total',
-          style: Theme.of(context).textTheme.bodySmall,
+          style: TextStyle(color: colors.text),
         ),
       ],
     );

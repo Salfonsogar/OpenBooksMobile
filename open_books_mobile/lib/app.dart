@@ -64,7 +64,7 @@ class _OpenBooksAppState extends State<OpenBooksApp>
         BlocProvider<ReaderSettingsCubit>.value(value: widget.injector.settingsCubit),
         ...AppProviders.build(widget.injector),
       ],
-      child: BlocBuilder<ReaderSettingsCubit, ReaderSettings>(
+        child: BlocBuilder<ReaderSettingsCubit, ReaderSettings>(
         builder: (context, settings) {
           return NotificationOverlayManager(
             onViewNotifications: () {
@@ -73,9 +73,9 @@ class _OpenBooksAppState extends State<OpenBooksApp>
             child: MaterialApp.router(
               title: 'OpenBooks',
               debugShowCheckedModeBanner: false,
-              theme: ThemeFactory.build(settings.theme, Brightness.light),
-              darkTheme: ThemeFactory.build(settings.theme, Brightness.dark),
-              themeMode: ThemeFactory.getMode(settings.theme),
+              theme: ThemeFactory.build(settings.appTheme, Brightness.light),
+              darkTheme: ThemeFactory.build(settings.appTheme, Brightness.dark),
+              themeMode: ThemeFactory.getMode(settings.appTheme),
               routerConfig: _appRouter.router,
             ),
           );

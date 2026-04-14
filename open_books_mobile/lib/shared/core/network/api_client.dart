@@ -13,7 +13,7 @@ class ApiClient {
         connectTimeout: Duration(milliseconds: int.tryParse(dotenv.env['API_TIMEOUT'] ?? '30000') ?? 30000),
         receiveTimeout: Duration(milliseconds: int.tryParse(dotenv.env['API_TIMEOUT'] ?? '30000') ?? 30000),
         followRedirects: true,
-        validateStatus: (status) => true,
+        validateStatus: (status) => status != null && status < 400,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

@@ -29,8 +29,10 @@ class _DenunciaResenaDialogState extends State<DenunciaResenaDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context);
     return AlertDialog(
-      title: const Text('Denunciar reseña'),
+      backgroundColor: colors.colorScheme.surface,
+      title: Text('Denunciar reseña', style: TextStyle(color: colors.colorScheme.onSurface)),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -40,7 +42,7 @@ class _DenunciaResenaDialogState extends State<DenunciaResenaDialog> {
             children: [
               Text(
                 '¿Por qué deseas denunciar esta reseña?',
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: TextStyle(color: colors.colorScheme.onSurface),
               ),
               const SizedBox(height: 16),
               ...motivosDenuncia.map((motivo) => ListTile(
@@ -53,7 +55,7 @@ class _DenunciaResenaDialogState extends State<DenunciaResenaDialog> {
                     });
                   },
                 ),
-                title: Text(motivo, style: const TextStyle(fontSize: 14)),
+                title: Text(motivo, style: TextStyle(fontSize: 14, color: colors.colorScheme.onSurface)),
                 onTap: () {
                   setState(() {
                     _motivoSeleccionado = motivo;
@@ -68,10 +70,13 @@ class _DenunciaResenaDialogState extends State<DenunciaResenaDialog> {
                   controller: _comentarioController,
                   maxLines: 3,
                   maxLength: 200,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: colors.colorScheme.onSurface),
+                  decoration: InputDecoration(
                     hintText: 'Describe el motivo de tu denuncia...',
-                    border: OutlineInputBorder(),
+                    hintStyle: TextStyle(color: colors.colorScheme.onSurfaceVariant),
+                    border: const OutlineInputBorder(),
                     labelText: 'Descripción',
+                    labelStyle: TextStyle(color: colors.colorScheme.onSurfaceVariant),
                   ),
                 ),
               ],
@@ -81,10 +86,13 @@ class _DenunciaResenaDialogState extends State<DenunciaResenaDialog> {
                   controller: _comentarioController,
                   maxLines: 2,
                   maxLength: 200,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: colors.colorScheme.onSurface),
+                  decoration: InputDecoration(
                     hintText: 'Descripción adicional (opcional)',
-                    border: OutlineInputBorder(),
+                    hintStyle: TextStyle(color: colors.colorScheme.onSurfaceVariant),
+                    border: const OutlineInputBorder(),
                     labelText: 'Comentarios adicionales',
+                    labelStyle: TextStyle(color: colors.colorScheme.onSurfaceVariant),
                   ),
                 ),
               ],
@@ -95,7 +103,7 @@ class _DenunciaResenaDialogState extends State<DenunciaResenaDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          child: Text('Cancelar', style: TextStyle(color: colors.colorScheme.onSurfaceVariant)),
         ),
         ElevatedButton(
           onPressed: () {
@@ -114,7 +122,7 @@ class _DenunciaResenaDialogState extends State<DenunciaResenaDialog> {
             Navigator.pop(context);
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
+            backgroundColor: colors.colorScheme.error,
           ),
           child: const Text('Denunciar'),
         ),

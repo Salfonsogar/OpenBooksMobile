@@ -17,8 +17,8 @@ class Resena {
 
   factory Resena.fromJson(Map<String, dynamic> json) {
     return Resena(
-      id: json['id'] as int,
-      usuarioId: json['usuarioId'] as int? ?? 0,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      usuarioId: (json['usuarioId'] as num?)?.toInt() ?? 0,
       nombreUsuario: json['nombreUsuario'] as String? ?? 'Usuario',
       fotoPerfilBase64: json['fotoPerfil'] as String?,
       texto: json['texto'] as String? ?? '',
