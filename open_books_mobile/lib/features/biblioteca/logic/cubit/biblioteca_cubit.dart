@@ -101,6 +101,10 @@ class BibliotecaCubit extends Cubit<BibliotecaState> {
                 portadaBase64: e.portadaBase64,
                 categorias: e.categorias,
                 progreso: e.progreso,
+                page: e.page,
+                syncStatus: e.syncStatus,
+                lastReadAt: e.lastReadAt?.millisecondsSinceEpoch,
+                readingStreak: e.readingStreak,
               ))
           .toList();
 
