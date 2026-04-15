@@ -80,12 +80,13 @@ class ReaderCubit extends Cubit<ReaderState> {
   
   OnProgressChanged? _onProgressChanged;
   Timer? _debounceTimer;
-  static const Duration _debounceDelay = Duration(seconds: 5);
+  static const Duration _debounceDelay = Duration(seconds: 1);
   int _lastSavedChapter = -1;
 
   ReaderMode get currentMode => _currentMode;
 
   void setOnProgressChanged(OnProgressChanged? callback) {
+    print('[DEBUG] setOnProgressChanged called with: ${callback != null}');
     _onProgressChanged = callback;
   }
 
@@ -263,6 +264,7 @@ class ReaderCubit extends Cubit<ReaderState> {
   List<int> get cachedIndices => _chapterCache.cachedIndices;
 
   void _onChapterChanged(int newChapterIndex, int totalChapters) {
+    print('[DEBUG] _onChapterChanged called: chapter=$newChapterIndex, total=$totalChapters');
     if (_lastSavedChapter == newChapterIndex) return;
     _lastSavedChapter = newChapterIndex;
 
@@ -273,9 +275,11 @@ class ReaderCubit extends Cubit<ReaderState> {
   }
 
   void _saveProgress(int currentChapter, int totalChapters) {
+    print('[DEBUG] _saveProgress called: chapter=$currentChapter, total=$totalChapters, callback=${_onProgressChanged != null}');
     if (_onProgressChanged == null) return;
 
     final progreso = totalChapters > 0 ? ((currentChapter + 1) / totalChapters) * 100 : 0.0;
+    print('[DEBUG] Sending progress: $progreso%, page: ${currentChapter + 1}');
     
     _onProgressChanged!(
       libroId: libroId,

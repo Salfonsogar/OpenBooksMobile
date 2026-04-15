@@ -58,8 +58,6 @@ class _ReaderPageState extends State<ReaderPage> {
     super.initState();
     final syncService = getIt<SyncService>();
     final sessionCubit = getIt<SessionCubit>();
-    final sessionState = sessionCubit.state;
-    final usuarioId = sessionState is SessionAuthenticated ? sessionState.userId : 1;
     
     _readerCubit = ReaderCubit(
       getIt<EpubRepository>(),
@@ -71,12 +69,17 @@ class _ReaderPageState extends State<ReaderPage> {
       required int page,
       required int totalPages,
     }) async {
+      print('[DEBUG ReaderPage] Progress callback triggered: libroId=$libroId, progreso=$progreso%, page=$page');
+      final currentSessionState = sessionCubit.state;
+      final usuarioId = currentSessionState is SessionAuthenticated ? currentSessionState.userId : 1;
+      print('[DEBUG ReaderPage] Using usuarioId: $usuarioId');
       await syncService.addProgressUpdateToQueue(
         libroId: libroId,
         usuarioId: usuarioId,
         progreso: progreso,
         page: page,
       );
+      print('[DEBUG ReaderPage] Progress saved to queue');
     });
     
     _settingsCubit = getIt<ReaderSettingsCubit>();

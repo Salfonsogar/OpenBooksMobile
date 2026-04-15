@@ -4,6 +4,7 @@ import 'local_database.dart';
 import 'network_info.dart';
 import 'models/sync_queue_model.dart';
 import 'models/reading_session_model.dart';
+import 'models/biblioteca_local_model.dart';
 import 'progress_cache.dart';
 import '../../features/biblioteca/data/repositories/biblioteca_repository_impl.dart';
 import '../../features/historial/data/repositories/historial_repository_impl.dart';
@@ -232,10 +233,12 @@ class SyncService {
     required int page,
     int? timestamp,
   }) async {
+    print('[DEBUG SyncService] addProgressUpdateToQueue called: libroId=$libroId, usuarioId=$usuarioId, progreso=$progreso, page=$page');
     final now = timestamp ?? DateTime.now().millisecondsSinceEpoch;
     ProgressCache().set(libroId, progreso, page);
     
     final existing = await localDatabase.bibliotecaLocalDataSource.getByLibroId(libroId, usuarioId);
+    print('[DEBUG SyncService] Existing book found: ${existing != null}');
     if (existing != null) {
       await localDatabase.bibliotecaLocalDataSource.updateProgressWithTracking(
         id: existing.id!,
@@ -243,6 +246,22 @@ class SyncService {
         page: page,
         timestamp: now,
       );
+      print('[DEBUG SyncService] Updated local database');
+    } else {
+      print('[DEBUG SyncService] Book not found in local DB - creating new entry');
+      await localDatabase.bibliotecaLocalDataSource.insert(
+        BibliotecaLocalModel(
+          libroId: libroId,
+          usuarioId: usuarioId,
+          titulo: 'Libro $libroId',
+          progreso: progreso,
+          page: page,
+          lastReadAt: now,
+          syncStatus: 'pending',
+          createdAt: now,
+        ),
+      );
+      print('[DEBUG SyncService] Created new book entry');
     }
     
     final payload = {
