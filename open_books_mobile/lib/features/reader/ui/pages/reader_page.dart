@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../injection_container.dart';
+import '../../../../shared/core/session/session_cubit.dart';
+import '../../../../shared/core/session/session_state.dart';
 import '../../../../shared/services/sync_service.dart';
 import '../../data/datasources/highlight_datasource.dart';
 import '../../data/models/audio_player_state.dart';
@@ -55,6 +57,9 @@ class _ReaderPageState extends State<ReaderPage> {
   void initState() {
     super.initState();
     final syncService = getIt<SyncService>();
+    final sessionCubit = getIt<SessionCubit>();
+    final sessionState = sessionCubit.state;
+    final usuarioId = sessionState is SessionAuthenticated ? sessionState.userId : 1;
     
     _readerCubit = ReaderCubit(
       getIt<EpubRepository>(),
@@ -68,7 +73,7 @@ class _ReaderPageState extends State<ReaderPage> {
     }) async {
       await syncService.addProgressUpdateToQueue(
         libroId: libroId,
-        usuarioId: 1,
+        usuarioId: usuarioId,
         progreso: progreso,
         page: page,
       );
