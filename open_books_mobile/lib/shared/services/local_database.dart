@@ -5,10 +5,11 @@ import 'datasources/biblioteca_local_datasource.dart';
 import 'datasources/historial_local_datasource.dart';
 import 'datasources/sync_queue_datasource.dart';
 import 'datasources/epub_downloads_datasource.dart';
+import 'datasources/reading_sessions_datasource.dart';
 
 class LocalDatabase {
   static const String _databaseName = 'open_books.db';
-  static const int _databaseVersion = 1;
+  static const int _databaseVersion = 2;
 
   static const int _syncedRetentionDays = 7;
   static const int _maxRetryCount = 3;
@@ -19,6 +20,7 @@ class LocalDatabase {
   late HistorialLocalDataSource historialLocalDataSource;
   late SyncQueueDataSource syncQueueDataSource;
   late EpubDownloadsDataSource epubDownloadsDataSource;
+  late ReadingSessionsDataSource readingSessionsDataSource;
 
   Future<void> init() async {
     final databasePath = await getDatabasesPath();
@@ -28,6 +30,7 @@ class LocalDatabase {
       path,
       version: _databaseVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
 
     _initDataSources();
@@ -39,6 +42,7 @@ class LocalDatabase {
     historialLocalDataSource = HistorialLocalDataSource(_database!);
     syncQueueDataSource = SyncQueueDataSource(_database!);
     epubDownloadsDataSource = EpubDownloadsDataSource(_database!);
+    readingSessionsDataSource = ReadingSessionsDataSource(_database!);
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -122,6 +126,61 @@ class LocalDatabase {
     await db.execute('''
       CREATE INDEX idx_epub_downloads_libro ON epub_downloads(libro_id)
     ''');
+
+    await db.execute('''
+      CREATE TABLE reading_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        progress_id INTEGER NOT NULL,
+        libro_id INTEGER NOT NULL,
+        usuario_id INTEGER NOT NULL,
+        pages_read_in_session INTEGER DEFAULT 0,
+        session_timestamp INTEGER NOT NULL,
+        notes TEXT,
+        created_at INTEGER,
+        
+        UNIQUE(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_reading_sessions_libro ON reading_sessions(libro_id, usuario_id)
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_reading_sessions_timestamp ON reading_sessions(session_timestamp)
+    ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE biblioteca_local ADD COLUMN last_read_at INTEGER');
+      await db.execute('ALTER TABLE biblioteca_local ADD COLUMN reading_streak INTEGER');
+      await db.execute('ALTER TABLE biblioteca_local ADD COLUMN sync_status TEXT');
+      await db.execute('ALTER TABLE biblioteca_local ADD COLUMN local_version INTEGER');
+      
+      await db.execute('''
+        CREATE TABLE reading_sessions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          progress_id INTEGER NOT NULL,
+          libro_id INTEGER NOT NULL,
+          usuario_id INTEGER NOT NULL,
+          pages_read_in_session INTEGER DEFAULT 0,
+          session_timestamp INTEGER NOT NULL,
+          notes TEXT,
+          created_at INTEGER,
+          
+          UNIQUE(id)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_reading_sessions_libro ON reading_sessions(libro_id, usuario_id)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_reading_sessions_timestamp ON reading_sessions(session_timestamp)
+      ''');
+    }
   }
 
   Future<void> _cleanupSyncQueue() async {

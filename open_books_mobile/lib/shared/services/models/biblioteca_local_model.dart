@@ -10,6 +10,10 @@ class BibliotecaLocalModel {
   final double progreso;
   final bool isDownloaded;
   final int? page;
+  final int? lastReadAt;
+  final int? readingStreak;
+  final String? syncStatus;
+  final int? localVersion;
   final int? updatedAt;
   final int createdAt;
 
@@ -25,6 +29,10 @@ class BibliotecaLocalModel {
     this.progreso = 0.0,
     this.isDownloaded = false,
     this.page,
+    this.lastReadAt,
+    this.readingStreak,
+    this.syncStatus,
+    this.localVersion,
     this.updatedAt,
     required this.createdAt,
   });
@@ -42,6 +50,10 @@ class BibliotecaLocalModel {
       progreso: (map['progreso'] as num?)?.toDouble() ?? 0.0,
       isDownloaded: (map['is_downloaded'] as int?) == 1,
       page: map['page'] as int?,
+      lastReadAt: map['last_read_at'] as int?,
+      readingStreak: map['reading_streak'] as int?,
+      syncStatus: map['sync_status'] as String?,
+      localVersion: map['local_version'] as int?,
       updatedAt: map['updated_at'] as int?,
       createdAt: map['created_at'] as int,
     );
@@ -60,6 +72,10 @@ class BibliotecaLocalModel {
       'progreso': progreso,
       'is_downloaded': isDownloaded ? 1 : 0,
       'page': page,
+      'last_read_at': lastReadAt,
+      'reading_streak': readingStreak,
+      'sync_status': syncStatus,
+      'local_version': localVersion,
       'updated_at': updatedAt,
       'created_at': createdAt,
     };
@@ -77,6 +93,10 @@ class BibliotecaLocalModel {
     double? progreso,
     bool? isDownloaded,
     int? page,
+    int? lastReadAt,
+    int? readingStreak,
+    String? syncStatus,
+    int? localVersion,
     int? updatedAt,
     int? createdAt,
   }) {
@@ -92,6 +112,10 @@ class BibliotecaLocalModel {
       progreso: progreso ?? this.progreso,
       isDownloaded: isDownloaded ?? this.isDownloaded,
       page: page ?? this.page,
+      lastReadAt: lastReadAt ?? this.lastReadAt,
+      readingStreak: readingStreak ?? this.readingStreak,
+      syncStatus: syncStatus ?? this.syncStatus,
+      localVersion: localVersion ?? this.localVersion,
       updatedAt: updatedAt ?? this.updatedAt,
       createdAt: createdAt ?? this.createdAt,
     );

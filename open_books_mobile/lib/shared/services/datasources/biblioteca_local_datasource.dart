@@ -118,6 +118,79 @@ class BibliotecaLocalDataSource {
     );
   }
 
+  Future<void> updateLastReadAt(int id, int timestamp) async {
+    await _db.update(
+      _tableName,
+      {
+        'last_read_at': timestamp,
+        'updated_at': timestamp,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> updateReadingStreak(int id, int streak) async {
+    await _db.update(
+      _tableName,
+      {
+        'reading_streak': streak,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> updateSyncStatus(int id, String status) async {
+    await _db.update(
+      _tableName,
+      {
+        'sync_status': status,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> incrementLocalVersion(int id) async {
+    await _db.rawUpdate(
+      'UPDATE $_tableName SET local_version = local_version + 1, updated_at = ? WHERE id = ?',
+      [DateTime.now().millisecondsSinceEpoch, id],
+    );
+  }
+
+  Future<List<BibliotecaLocalModel>> getPendingSync() async {
+    final maps = await _db.query(
+      _tableName,
+      where: 'sync_status = ? OR sync_status IS NULL',
+      whereArgs: ['pending'],
+    );
+    return maps.map((map) => BibliotecaLocalModel.fromMap(map)).toList();
+  }
+
+  Future<void> updateProgressWithTracking({
+    required int id,
+    required double progreso,
+    required int page,
+    required int timestamp,
+  }) async {
+    await _db.update(
+      _tableName,
+      {
+        'progreso': progreso,
+        'page': page,
+        'last_read_at': timestamp,
+        'sync_status': 'pending',
+        'local_version': (await getById(id))?.localVersion ?? 0,
+        'updated_at': timestamp,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<List<BibliotecaLocalModel>> getDownloaded() async {
     final maps = await _db.query(
       _tableName,
