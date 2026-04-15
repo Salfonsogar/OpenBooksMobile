@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../injection_container.dart';
+import '../../../../shared/ui/widgets/session_note_input.dart';
+import '../../../../shared/services/sync_service.dart';
 import '../../data/datasources/highlight_datasource.dart';
 import '../../data/models/audio_player_state.dart';
 import '../../data/models/bookmark.dart';
@@ -53,10 +55,26 @@ class _ReaderPageState extends State<ReaderPage> {
   @override
   void initState() {
     super.initState();
+    final syncService = getIt<SyncService>();
+    
     _readerCubit = ReaderCubit(
       getIt<EpubRepository>(),
       widget.libroId,
     );
+    _readerCubit.setOnProgressChanged(({
+      required int libroId,
+      required double progreso,
+      required int page,
+      required int totalPages,
+    }) async {
+      await syncService.addProgressUpdateToQueue(
+        libroId: libroId,
+        usuarioId: 1,
+        progreso: progreso,
+        page: page,
+      );
+    });
+    
     _settingsCubit = getIt<ReaderSettingsCubit>();
     _bookmarkCubit = getIt<BookmarkCubit>();
     _highlightCubit = HighlightCubit(_highlightDataSource);
@@ -70,6 +88,7 @@ class _ReaderPageState extends State<ReaderPage> {
   @override
   void dispose() {
     _pageController.dispose();
+    _readerCubit.onReaderClosed();
     _readerCubit.close();
     _bookmarkCubit.close();
     _highlightCubit.close();
@@ -429,18 +448,133 @@ class _ReaderPageState extends State<ReaderPage> {
       title: titulo,
       colors: colors,
       topPadding: MediaQuery.of(context).padding.top,
-      onBack: () {
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go('/home');
-        }
-      },
+      onBack: () => _showCloseConfirmation(context),
       onSearch: () => _showSearch(state, colors),
       onSettings: () => _showSettings(),
       currentMode: _readerCubit.currentMode,
       onModeChanged: (mode) => _readerCubit.setReaderMode(mode),
     );
+  }
+
+  Future<void> _showCloseConfirmation(BuildContext context) async {
+    String? sessionNote;
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Guardar Progreso',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Builder(
+                      builder: (context) {
+                        if (_readerCubit.state is ReaderLoaded) {
+                          final loadedState = _readerCubit.state as ReaderLoaded;
+                          final currentPage = loadedState.currentChapterIndex + 1;
+                          final totalPages = loadedState.manifest.readingOrder.length;
+                          final progreso = (currentPage / totalPages * 100).toStringAsFixed(1);
+                          return Text(
+                            'Progreso: $progreso% (Pagina $currentPage de $totalPages)',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    SessionNoteInput(
+                      onNoteChanged: (note) => sessionNote = note,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Descartar'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () async {
+                              final syncService = getIt<SyncService>();
+                              final state = _readerCubit.state;
+                              if (state is ReaderLoaded) {
+                                final currentPage = state.currentChapterIndex + 1;
+                                final totalPages = state.manifest.readingOrder.length;
+                                final progreso = (currentPage / totalPages * 100);
+                                await syncService.addProgressUpdateToQueue(
+                                  libroId: widget.libroId,
+                                  usuarioId: 1,
+                                  progreso: progreso,
+                                  page: currentPage,
+                                );
+                                if (sessionNote != null && sessionNote!.isNotEmpty) {
+                                  await syncService.addReadingSessionToQueue(
+                                    libroId: widget.libroId,
+                                    usuarioId: 1,
+                                    progressId: widget.libroId,
+                                    pagesRead: currentPage,
+                                    notes: sessionNote,
+                                  );
+                                }
+                              }
+                              if (context.mounted) {
+                                Navigator.pop(context, true);
+                              }
+                            },
+                            child: const Text('Guardar'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    if (result == true) {
+      if (context.mounted) {
+        _readerCubit.saveProgressNow();
+        context.pop();
+      }
+    } else if (result == false) {
+      if (context.mounted) {
+        context.pop();
+      }
+    }
   }
 
   Widget _buildFooter(ReaderState state, ReaderColors colors) {
