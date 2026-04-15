@@ -232,7 +232,18 @@ class SyncService {
     required int page,
     int? timestamp,
   }) async {
+    final now = timestamp ?? DateTime.now().millisecondsSinceEpoch;
     ProgressCache().set(libroId, progreso, page);
+    
+    final existing = await localDatabase.bibliotecaLocalDataSource.getByLibroId(libroId, usuarioId);
+    if (existing != null) {
+      await localDatabase.bibliotecaLocalDataSource.updateProgressWithTracking(
+        id: existing.id!,
+        progreso: progreso,
+        page: page,
+        timestamp: now,
+      );
+    }
     
     final payload = {
       'libroId': libroId,
@@ -247,14 +258,16 @@ class SyncService {
       entityId: libroId,
       payload: payload.toString(),
       priority: SyncQueueModel.priorityHigh,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
+      createdAt: now,
     );
 
     await localDatabase.syncQueueDataSource.insert(operation);
-    await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(
-      (await localDatabase.bibliotecaLocalDataSource.getByLibroId(libroId, usuarioId))?.id ?? 0,
-      'pending',
-    );
+    if (existing != null) {
+      await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(
+        existing.id!,
+        'pending',
+      );
+    }
   }
 
   Future<void> addReadingSessionToQueue({
