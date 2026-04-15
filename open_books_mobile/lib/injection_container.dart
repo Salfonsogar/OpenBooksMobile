@@ -244,7 +244,7 @@ Future<void> setupDependencies() async {
       networkInfo: getIt<NetworkInfo>(),
     ),
   );
-  getIt.registerLazySingleton<ReaderSettingsCubit>(
+  getIt.registerFactory<ReaderSettingsCubit>(
     () => ReaderSettingsCubit(),
   );
   getIt.registerLazySingleton<BookmarkDataSource>(
@@ -253,7 +253,7 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<BookmarkRepository>(
     () => BookmarkRepository(getIt<BookmarkDataSource>()),
   );
-  getIt.registerLazySingleton<BookmarkCubit>(
+  getIt.registerFactory<BookmarkCubit>(
     () => BookmarkCubit(getIt<BookmarkRepository>()),
   );
 
