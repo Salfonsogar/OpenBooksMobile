@@ -149,6 +149,18 @@ class LocalDatabase {
     await db.execute('''
       CREATE INDEX idx_reading_sessions_timestamp ON reading_sessions(session_timestamp)
     ''');
+
+    await db.execute('''
+      CREATE INDEX idx_biblioteca_sync_status ON biblioteca_local(sync_status)
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_biblioteca_last_read ON biblioteca_local(last_read_at)
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_sync_queue_entity ON sync_queue(entity_type, status)
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {

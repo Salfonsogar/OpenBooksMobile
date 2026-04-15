@@ -4,6 +4,7 @@ import 'local_database.dart';
 import 'network_info.dart';
 import 'models/sync_queue_model.dart';
 import 'models/reading_session_model.dart';
+import 'progress_cache.dart';
 import '../../features/biblioteca/data/repositories/biblioteca_repository_impl.dart';
 import '../../features/historial/data/repositories/historial_repository_impl.dart';
 
@@ -231,12 +232,13 @@ class SyncService {
     required int page,
     int? timestamp,
   }) async {
+    ProgressCache().set(libroId, progreso, page);
+    
     final payload = {
       'libroId': libroId,
       'usuarioId': usuarioId,
       'progreso': progreso,
       'page': page,
-      'timestamp': timestamp ?? DateTime.now().millisecondsSinceEpoch,
     };
 
     final operation = SyncQueueModel(
@@ -389,6 +391,18 @@ class SyncService {
     return localDatabase.syncQueueDataSource.countPendingByEntityType(
       SyncQueueModel.entityTypeProgress,
     );
+  }
+
+  double? getCachedProgress(int libroId) {
+    return ProgressCache().get(libroId)?.progreso;
+  }
+
+  int? getCachedPage(int libroId) {
+    return ProgressCache().get(libroId)?.page;
+  }
+
+  void clearProgressCache(int libroId) {
+    ProgressCache().remove(libroId);
   }
 
   void dispose() {
