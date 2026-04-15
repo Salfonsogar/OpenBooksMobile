@@ -36,6 +36,11 @@ class BibliotecaMapper {
           ? DateTime.fromMillisecondsSinceEpoch(model.updatedAt!)
           : null,
       createdAt: DateTime.fromMillisecondsSinceEpoch(model.createdAt),
+      syncStatus: model.syncStatus,
+      lastReadAt: model.lastReadAt != null
+          ? DateTime.fromMillisecondsSinceEpoch(model.lastReadAt!)
+          : null,
+      readingStreak: model.readingStreak,
     );
   }
 
@@ -54,6 +59,9 @@ class BibliotecaMapper {
       progreso: entity.progreso,
       isDownloaded: entity.isDownloaded,
       page: entity.page,
+      syncStatus: entity.syncStatus,
+      lastReadAt: entity.lastReadAt?.millisecondsSinceEpoch,
+      readingStreak: entity.readingStreak,
       updatedAt: entity.updatedAt?.millisecondsSinceEpoch,
       createdAt: entity.createdAt?.millisecondsSinceEpoch ??
           DateTime.now().millisecondsSinceEpoch,
@@ -77,7 +85,12 @@ class BibliotecaMapper {
       categorias: model.categorias,
       progreso: model.progreso,
       isDownloaded: false,
-      page: null,
+      page: model.page,
+      syncStatus: model.syncStatus,
+      lastReadAt: model.lastReadAt != null 
+          ? DateTime.fromMillisecondsSinceEpoch(model.lastReadAt!) 
+          : null,
+      readingStreak: model.readingStreak,
       updatedAt: DateTime.now(),
       createdAt: DateTime.now(),
     );
@@ -97,6 +110,10 @@ class BibliotecaMapper {
       categorias: jsonEncode(apiModel.categorias),
       progreso: apiModel.progreso,
       isDownloaded: false,
+      page: apiModel.page,
+      syncStatus: apiModel.syncStatus,
+      lastReadAt: apiModel.lastReadAt,
+      readingStreak: apiModel.readingStreak,
       createdAt: DateTime.now().millisecondsSinceEpoch,
     );
   }

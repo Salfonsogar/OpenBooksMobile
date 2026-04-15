@@ -14,6 +14,9 @@ class LibroBibliotecaEntity extends Equatable {
   final int? page;
   final DateTime? updatedAt;
   final DateTime? createdAt;
+  final String? syncStatus;
+  final DateTime? lastReadAt;
+  final int? readingStreak;
 
   const LibroBibliotecaEntity({
     required this.id,
@@ -29,6 +32,9 @@ class LibroBibliotecaEntity extends Equatable {
     this.page,
     this.updatedAt,
     this.createdAt,
+    this.syncStatus,
+    this.lastReadAt,
+    this.readingStreak,
   });
 
   @override
@@ -46,6 +52,9 @@ class LibroBibliotecaEntity extends Equatable {
         page,
         updatedAt,
         createdAt,
+        syncStatus,
+        lastReadAt,
+        readingStreak,
       ];
 
   LibroBibliotecaEntity copyWith({
@@ -62,6 +71,9 @@ class LibroBibliotecaEntity extends Equatable {
     int? page,
     DateTime? updatedAt,
     DateTime? createdAt,
+    String? syncStatus,
+    DateTime? lastReadAt,
+    int? readingStreak,
   }) {
     return LibroBibliotecaEntity(
       id: id ?? this.id,
@@ -77,6 +89,9 @@ class LibroBibliotecaEntity extends Equatable {
       page: page ?? this.page,
       updatedAt: updatedAt ?? this.updatedAt,
       createdAt: createdAt ?? this.createdAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      lastReadAt: lastReadAt ?? this.lastReadAt,
+      readingStreak: readingStreak ?? this.readingStreak,
     );
   }
 }

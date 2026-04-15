@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/models/libro_biblioteca.dart';
 import '../../logic/cubit/biblioteca_cubit.dart';
+import '../../../../shared/ui/widgets/reading_progress_bar.dart';
+import '../../../../shared/ui/widgets/sync_status_indicator.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
@@ -225,31 +227,28 @@ class _LibraryPageState extends State<LibraryPage> {
                     ),
                     const SizedBox(height: 8),
                     if (libro.progreso > 0) ...[
+                      ReadingProgressBar(
+                        progreso: libro.progreso,
+                        height: 6,
+                        showPercentage: true,
+                      ),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: libro.progreso / 100,
-                                backgroundColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Theme.of(context).colorScheme.primary,
-                                ),
-                                minHeight: 6,
+                          if (libro.page != null) ...[
+                            Text(
+                              'Pagina ${libro.page}',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${libro.progreso.toInt()}%',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
+                            const SizedBox(width: 8),
+                          ],
+                          if (libro.syncStatus != null) ...[
+                            SyncStatusIndicator(
+                              pendingCount: libro.syncStatus == 'pending' ? 1 : 0,
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ],
