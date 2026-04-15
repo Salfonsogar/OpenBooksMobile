@@ -214,6 +214,7 @@ Future<void> setupDependencies() async {
       getHistorialUseCase: getIt<GetHistorialUseCase>(),
       addToHistorialUseCase: getIt<AddToHistorialUseCase>(),
       sessionCubit: getIt<SessionCubit>(),
+      localDatabase: getIt<LocalDatabase>(),
     ),
   );
 

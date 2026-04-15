@@ -57,6 +57,10 @@ class _ReaderPageState extends State<ReaderPage> {
   @override
   void initState() {
     super.initState();
+    _initReader();
+  }
+
+  Future<void> _initReader() async {
     final syncService = getIt<SyncService>();
     final sessionCubit = getIt<SessionCubit>();
     final localDatabase = getIt<LocalDatabase>();
@@ -64,11 +68,10 @@ class _ReaderPageState extends State<ReaderPage> {
     final usuarioId = sessionState is SessionAuthenticated ? sessionState.userId : 1;
     
     int savedPage = 0;
-    localDatabase.bibliotecaLocalDataSource.getByLibroId(widget.libroId, usuarioId).then((libro) {
-      if (libro != null && libro.page != null) {
-        savedPage = libro.page!;
-      }
-    });
+    final libro = await localDatabase.bibliotecaLocalDataSource.getByLibroId(widget.libroId, usuarioId);
+    if (libro != null && libro.page != null) {
+      savedPage = libro.page!;
+    }
     
     _readerCubit = ReaderCubit(
       getIt<EpubRepository>(),
