@@ -80,14 +80,20 @@ class SyncStatusToast {
   static void showSuccess(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Row(
+        content: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Progreso sincronizado exitosamente'),
+            Icon(
+              Icons.check_circle, 
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Progreso sincronizado exitosamente',
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+            ),
           ],
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
       ),
@@ -99,12 +105,18 @@ class SyncStatusToast {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.white),
+            Icon(
+              Icons.error_outline, 
+              color: Theme.of(context).colorScheme.onError,
+            ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(message.isNotEmpty 
-                  ? 'Fallo la sincronizacion: $message'
-                  : 'Fallo la sincronizacion. Por favor, revisa tu conexion.'),
+              child: Text(
+                message.isNotEmpty 
+                    ? 'Fallo la sincronizacion: $message'
+                    : 'Fallo la sincronizacion. Por favor, revisa tu conexion.',
+                style: TextStyle(color: Theme.of(context).colorScheme.onError),
+              ),
             ),
           ],
         ),
@@ -113,7 +125,7 @@ class SyncStatusToast {
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
           label: 'REINTENTAR',
-          textColor: Colors.white,
+          textColor: Theme.of(context).colorScheme.onError,
           onPressed: () {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
           },
@@ -125,14 +137,20 @@ class SyncStatusToast {
   static void showOffline(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Row(
+        content: Row(
           children: [
-            Icon(Icons.cloud_off, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Sin conexion - guardado localmente'),
+            Icon(
+              Icons.cloud_off, 
+              color: Theme.of(context).colorScheme.onSecondary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Sin conexion - guardado localmente',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSecondary),
+            ),
           ],
         ),
-        backgroundColor: Colors.orange,
+        backgroundColor: Theme.of(context).colorScheme.secondary,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),

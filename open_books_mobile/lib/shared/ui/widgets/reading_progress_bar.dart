@@ -70,13 +70,13 @@ class ReadingProgressBar extends StatelessWidget {
 
   Color _getProgressColor(BuildContext context, double progreso) {
     if (progreso >= 100) {
-      return Colors.green;
+      return Theme.of(context).colorScheme.tertiary;
     } else if (progreso >= 50) {
       return Theme.of(context).colorScheme.primary;
     } else if (progreso >= 25) {
-      return Colors.orange;
+      return Theme.of(context).colorScheme.secondary;
     } else {
-      return Colors.red;
+      return Theme.of(context).colorScheme.error;
     }
   }
 }
