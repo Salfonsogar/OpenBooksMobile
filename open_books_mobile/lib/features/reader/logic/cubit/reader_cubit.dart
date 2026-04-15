@@ -140,6 +140,10 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
       ));
 
       _precargarSiguienteCapitulo(startIndex);
+      
+      if (startIndex > 0) {
+        _onChapterChanged(startIndex, manifest.readingOrder.length);
+      }
     } catch (e) {
       emit(ReaderError(e.toString().replaceAll('Exception: ', '')));
     }
