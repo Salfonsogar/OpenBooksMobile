@@ -44,15 +44,16 @@ class _ReaderPageState extends State<ReaderPage> {
   final PageController _pageController = PageController();
   final EpubParser _parser = EpubParser();
   bool _showUi = true;
-  late final ReaderCubit _readerCubit;
-  late final ReaderSettingsCubit _settingsCubit;
-  late final BookmarkCubit _bookmarkCubit;
-  late final HighlightCubit _highlightCubit;
-  late final AudioPlayerCubit _audioPlayerCubit;
+  late ReaderCubit _readerCubit;
+  late ReaderSettingsCubit _settingsCubit;
+  late BookmarkCubit _bookmarkCubit;
+  late HighlightCubit _highlightCubit;
+  late AudioPlayerCubit _audioPlayerCubit;
   final HighlightDataSource _highlightDataSource = HighlightDataSource();
   List<ReadingOrderItem> _chapters = [];
   int _currentIndex = 0;
   List<String> _paragraphs = [];
+  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -68,9 +69,13 @@ class _ReaderPageState extends State<ReaderPage> {
     final usuarioId = sessionState is SessionAuthenticated ? sessionState.userId : 1;
     
     int savedPage = 0;
-    final libro = await localDatabase.bibliotecaLocalDataSource.getByLibroId(widget.libroId, usuarioId);
-    if (libro != null && libro.page != null) {
-      savedPage = libro.page!;
+    try {
+      final libro = await localDatabase.bibliotecaLocalDataSource.getByLibroId(widget.libroId, usuarioId);
+      if (libro != null && libro.page != null) {
+        savedPage = libro.page!;
+      }
+    } catch (e) {
+      // Si falla, usar pagina 0
     }
     
     _readerCubit = ReaderCubit(
@@ -102,6 +107,10 @@ class _ReaderPageState extends State<ReaderPage> {
     _readerCubit.cargarLibro();
     _bookmarkCubit.cargarBookmarks(widget.libroId);
     _highlightCubit.cargarHighlights(widget.libroId);
+    
+    setState(() {
+      _isInitialized = true;
+    });
   }
 
   @override
@@ -117,6 +126,12 @@ class _ReaderPageState extends State<ReaderPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return PopScope(
       canPop: true,
       child: MultiBlocProvider(
