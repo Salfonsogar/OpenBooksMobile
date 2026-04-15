@@ -88,9 +88,13 @@ class SyncQueueModel {
   static const String operationAddBiblioteca = 'add_biblioteca';
   static const String operationRemoveBiblioteca = 'remove_biblioteca';
   static const String operationAddHistorial = 'add_historial';
+  static const String operationUpdateProgress = 'update_progress';
+  static const String operationAddReadingSession = 'add_reading_session';
 
   static const String entityTypeBiblioteca = 'biblioteca';
   static const String entityTypeHistorial = 'historial';
+  static const String entityTypeProgress = 'progress';
+  static const String entityTypeReadingSession = 'reading_session';
 
   static const String statusPending = 'pending';
   static const String statusProcessing = 'processing';

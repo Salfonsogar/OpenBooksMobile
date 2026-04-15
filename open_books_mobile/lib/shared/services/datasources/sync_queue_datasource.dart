@@ -154,4 +154,12 @@ class SyncQueueDataSource {
     );
     return Sqflite.firstIntValue(result) ?? 0;
   }
+
+  Future<int> countPendingByEntityType(String entityType) async {
+    final result = await _db.rawQuery(
+      'SELECT COUNT(*) as count FROM $_tableName WHERE status = ? AND entity_type = ?',
+      [SyncQueueModel.statusPending, entityType],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
 }
