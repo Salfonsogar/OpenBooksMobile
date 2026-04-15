@@ -62,55 +62,75 @@ class _ReaderPageState extends State<ReaderPage> {
   }
 
   Future<void> _initReader() async {
-    final syncService = getIt<SyncService>();
-    final sessionCubit = getIt<SessionCubit>();
-    final localDatabase = getIt<LocalDatabase>();
-    final sessionState = sessionCubit.state;
-    final usuarioId = sessionState is SessionAuthenticated ? sessionState.userId : 1;
+    print('[DEBUG ReaderPage] _initReader started for libroId: ${widget.libroId}');
     
-    int savedPage = 0;
     try {
-      final libro = await localDatabase.bibliotecaLocalDataSource.getByLibroId(widget.libroId, usuarioId);
-      if (libro != null && libro.page != null) {
-        savedPage = libro.page!;
+      final syncService = getIt<SyncService>();
+      final sessionCubit = getIt<SessionCubit>();
+      final localDatabase = getIt<LocalDatabase>();
+      final sessionState = sessionCubit.state;
+      final usuarioId = sessionState is SessionAuthenticated ? sessionState.userId : 1;
+      print('[DEBUG ReaderPage] usuarioId: $usuarioId');
+      
+      int savedPage = 0;
+      try {
+        print('[DEBUG ReaderPage] Getting saved page from local database...');
+        final libro = await localDatabase.bibliotecaLocalDataSource.getByLibroId(widget.libroId, usuarioId);
+        print('[DEBUG ReaderPage] Libro found: ${libro != null}, page: ${libro?.page}');
+        if (libro != null && libro.page != null) {
+          savedPage = libro.page!;
+          print('[DEBUG ReaderPage] Saved page: $savedPage');
+        }
+      } catch (e) {
+        print('[DEBUG ReaderPage] Error getting book: $e');
       }
-    } catch (e) {
-      // Si falla, usar pagina 0
-    }
-    
-    _readerCubit = ReaderCubit(
-      getIt<EpubRepository>(),
-      widget.libroId,
-      initialPage: savedPage,
-    );
-    _readerCubit.setOnProgressChanged(({
-      required int libroId,
-      required double progreso,
-      required int page,
-      required int totalPages,
-    }) async {
-      final currentSessionState = sessionCubit.state;
-      final currentUsuarioId = currentSessionState is SessionAuthenticated ? currentSessionState.userId : usuarioId;
-      await syncService.addProgressUpdateToQueue(
-        libroId: libroId,
-        usuarioId: currentUsuarioId,
-        progreso: progreso,
-        page: page,
+      
+      print('[DEBUG ReaderPage] Creating ReaderCubit with initialPage: $savedPage');
+      _readerCubit = ReaderCubit(
+        getIt<EpubRepository>(),
+        widget.libroId,
+        initialPage: savedPage,
       );
-    });
-    
-    _settingsCubit = getIt<ReaderSettingsCubit>();
-    _bookmarkCubit = getIt<BookmarkCubit>();
-    _highlightCubit = HighlightCubit(_highlightDataSource);
-    _audioPlayerCubit = getIt<AudioPlayerCubit>(param1: widget.libroId);
-    _settingsCubit.cargarSettings();
-    _readerCubit.cargarLibro();
-    _bookmarkCubit.cargarBookmarks(widget.libroId);
-    _highlightCubit.cargarHighlights(widget.libroId);
-    
-    setState(() {
-      _isInitialized = true;
-    });
+      print('[DEBUG ReaderPage] ReaderCubit created');
+      
+      _readerCubit.setOnProgressChanged(({
+        required int libroId,
+        required double progreso,
+        required int page,
+        required int totalPages,
+      }) async {
+        final currentSessionState = sessionCubit.state;
+        final currentUsuarioId = currentSessionState is SessionAuthenticated ? currentSessionState.userId : usuarioId;
+        await syncService.addProgressUpdateToQueue(
+          libroId: libroId,
+          usuarioId: currentUsuarioId,
+          progreso: progreso,
+          page: page,
+        );
+      });
+      
+      print('[DEBUG ReaderPage] Setting up other cubits...');
+      _settingsCubit = getIt<ReaderSettingsCubit>();
+      _bookmarkCubit = getIt<BookmarkCubit>();
+      _highlightCubit = HighlightCubit(_highlightDataSource);
+      _audioPlayerCubit = getIt<AudioPlayerCubit>(param1: widget.libroId);
+      
+      print('[DEBUG ReaderPage] Loading data...');
+      _settingsCubit.cargarSettings();
+      _readerCubit.cargarLibro();
+      _bookmarkCubit.cargarBookmarks(widget.libroId);
+      _highlightCubit.cargarHighlights(widget.libroId);
+      
+      print('[DEBUG ReaderPage] All loaded, setting state...');
+      setState(() {
+        _isInitialized = true;
+      });
+      print('[DEBUG ReaderPage] Done!');
+    } catch (e, stack) {
+      print('[DEBUG ReaderPage] ERROR: $e');
+      print('[DEBUG ReaderPage] STACK: $stack');
+      rethrow;
+    }
   }
 
   @override
