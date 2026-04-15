@@ -6,6 +6,7 @@ import '../../../../injection_container.dart';
 import '../../../../shared/core/session/session_cubit.dart';
 import '../../../../shared/core/session/session_state.dart';
 import '../../../../shared/services/sync_service.dart';
+import '../../../../shared/services/local_database.dart';
 import '../../data/datasources/highlight_datasource.dart';
 import '../../data/models/audio_player_state.dart';
 import '../../data/models/bookmark.dart';
@@ -58,10 +59,21 @@ class _ReaderPageState extends State<ReaderPage> {
     super.initState();
     final syncService = getIt<SyncService>();
     final sessionCubit = getIt<SessionCubit>();
+    final localDatabase = getIt<LocalDatabase>();
+    final sessionState = sessionCubit.state;
+    final usuarioId = sessionState is SessionAuthenticated ? sessionState.userId : 1;
+    
+    int savedPage = 0;
+    localDatabase.bibliotecaLocalDataSource.getByLibroId(widget.libroId, usuarioId).then((libro) {
+      if (libro != null && libro.page != null) {
+        savedPage = libro.page!;
+      }
+    });
     
     _readerCubit = ReaderCubit(
       getIt<EpubRepository>(),
       widget.libroId,
+      initialPage: savedPage,
     );
     _readerCubit.setOnProgressChanged(({
       required int libroId,
@@ -69,17 +81,14 @@ class _ReaderPageState extends State<ReaderPage> {
       required int page,
       required int totalPages,
     }) async {
-      print('[DEBUG ReaderPage] Progress callback triggered: libroId=$libroId, progreso=$progreso%, page=$page');
       final currentSessionState = sessionCubit.state;
-      final usuarioId = currentSessionState is SessionAuthenticated ? currentSessionState.userId : 1;
-      print('[DEBUG ReaderPage] Using usuarioId: $usuarioId');
+      final currentUsuarioId = currentSessionState is SessionAuthenticated ? currentSessionState.userId : usuarioId;
       await syncService.addProgressUpdateToQueue(
         libroId: libroId,
-        usuarioId: usuarioId,
+        usuarioId: currentUsuarioId,
         progreso: progreso,
         page: page,
       );
-      print('[DEBUG ReaderPage] Progress saved to queue');
     });
     
     _settingsCubit = getIt<ReaderSettingsCubit>();

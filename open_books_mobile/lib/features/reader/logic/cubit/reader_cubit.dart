@@ -108,7 +108,9 @@ class ReaderCubit extends Cubit<ReaderState> {
     }
   }
 
-  ReaderCubit(this._repository, this.libroId) : super(ReaderInitial());
+ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(ReaderInitial());
+
+  final int initialPage;
 
   Future<void> cargarLibro() async {
     emit(ReaderLoading());
@@ -116,24 +118,28 @@ class ReaderCubit extends Cubit<ReaderState> {
       final manifest = await _repository.getManifest(libroId);
       
       if (manifest.readingOrder.isEmpty) {
-        emit(const ReaderError('El libro no tiene capítulos'));
+        emit(const ReaderError('El libro no tiene capitulos'));
         return;
       }
 
-      final firstChapter = manifest.readingOrder.first.href;
-      final content = await _repository.getResource(libroId, firstChapter);
+      final startIndex = initialPage > 0 && initialPage < manifest.readingOrder.length 
+          ? initialPage - 1 
+          : 0;
       
-      _chapterCache.put(0, content);
+      final chapterPath = manifest.readingOrder[startIndex].href;
+      final content = await _repository.getResource(libroId, chapterPath);
+      
+      _chapterCache.put(startIndex, content);
 
       emit(ReaderLoaded(
         manifest: manifest,
-        currentChapterIndex: 0,
+        currentChapterIndex: startIndex,
         currentContent: content,
-        cachedChapterIndices: {0},
+        cachedChapterIndices: {startIndex},
         mode: _currentMode,
       ));
 
-      _precargarSiguienteCapitulo(0);
+      _precargarSiguienteCapitulo(startIndex);
     } catch (e) {
       emit(ReaderError(e.toString().replaceAll('Exception: ', '')));
     }
