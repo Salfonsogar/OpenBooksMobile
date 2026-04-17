@@ -140,7 +140,11 @@ Future<void> setupDependencies() async {
     () => PerfilDataSource(getIt<ApiClient>()),
   );
   getIt.registerLazySingleton<PerfilRepository>(
-    () => PerfilRepository(getIt<PerfilDataSource>()),
+    () => PerfilRepository(
+      getIt<PerfilDataSource>(),
+      getIt<LocalDatabase>(),
+      getIt<NetworkInfo>(),
+    ),
   );
 
   getIt.registerLazySingleton<HistorialDataSource>(
@@ -173,11 +177,7 @@ Future<void> setupDependencies() async {
   );
 
   getIt.registerLazySingleton<GetBibliotecaUseCase>(
-    () => GetBibliotecaUseCase(
-      getIt<BibliotecaRepositoryImpl>(),
-      getIt<BibliotecaRepositoryImpl>(),
-      getIt<LibrosRepository>(),
-    ),
+    () => GetBibliotecaUseCase(getIt<BibliotecaRepositoryImpl>()),
   );
 
   getIt.registerLazySingleton<AddLibroBibliotecaUseCase>(
@@ -202,7 +202,7 @@ Future<void> setupDependencies() async {
     () => UploadLibroCubit(),
   );
 
-  getIt.registerLazySingleton<PerfilCubit>(
+  getIt.registerFactory<PerfilCubit>(
     () => PerfilCubit(
       repository: getIt<PerfilRepository>(),
       sessionCubit: getIt<SessionCubit>(),

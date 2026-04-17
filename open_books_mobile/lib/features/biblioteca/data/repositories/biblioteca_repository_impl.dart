@@ -153,6 +153,7 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
     await remoteDataSource.quitarLibro(usuarioId, libroId);
   }
 
+  @override
   Future<void> syncFromRemote(int usuarioId) async {
     final isConnected = await networkInfo.isConnected;
     if (!isConnected) return;

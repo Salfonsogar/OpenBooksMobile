@@ -6,10 +6,11 @@ import 'datasources/historial_local_datasource.dart';
 import 'datasources/sync_queue_datasource.dart';
 import 'datasources/epub_downloads_datasource.dart';
 import 'datasources/reading_sessions_datasource.dart';
+import 'datasources/perfil_local_datasource.dart';
 
 class LocalDatabase {
   static const String _databaseName = 'open_books.db';
-  static const int _databaseVersion = 2;
+  static const int _databaseVersion = 4;
 
   static const int _syncedRetentionDays = 7;
   static const int _maxRetryCount = 3;
@@ -21,6 +22,7 @@ class LocalDatabase {
   late SyncQueueDataSource syncQueueDataSource;
   late EpubDownloadsDataSource epubDownloadsDataSource;
   late ReadingSessionsDataSource readingSessionsDataSource;
+  late PerfilLocalDataSource perfilLocalDataSource;
 
   Future<void> init() async {
     final databasePath = await getDatabasesPath();
@@ -43,6 +45,7 @@ class LocalDatabase {
     syncQueueDataSource = SyncQueueDataSource(_database!);
     epubDownloadsDataSource = EpubDownloadsDataSource(_database!);
     readingSessionsDataSource = ReadingSessionsDataSource(_database!);
+    perfilLocalDataSource = PerfilLocalDataSource(_database!);
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -161,6 +164,27 @@ class LocalDatabase {
     await db.execute('''
       CREATE INDEX idx_sync_queue_entity ON sync_queue(entity_type, status)
     ''');
+
+    await _createPerfilTable(db);
+  }
+
+  Future<void> _createPerfilTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS perfil_local (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL UNIQUE,
+        user_name TEXT NOT NULL,
+        nombre_completo TEXT NOT NULL,
+        email TEXT NOT NULL,
+        estado INTEGER DEFAULT 1,
+        sancionado INTEGER DEFAULT 0,
+        fecha_registro TEXT NOT NULL,
+        nombre_rol TEXT NOT NULL,
+        rol_id INTEGER NOT NULL,
+        foto_perfil_base64 TEXT,
+        cached_at INTEGER
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -169,7 +193,7 @@ class LocalDatabase {
       await db.execute('ALTER TABLE biblioteca_local ADD COLUMN reading_streak INTEGER');
       await db.execute('ALTER TABLE biblioteca_local ADD COLUMN sync_status TEXT');
       await db.execute('ALTER TABLE biblioteca_local ADD COLUMN local_version INTEGER');
-      
+
       await db.execute('''
         CREATE TABLE reading_sessions (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -180,7 +204,7 @@ class LocalDatabase {
           session_timestamp INTEGER NOT NULL,
           notes TEXT,
           created_at INTEGER,
-          
+
           UNIQUE(id)
         )
       ''');
@@ -192,6 +216,19 @@ class LocalDatabase {
       await db.execute('''
         CREATE INDEX idx_reading_sessions_timestamp ON reading_sessions(session_timestamp)
       ''');
+    }
+
+    if (oldVersion < 3) {
+      await _createPerfilTable(db);
+    }
+
+    if (oldVersion < 4) {
+      // Limpiar foto_perfil_base64 existente para evitar "Row too big" en CursorWindow de Android
+      try {
+        await db.rawUpdate(
+          'UPDATE perfil_local SET foto_perfil_base64 = NULL',
+        );
+      } catch (_) {}
     }
   }
 
