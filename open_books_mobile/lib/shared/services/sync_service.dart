@@ -8,15 +8,23 @@ import 'models/biblioteca_local_model.dart';
 import 'progress_cache.dart';
 import '../../features/biblioteca/data/repositories/biblioteca_repository_impl.dart';
 import '../../features/historial/data/repositories/historial_repository_impl.dart';
+import '../../features/reader/data/datasources/epub_datasource.dart';
+import '../core/enums/download_status.dart';
+import '../core/utils/retry_handler.dart';
+import '../core/utils/concurrency_pool.dart';
 
 class SyncService {
   final LocalDatabase localDatabase;
   final BibliotecaRepositoryImpl bibliotecaRepository;
   final HistorialRepositoryImpl historialRepository;
   final NetworkInfo networkInfo;
+  EpubDataSource? _epubDataSource;
 
   static const int _maxRetryCount = 3;
   static const Duration _retryDelay = Duration(seconds: 30);
+  static const int _bookContentBatchSize = 3;
+  static const int _maxConcurrentDownloads = 5;
+  static const int _maxDownloadAttempts = 3;
 
   StreamSubscription<bool>? _connectivitySubscription;
   final StreamController<SyncEvent> _syncEventController = StreamController<SyncEvent>.broadcast();
@@ -52,6 +60,7 @@ class SyncService {
 
     _syncEventController.add(SyncEvent.appInitStarted());
     await processSyncQueue();
+    await _syncBookContents();
     _syncEventController.add(SyncEvent.appInitCompleted());
   }
 
@@ -61,6 +70,7 @@ class SyncService {
 
     _syncEventController.add(SyncEvent.appResumedStarted());
     await processSyncQueue();
+    await _syncBookContents();
     _syncEventController.add(SyncEvent.appResumedCompleted());
   }
 
@@ -435,6 +445,107 @@ class SyncService {
 
   void clearProgressCache(int libroId) {
     ProgressCache().remove(libroId);
+  }
+
+  void setEpubDataSource(EpubDataSource dataSource) {
+    _epubDataSource = dataSource;
+  }
+
+  Future<void> _syncBookContents() async {
+    if (_epubDataSource == null) return;
+
+    final dataSource = localDatabase.bookContentLocalDataSource;
+
+    try {
+      final booksToSync = await dataSource.getBooksToSync();
+      final limitedBooks = booksToSync.take(_bookContentBatchSize).toList();
+
+      for (final libroId in limitedBooks) {
+        final status = await dataSource.getDownloadStatus(libroId);
+        if (status == DownloadStatus.downloading) continue;
+
+        await dataSource.updateDownloadStatus(libroId, DownloadStatus.downloading);
+        await _syncBookContentWithRetry(libroId);
+      }
+    } catch (e) {
+      // Skip book content sync on error
+    }
+  }
+
+  Future<void> _syncBookContentWithRetry(int libroId) async {
+    final dataSource = localDatabase.bookContentLocalDataSource;
+
+    for (int attempt = 0; attempt < _maxDownloadAttempts; attempt++) {
+      try {
+        await _syncBookContent(libroId);
+        await dataSource.updateDownloadStatus(libroId, DownloadStatus.completed);
+        return;
+      } catch (e) {
+        if (attempt < _maxDownloadAttempts - 1) {
+          final delay = (1 << attempt) * _retryDelay.inMilliseconds;
+          await Future.delayed(Duration(milliseconds: delay));
+        }
+      }
+    }
+
+    await dataSource.updateDownloadStatus(libroId, DownloadStatus.failed);
+  }
+
+  Future<void> _syncBookContent(int libroId) async {
+    if (_epubDataSource == null) return;
+
+    final dataSource = localDatabase.bookContentLocalDataSource;
+
+    // Version checking
+    final remoteManifest = await _epubDataSource!.getManifest(libroId);
+
+    if (remoteManifest == null) {
+      throw Exception('Manifest not found for libro $libroId');
+    }
+
+    final remoteVersion = remoteManifest.version ?? 1;
+    final localVersion = await dataSource.getVersion(libroId);
+
+    // Skip if remote version <= local version
+    if (localVersion != null && remoteVersion <= localVersion) {
+      await dataSource.updateDownloadStatus(libroId, DownloadStatus.completed);
+      return;
+    }
+
+    // Delete previous content before downloading new version
+    await dataSource.deleteContent(libroId);
+
+    // Save manifest
+    await dataSource.saveManifest(libroId, remoteManifest);
+
+    // Download resources with concurrency control
+    final pool = ConcurrencyPool(maxConcurrent: _maxConcurrentDownloads);
+    final downloadTasks = remoteManifest.readingOrder.map((item) async {
+      try {
+        final content = await _epubDataSource!.getResource(libroId, item.href);
+        if (content != null) {
+          await dataSource.saveResource(libroId, item.href, content);
+        }
+      } catch (e) {
+        // Fallo parcial - continuar con otros capítulos
+      }
+    }).toList();
+
+    await pool.run(downloadTasks);
+
+    // Verify critical resources exist
+    final hasResources = await dataSource.hasContent(libroId);
+    if (!hasResources) {
+      throw Exception('No resources downloaded for libro $libroId');
+    }
+
+    await dataSource.updateVersion(libroId, remoteVersion);
+  }
+
+  Future<void> retryDownload(int libroId) async {
+    final dataSource = localDatabase.bookContentLocalDataSource;
+    await dataSource.updateDownloadStatus(libroId, DownloadStatus.downloading);
+    await _syncBookContentWithRetry(libroId);
   }
 
   void dispose() {

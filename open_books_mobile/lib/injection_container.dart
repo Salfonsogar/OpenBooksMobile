@@ -27,6 +27,7 @@ import 'features/reader/data/datasources/bookmark_datasource.dart';
 import 'features/reader/data/datasources/epub_datasource.dart';
 import 'features/reader/data/repositories/bookmark_repository.dart';
 import 'features/reader/data/repositories/epub_repository.dart';
+import 'features/reader/data/repositories/epub_repository_impl.dart';
 import 'features/reader/logic/cubit/bookmark_cubit.dart';
 import 'features/reader/logic/cubit/audio_player_cubit.dart';
 import 'features/reader/logic/cubit/reader_settings_cubit.dart';
@@ -235,7 +236,11 @@ Future<void> setupDependencies() async {
     () => EpubDataSource(getIt<ApiClient>()),
   );
   getIt.registerLazySingleton<EpubRepository>(
-    () => EpubRepository(getIt<EpubDataSource>()),
+    () => EpubRepositoryImpl(
+      remoteDataSource: getIt<EpubDataSource>(),
+      localDataSource: getIt<LocalDatabase>().bookContentLocalDataSource,
+      networkInfo: getIt<NetworkInfo>(),
+    ),
   );
   getIt.registerLazySingleton<EpubLocalStorageService>(
     () => EpubLocalStorageService(

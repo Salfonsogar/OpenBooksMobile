@@ -7,10 +7,11 @@ import 'datasources/sync_queue_datasource.dart';
 import 'datasources/epub_downloads_datasource.dart';
 import 'datasources/reading_sessions_datasource.dart';
 import 'datasources/perfil_local_datasource.dart';
+import 'datasources/book_content_local_datasource.dart';
 
 class LocalDatabase {
   static const String _databaseName = 'open_books.db';
-  static const int _databaseVersion = 4;
+  static const int _databaseVersion = 5;
 
   static const int _syncedRetentionDays = 7;
   static const int _maxRetryCount = 3;
@@ -23,6 +24,7 @@ class LocalDatabase {
   late EpubDownloadsDataSource epubDownloadsDataSource;
   late ReadingSessionsDataSource readingSessionsDataSource;
   late PerfilLocalDataSource perfilLocalDataSource;
+  late BookContentLocalDataSource bookContentLocalDataSource;
 
   Future<void> init() async {
     final databasePath = await getDatabasesPath();
@@ -46,6 +48,7 @@ class LocalDatabase {
     epubDownloadsDataSource = EpubDownloadsDataSource(_database!);
     readingSessionsDataSource = ReadingSessionsDataSource(_database!);
     perfilLocalDataSource = PerfilLocalDataSource(_database!);
+    bookContentLocalDataSource = BookContentLocalDataSourceImpl(_database!);
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -61,6 +64,7 @@ class LocalDatabase {
         categorias TEXT,
         progreso REAL DEFAULT 0.0,
         is_downloaded INTEGER DEFAULT 0,
+        download_status TEXT DEFAULT 'not_downloaded',
         page INTEGER,
         updated_at INTEGER,
         created_at INTEGER,
@@ -165,6 +169,30 @@ class LocalDatabase {
       CREATE INDEX idx_sync_queue_entity ON sync_queue(entity_type, status)
     ''');
 
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS book_content (
+        libro_id INTEGER PRIMARY KEY,
+        manifest_json TEXT NOT NULL,
+        last_synced_at INTEGER NOT NULL,
+        version INTEGER DEFAULT 1
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS book_resources (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        libro_id INTEGER NOT NULL,
+        path TEXT NOT NULL,
+        content TEXT NOT NULL,
+        FOREIGN KEY (libro_id) REFERENCES book_content(libro_id),
+        UNIQUE(libro_id, path)
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_book_resources_libro ON book_resources(libro_id)',
+    );
+
     await _createPerfilTable(db);
   }
 
@@ -229,6 +257,36 @@ class LocalDatabase {
           'UPDATE perfil_local SET foto_perfil_base64 = NULL',
         );
       } catch (_) {}
+    }
+
+    if (oldVersion < 5) {
+      await db.execute(
+        'ALTER TABLE biblioteca_local ADD COLUMN download_status TEXT DEFAULT \'not_downloaded\'',
+      );
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS book_content (
+          libro_id INTEGER PRIMARY KEY,
+          manifest_json TEXT NOT NULL,
+          last_synced_at INTEGER NOT NULL,
+          version INTEGER DEFAULT 1
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS book_resources (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          libro_id INTEGER NOT NULL,
+          path TEXT NOT NULL,
+          content TEXT NOT NULL,
+          FOREIGN KEY (libro_id) REFERENCES book_content(libro_id),
+          UNIQUE(libro_id, path)
+        )
+      ''');
+
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_book_resources_libro ON book_resources(libro_id)',
+      );
     }
   }
 
