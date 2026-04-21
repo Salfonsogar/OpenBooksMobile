@@ -45,11 +45,16 @@ class _HomePageState extends State<HomePage> {
       final random = Random();
       final cubit = context.read<LibrosCubit>();
       
-      final categoriasResult = await cubit.getCategorias();
+      final results = await Future.wait([
+        cubit.getCategorias(),
+        cubit.getLibrosAleatorios(),
+        cubit.getTop5Libros(),
+      ]);
+      
+      final categoriasResult = results[0] as PagedResult<Categoria>;
       final categorias = categoriasResult.data;
-
-      final recomendados = await cubit.getLibrosAleatorios();
-      final top5 = await cubit.getTop5Libros();
+      final recomendados = results[1] as List<Libro>;
+      final top5 = results[2] as List<Libro>;
 
       String? autorRandom;
       List<Libro> librosAutor = [];

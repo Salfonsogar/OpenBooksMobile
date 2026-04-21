@@ -26,17 +26,29 @@ class _ReviewDialogState extends State<ReviewDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context);
     return AlertDialog(
-      title: const Text('Escribir reseña'),
+      backgroundColor: colors.colorScheme.surface,
+      title: Text('Escribir reseña', style: TextStyle(color: colors.colorScheme.onSurface)),
       content: Form(
         key: _formKey,
         child: TextFormField(
           controller: _controller,
           maxLines: 5,
           maxLength: 500,
-          decoration: const InputDecoration(
+          style: TextStyle(color: colors.colorScheme.onSurface),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: colors.colorScheme.surface,
             hintText: 'Comparte tu opinión sobre este libro...',
-            border: OutlineInputBorder(),
+            hintStyle: TextStyle(color: colors.colorScheme.onSurfaceVariant),
+            border: const OutlineInputBorder(),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: colors.colorScheme.outline),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: colors.colorScheme.primary, width: 2),
+            ),
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -52,7 +64,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          child: Text('Cancelar', style: TextStyle(color: colors.colorScheme.onSurfaceVariant)),
         ),
         ElevatedButton(
           onPressed: () {

@@ -1,9 +1,19 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/chapter_cache.dart';
 import '../../data/models/epub_manifest.dart';
+import '../../data/models/reader_mode.dart';
 import '../../data/repositories/epub_repository.dart';
+
+typedef OnProgressChanged = void Function({
+  required int libroId,
+  required double progreso,
+  required int page,
+  required int totalPages,
+});
 
 abstract class ReaderState extends Equatable {
   const ReaderState();
@@ -21,28 +31,32 @@ class ReaderLoaded extends ReaderState {
   final int currentChapterIndex;
   final String currentContent;
   final Set<int> cachedChapterIndices;
+  final ReaderMode mode;
 
   const ReaderLoaded({
     required this.manifest,
     required this.currentChapterIndex,
     required this.currentContent,
     this.cachedChapterIndices = const {},
+    this.mode = ReaderMode.reading,
   });
 
   @override
-  List<Object?> get props => [manifest, currentChapterIndex, currentContent, cachedChapterIndices];
+  List<Object?> get props => [manifest, currentChapterIndex, currentContent, cachedChapterIndices, mode];
 
   ReaderLoaded copyWith({
     EpubManifest? manifest,
     int? currentChapterIndex,
     String? currentContent,
     Set<int>? cachedChapterIndices,
+    ReaderMode? mode,
   }) {
     return ReaderLoaded(
       manifest: manifest ?? this.manifest,
       currentChapterIndex: currentChapterIndex ?? this.currentChapterIndex,
       currentContent: currentContent ?? this.currentContent,
       cachedChapterIndices: cachedChapterIndices ?? this.cachedChapterIndices,
+      mode: mode ?? this.mode,
     );
   }
 
@@ -62,8 +76,41 @@ class ReaderCubit extends Cubit<ReaderState> {
   final EpubRepository _repository;
   final int libroId;
   final ChapterCache _chapterCache = ChapterCache();
+  ReaderMode _currentMode = ReaderMode.reading;
+  
+  OnProgressChanged? _onProgressChanged;
+  Timer? _debounceTimer;
+  static const Duration _debounceDelay = Duration(seconds: 1);
+  int _lastSavedChapter = -1;
 
-  ReaderCubit(this._repository, this.libroId) : super(ReaderInitial());
+  ReaderMode get currentMode => _currentMode;
+
+  void setOnProgressChanged(OnProgressChanged? callback) {
+    print('[DEBUG] setOnProgressChanged called with: ${callback != null}');
+    _onProgressChanged = callback;
+  }
+
+  void setReaderMode(ReaderMode mode) {
+    _currentMode = mode;
+    final currentState = state;
+    if (currentState is ReaderLoaded) {
+      emit(currentState.copyWith(mode: mode));
+    }
+  }
+
+  void toggleMode() {
+    _currentMode = _currentMode == ReaderMode.reading 
+        ? ReaderMode.audio 
+        : ReaderMode.reading;
+    final currentState = state;
+    if (currentState is ReaderLoaded) {
+      emit(currentState.copyWith(mode: _currentMode));
+    }
+  }
+
+ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(ReaderInitial());
+
+  final int initialPage;
 
   Future<void> cargarLibro() async {
     emit(ReaderLoading());
@@ -71,23 +118,32 @@ class ReaderCubit extends Cubit<ReaderState> {
       final manifest = await _repository.getManifest(libroId);
       
       if (manifest.readingOrder.isEmpty) {
-        emit(const ReaderError('El libro no tiene capítulos'));
+        emit(const ReaderError('El libro no tiene capitulos'));
         return;
       }
 
-      final firstChapter = manifest.readingOrder.first.href;
-      final content = await _repository.getResource(libroId, firstChapter);
+      final startIndex = initialPage > 0 && initialPage < manifest.readingOrder.length 
+          ? initialPage - 1 
+          : 0;
       
-      _chapterCache.put(0, content);
+      final chapterPath = manifest.readingOrder[startIndex].href;
+      final content = await _repository.getResource(libroId, chapterPath);
+      
+      _chapterCache.put(startIndex, content);
 
       emit(ReaderLoaded(
         manifest: manifest,
-        currentChapterIndex: 0,
+        currentChapterIndex: startIndex,
         currentContent: content,
-        cachedChapterIndices: {0},
+        cachedChapterIndices: {startIndex},
+        mode: _currentMode,
       ));
 
-      _precargarSiguienteCapitulo(0);
+      _precargarSiguienteCapitulo(startIndex);
+      
+      if (startIndex > 0) {
+        _onChapterChanged(startIndex, manifest.readingOrder.length);
+      }
     } catch (e) {
       emit(ReaderError(e.toString().replaceAll('Exception: ', '')));
     }
@@ -108,6 +164,7 @@ class ReaderCubit extends Cubit<ReaderState> {
         currentContent: content,
       ));
       _precargarSiguienteCapitulo(index);
+      _onChapterChanged(index, currentState.manifest.readingOrder.length);
       return;
     }
 
@@ -127,6 +184,7 @@ class ReaderCubit extends Cubit<ReaderState> {
 
       _precargarSiguienteCapitulo(index);
       _optimizeCache(currentState.currentChapterIndex);
+      _onChapterChanged(index, currentState.manifest.readingOrder.length);
     } catch (e) {
       emit(ReaderError(e.toString().replaceAll('Exception: ', '')));
     }
@@ -214,4 +272,52 @@ class ReaderCubit extends Cubit<ReaderState> {
 
   int get cachedChaptersCount => _chapterCache.length;
   List<int> get cachedIndices => _chapterCache.cachedIndices;
+
+  void _onChapterChanged(int newChapterIndex, int totalChapters) {
+    print('[DEBUG] _onChapterChanged called: chapter=$newChapterIndex, total=$totalChapters');
+    if (_lastSavedChapter == newChapterIndex) return;
+    _lastSavedChapter = newChapterIndex;
+
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceDelay, () {
+      _saveProgress(newChapterIndex, totalChapters);
+    });
+  }
+
+  void _saveProgress(int currentChapter, int totalChapters) {
+    print('[DEBUG] _saveProgress called: chapter=$currentChapter, total=$totalChapters, callback=${_onProgressChanged != null}');
+    if (_onProgressChanged == null) return;
+
+    final progreso = totalChapters > 0 ? ((currentChapter + 1) / totalChapters) * 100 : 0.0;
+    print('[DEBUG] Sending progress: $progreso%, page: ${currentChapter + 1}');
+    
+    _onProgressChanged!(
+      libroId: libroId,
+      progreso: progreso,
+      page: currentChapter + 1,
+      totalPages: totalChapters,
+    );
+  }
+
+  void saveProgressNow() {
+    _debounceTimer?.cancel();
+    final currentState = state;
+    if (currentState is ReaderLoaded) {
+      _saveProgress(
+        currentState.currentChapterIndex,
+        currentState.manifest.readingOrder.length,
+      );
+    }
+  }
+
+  void onReaderClosed() {
+    saveProgressNow();
+  }
+
+  @override
+  Future<void> close() {
+    _debounceTimer?.cancel();
+    saveProgressNow();
+    return super.close();
+  }
 }

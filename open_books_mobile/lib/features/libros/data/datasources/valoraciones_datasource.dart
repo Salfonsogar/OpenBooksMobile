@@ -10,10 +10,14 @@ class ValoracionesDataSource {
 
   Future<void> crearValoracion(int libroId, int puntuacion) async {
     try {
-      await _apiClient.post(
+      final response = await _apiClient.post(
         '/api/Valoraciones',
-        data: {'libroId': libroId, 'puntuacion': puntuacion},
+        data: {'IdLibro': libroId, 'puntuacion': puntuacion},
       );
+      if (response.statusCode == 400) {
+        final message = response.data?['mensaje'] ?? response.data?['message'] ?? response.data?['error'] ?? 'Error en la solicitud';
+        throw Exception(message);
+      }
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -23,7 +27,8 @@ class ValoracionesDataSource {
     try {
       await _apiClient.put(
         '/api/Valoraciones',
-        data: {'libroId': libroId, 'puntuacion': puntuacion},
+        queryParameters: {'IdLibro': libroId},
+        data: {'puntuacion': puntuacion},
       );
     } on DioException catch (e) {
       throw _handleError(e);
@@ -56,7 +61,7 @@ class ValoracionesDataSource {
     try {
       final response = await _apiClient.get(
         '/api/Libros',
-        queryParameters: {'query': '', 'page': 1, 'pageSize': 10},
+        queryParameters: {'ordenarPor': 'valoraciones', 'page': 1, 'pageSize': 10},
       );
       final data = response.data as Map<String, dynamic>;
       return (data['data'] as List<dynamic>)
@@ -69,7 +74,7 @@ class ValoracionesDataSource {
 
   Exception _handleError(DioException e) {
     if (e.response?.statusCode == 400) {
-      final message = e.response?.data?['message'] ?? e.response?.data?['error'];
+      final message = e.response?.data?['message'] ?? e.response?.data?['error'] ?? e.response?.data?['mensaje'];
       return Exception(message ?? 'Error en la solicitud');
     }
     return Exception('Error de conexión. Intenta más tarde.');

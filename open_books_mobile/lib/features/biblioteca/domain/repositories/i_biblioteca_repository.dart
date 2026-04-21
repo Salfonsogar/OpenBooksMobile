@@ -9,5 +9,6 @@ abstract class IBibliotecaRepository {
   Future<void> addLibroFromRemote(int usuarioId, Libro libro);
   Future<void> removeLibro(int usuarioId, int libroId);
   Future<void> syncNow();
+  Future<void> syncFromRemote(int usuarioId);
   Future<bool> get isConnected;
 }

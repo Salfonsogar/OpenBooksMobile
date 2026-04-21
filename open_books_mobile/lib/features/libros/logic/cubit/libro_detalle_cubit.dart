@@ -85,17 +85,10 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
     try {
       final libro = await _repository.getLibroDetalle(libroId);
       
-      String? portada;
-      bool enBiblioteca = false;
-      
-      try {
-        portada = await _repository.getPortada(libroId);
-      } catch (_) {
-        portada = null;
-      }
-      
+      String? portada = libro.portadaBase64;
       _portadaBase64 = portada;
       
+      bool enBiblioteca = false;
       final sessionState = _sessionCubit.state;
       if (sessionState is SessionAuthenticated) {
         try {
@@ -113,7 +106,7 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
         estaEnBiblioteca: enBiblioteca,
       ));
     } catch (e) {
-      emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
+      _handleAuthError(e);
     }
   }
 
@@ -134,12 +127,15 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
         estaEnBiblioteca: _estaEnBiblioteca,
       ));
     } catch (e) {
-      emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
+      _handleAuthError(e);
     }
   }
 
   Future<void> valorar(int puntuacion) async {
     if (_libroId == null) return;
+
+    final sessionState = _sessionCubit.state;
+    if (sessionState is! SessionAuthenticated) return;
 
     final currentState = state;
     if (currentState is! LibroDetalleLoaded) return;
@@ -154,12 +150,31 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
         operationType: OperationType.valoracion,
       ));
     } catch (e) {
-      emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
+      final errorStr = e.toString();
+      if (errorStr.contains('Ya has valorado')) {
+        try {
+          await _repository.actualizarValoracion(_libroId!, puntuacion);
+          final libro = await _repository.getLibroDetalle(_libroId!);
+          emit(LibroDetalleLoaded(
+            libro: libro,
+            portadaBase64: _portadaBase64,
+            estaEnBiblioteca: _estaEnBiblioteca,
+            operationType: OperationType.valoracion,
+          ));
+        } catch (e2) {
+          _handleAuthError(e2);
+        }
+      } else {
+        _handleAuthError(e);
+      }
     }
   }
 
   Future<void> actualizarValoracion(int puntuacion) async {
     if (_libroId == null) return;
+
+    final sessionState = _sessionCubit.state;
+    if (sessionState is! SessionAuthenticated) return;
 
     final currentState = state;
     if (currentState is! LibroDetalleLoaded) return;
@@ -174,12 +189,15 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
         operationType: OperationType.valoracion,
       ));
     } catch (e) {
-      emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
+      _handleAuthError(e);
     }
   }
 
   Future<void> eliminarValoracion() async {
     if (_libroId == null) return;
+
+    final sessionState = _sessionCubit.state;
+    if (sessionState is! SessionAuthenticated) return;
 
     final currentState = state;
     if (currentState is! LibroDetalleLoaded) return;
@@ -194,12 +212,15 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
         operationType: OperationType.valoracion,
       ));
     } catch (e) {
-      emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
+      _handleAuthError(e);
     }
   }
 
   Future<void> escribirResena(String texto) async {
     if (_libroId == null) return;
+
+    final sessionState = _sessionCubit.state;
+    if (sessionState is! SessionAuthenticated) return;
 
     final currentState = state;
     if (currentState is! LibroDetalleLoaded) return;
@@ -214,7 +235,7 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
         operationType: OperationType.resena,
       ));
     } catch (e) {
-      emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
+      _handleAuthError(e);
     }
   }
 
@@ -233,7 +254,7 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
         emit(currentState.copyWith(estaEnBiblioteca: true, clearOperationType: true));
       }
     } catch (e) {
-      emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
+      _handleAuthError(e);
     }
   }
 
@@ -268,7 +289,17 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
         clearOperationType: false,
       ));
     } catch (e) {
-      emit(LibroDetalleError(e.toString().replaceAll('Exception: ', '')));
+      _handleAuthError(e);
+    }
+  }
+
+  Future<void> _handleAuthError(dynamic error) async {
+    final errorStr = error.toString();
+    if (errorStr.contains('401') || errorStr.toLowerCase().contains('unauthorized')) {
+      await _sessionCubit.logout();
+      emit(LibroDetalleError('Sesión expirada. Inicia sesión nuevamente.'));
+    } else {
+      emit(LibroDetalleError(errorStr.replaceAll('Exception: ', '')));
     }
   }
 }

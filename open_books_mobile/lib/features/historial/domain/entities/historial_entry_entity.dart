@@ -10,6 +10,8 @@ class HistorialEntryEntity extends Equatable {
   final DateTime ultimaLectura;
   final String status;
   final DateTime createdAt;
+  final double progreso;
+  final int? page;
 
   const HistorialEntryEntity({
     required this.id,
@@ -21,6 +23,8 @@ class HistorialEntryEntity extends Equatable {
     required this.ultimaLectura,
     this.status = 'synced',
     required this.createdAt,
+    this.progreso = 0.0,
+    this.page,
   });
 
   @override
@@ -34,6 +38,8 @@ class HistorialEntryEntity extends Equatable {
         ultimaLectura,
         status,
         createdAt,
+        progreso,
+        page,
       ];
 
   HistorialEntryEntity copyWith({
@@ -46,6 +52,8 @@ class HistorialEntryEntity extends Equatable {
     DateTime? ultimaLectura,
     String? status,
     DateTime? createdAt,
+    double? progreso,
+    int? page,
   }) {
     return HistorialEntryEntity(
       id: id ?? this.id,
@@ -57,6 +65,8 @@ class HistorialEntryEntity extends Equatable {
       ultimaLectura: ultimaLectura ?? this.ultimaLectura,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      progreso: progreso ?? this.progreso,
+      page: page ?? this.page,
     );
   }
 }

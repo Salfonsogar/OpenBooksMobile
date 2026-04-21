@@ -8,6 +8,10 @@ class LibroBiblioteca {
   final String? portadaBase64;
   final List<String> categorias;
   final double progreso;
+  final int? page;
+  final String? syncStatus;
+  final int? lastReadAt;
+  final int? readingStreak;
 
   LibroBiblioteca({
     required this.id,
@@ -17,6 +21,10 @@ class LibroBiblioteca {
     this.portadaBase64,
     required this.categorias,
     this.progreso = 0.0,
+    this.page,
+    this.syncStatus,
+    this.lastReadAt,
+    this.readingStreak,
   });
 
   factory LibroBiblioteca.fromJson(Map<String, dynamic> json) {
@@ -31,10 +39,14 @@ class LibroBiblioteca {
               .toList() ??
           [],
       progreso: (json['progreso'] as num?)?.toDouble() ?? 0.0,
+      page: json['page'] as int?,
+      syncStatus: json['syncStatus'] as String?,
+      lastReadAt: json['lastReadAt'] as int?,
+      readingStreak: json['readingStreak'] as int?,
     );
   }
 
-  factory LibroBiblioteca.fromLibro(Libro libro, {double progreso = 0.0}) {
+  factory LibroBiblioteca.fromLibro(Libro libro, {double progreso = 0.0, int? page, String? syncStatus, int? lastReadAt, int? readingStreak}) {
     return LibroBiblioteca(
       id: libro.id,
       titulo: libro.titulo,
@@ -43,6 +55,10 @@ class LibroBiblioteca {
       portadaBase64: libro.portadaBase64,
       categorias: libro.categorias,
       progreso: progreso,
+      page: page,
+      syncStatus: syncStatus,
+      lastReadAt: lastReadAt,
+      readingStreak: readingStreak,
     );
   }
 
@@ -55,6 +71,10 @@ class LibroBiblioteca {
       'portadaBase64': portadaBase64,
       'categorias': categorias,
       'progreso': progreso,
+      'page': page,
+      'syncStatus': syncStatus,
+      'lastReadAt': lastReadAt,
+      'readingStreak': readingStreak,
     };
   }
 }

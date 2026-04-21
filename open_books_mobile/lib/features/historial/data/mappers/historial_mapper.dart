@@ -19,6 +19,8 @@ class HistorialMapper {
       ultimaLectura: DateTime.fromMillisecondsSinceEpoch(model.ultimaLectura),
       status: model.status,
       createdAt: DateTime.fromMillisecondsSinceEpoch(model.createdAt),
+      progreso: 0.0,
+      page: null,
     );
   }
 

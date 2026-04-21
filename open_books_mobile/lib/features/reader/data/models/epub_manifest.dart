@@ -45,6 +45,7 @@ class EpubManifest {
   final String autor;
   final List<ReadingOrderItem> readingOrder;
   final List<TocItem> toc;
+  final int? version;
 
   const EpubManifest({
     required this.id,
@@ -52,6 +53,7 @@ class EpubManifest {
     required this.autor,
     required this.readingOrder,
     required this.toc,
+    this.version,
   });
 
   factory EpubManifest.fromJson(Map<String, dynamic> json) {
@@ -67,6 +69,7 @@ class EpubManifest {
               ?.map((e) => TocItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      version: json['version'] as int?,
     );
   }
 
@@ -77,6 +80,7 @@ class EpubManifest {
       'autor': autor,
       'readingOrder': readingOrder.map((e) => {'href': e.href, 'type': e.type}).toList(),
       'toc': toc.map((e) => e.toJson()).toList(),
+      'version': version,
     };
   }
 }

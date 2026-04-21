@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/core/session/session_cubit.dart';
 import '../../../../shared/core/session/session_state.dart';
+import '../../../../shared/core/enums/download_status.dart';
 import '../../../../shared/services/epub_local_storage_service.dart';
 import '../../data/models/libro_biblioteca.dart';
 import '../../domain/usecases/get_biblioteca_usecase.dart';
@@ -25,22 +26,26 @@ class BibliotecaLoading extends BibliotecaState {}
 class BibliotecaLoaded extends BibliotecaState {
   final List<LibroBiblioteca> libros;
   final Map<int, bool> downloadedStatus;
+  final Map<int, DownloadStatus> downloadStatuses;
 
   const BibliotecaLoaded({
     required this.libros,
     this.downloadedStatus = const {},
+    this.downloadStatuses = const {},
   });
 
   @override
-  List<Object> get props => [libros, downloadedStatus];
+  List<Object> get props => [libros, downloadedStatus, downloadStatuses];
 
   BibliotecaLoaded copyWith({
     List<LibroBiblioteca>? libros,
     Map<int, bool>? downloadedStatus,
+    Map<int, DownloadStatus>? downloadStatuses,
   }) {
     return BibliotecaLoaded(
       libros: libros ?? this.libros,
       downloadedStatus: downloadedStatus ?? this.downloadedStatus,
+      downloadStatuses: downloadStatuses ?? this.downloadStatuses,
     );
   }
 
@@ -50,6 +55,10 @@ class BibliotecaLoaded extends BibliotecaState {
 
   bool isDownloaded(int libroId) {
     return downloadedStatus[libroId] ?? false;
+  }
+
+  DownloadStatus getDownloadStatus(int libroId) {
+    return downloadStatuses[libroId] ?? DownloadStatus.notDownloaded;
   }
 }
 
@@ -101,12 +110,17 @@ class BibliotecaCubit extends Cubit<BibliotecaState> {
                 portadaBase64: e.portadaBase64,
                 categorias: e.categorias,
                 progreso: e.progreso,
+                page: e.page,
+                syncStatus: e.syncStatus,
+                lastReadAt: e.lastReadAt?.millisecondsSinceEpoch,
+                readingStreak: e.readingStreak,
               ))
           .toList();
 
+      final downloadedIds = await epubLocalStorageService.getAllDownloadedIds();
       final downloadedStatus = <int, bool>{};
       for (final libro in libros) {
-        downloadedStatus[libro.id] = await epubLocalStorageService.isDownloaded(libro.id);
+        downloadedStatus[libro.id] = downloadedIds.contains(libro.id);
       }
 
       emit(BibliotecaLoaded(libros: libros, downloadedStatus: downloadedStatus));

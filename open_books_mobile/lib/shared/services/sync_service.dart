@@ -3,17 +3,28 @@ import 'dart:async';
 import 'local_database.dart';
 import 'network_info.dart';
 import 'models/sync_queue_model.dart';
+import 'models/reading_session_model.dart';
+import 'models/biblioteca_local_model.dart';
+import 'progress_cache.dart';
 import '../../features/biblioteca/data/repositories/biblioteca_repository_impl.dart';
 import '../../features/historial/data/repositories/historial_repository_impl.dart';
+import '../../features/reader/data/datasources/epub_datasource.dart';
+import '../core/enums/download_status.dart';
+import '../core/utils/retry_handler.dart';
+import '../core/utils/concurrency_pool.dart';
 
 class SyncService {
   final LocalDatabase localDatabase;
   final BibliotecaRepositoryImpl bibliotecaRepository;
   final HistorialRepositoryImpl historialRepository;
   final NetworkInfo networkInfo;
+  EpubDataSource? _epubDataSource;
 
   static const int _maxRetryCount = 3;
   static const Duration _retryDelay = Duration(seconds: 30);
+  static const int _bookContentBatchSize = 3;
+  static const int _maxConcurrentDownloads = 5;
+  static const int _maxDownloadAttempts = 3;
 
   StreamSubscription<bool>? _connectivitySubscription;
   final StreamController<SyncEvent> _syncEventController = StreamController<SyncEvent>.broadcast();
@@ -49,6 +60,7 @@ class SyncService {
 
     _syncEventController.add(SyncEvent.appInitStarted());
     await processSyncQueue();
+    await _syncBookContents();
     _syncEventController.add(SyncEvent.appInitCompleted());
   }
 
@@ -58,6 +70,7 @@ class SyncService {
 
     _syncEventController.add(SyncEvent.appResumedStarted());
     await processSyncQueue();
+    await _syncBookContents();
     _syncEventController.add(SyncEvent.appResumedCompleted());
   }
 
@@ -137,9 +150,55 @@ class SyncService {
       case SyncQueueModel.operationAddHistorial:
         await historialRepository.syncAddHistorial(libroId);
         break;
+      case SyncQueueModel.operationUpdateProgress:
+        await _handleProgressUpdate(payload);
+        break;
+      case SyncQueueModel.operationAddReadingSession:
+        await _handleReadingSession(payload);
+        break;
       default:
         break;
     }
+  }
+
+  Future<void> _handleProgressUpdate(Map<String, dynamic> payload) async {
+    final libroId = payload['libroId'] as int? ?? 0;
+    final usuarioId = payload['usuarioId'] as int? ?? 0;
+    final progreso = (payload['progreso'] as num?)?.toDouble() ?? 0.0;
+    final page = payload['page'] as int? ?? 0;
+    final timestamp = payload['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch;
+
+    final existing = await localDatabase.bibliotecaLocalDataSource.getByLibroId(libroId, usuarioId);
+    if (existing != null) {
+      await localDatabase.bibliotecaLocalDataSource.updateProgressWithTracking(
+        id: existing.id!,
+        progreso: progreso,
+        page: page,
+        timestamp: timestamp,
+      );
+      await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(existing.id!, 'synced');
+    }
+  }
+
+  Future<void> _handleReadingSession(Map<String, dynamic> payload) async {
+    final libroId = payload['libroId'] as int? ?? 0;
+    final usuarioId = payload['usuarioId'] as int? ?? 0;
+    final progressId = payload['progressId'] as int? ?? 0;
+    final pagesRead = payload['pagesRead'] as int? ?? 0;
+    final notes = payload['notes'] as String?;
+    final timestamp = payload['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch;
+
+    final session = ReadingSessionModel(
+      progressId: progressId,
+      libroId: libroId,
+      usuarioId: usuarioId,
+      pagesReadInSession: pagesRead,
+      sessionTimestamp: timestamp,
+      notes: notes,
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+    );
+
+    await localDatabase.readingSessionsDataSource.insert(session);
   }
 
   Map<String, dynamic> _parsePayload(String payload) {
@@ -175,6 +234,318 @@ class SyncService {
 
   Future<void> forceSyncNow() async {
     await processSyncQueue();
+  }
+
+  Future<void> addProgressUpdateToQueue({
+    required int libroId,
+    required int usuarioId,
+    required double progreso,
+    required int page,
+    int? timestamp,
+  }) async {
+    print('[DEBUG SyncService] addProgressUpdateToQueue called: libroId=$libroId, usuarioId=$usuarioId, progreso=$progreso, page=$page');
+    final now = timestamp ?? DateTime.now().millisecondsSinceEpoch;
+    ProgressCache().set(libroId, progreso, page);
+    
+    final existing = await localDatabase.bibliotecaLocalDataSource.getByLibroId(libroId, usuarioId);
+    print('[DEBUG SyncService] Existing book found: ${existing != null}');
+    if (existing != null) {
+      await localDatabase.bibliotecaLocalDataSource.updateProgressWithTracking(
+        id: existing.id!,
+        progreso: progreso,
+        page: page,
+        timestamp: now,
+      );
+      print('[DEBUG SyncService] Updated local database');
+    } else {
+      print('[DEBUG SyncService] Book not found in local DB - creating new entry');
+      await localDatabase.bibliotecaLocalDataSource.insert(
+        BibliotecaLocalModel(
+          libroId: libroId,
+          usuarioId: usuarioId,
+          titulo: 'Libro $libroId',
+          progreso: progreso,
+          page: page,
+          lastReadAt: now,
+          syncStatus: 'pending',
+          createdAt: now,
+        ),
+      );
+      print('[DEBUG SyncService] Created new book entry');
+    }
+    
+    final payload = {
+      'libroId': libroId,
+      'usuarioId': usuarioId,
+      'progreso': progreso,
+      'page': page,
+    };
+
+    final operation = SyncQueueModel(
+      operation: SyncQueueModel.operationUpdateProgress,
+      entityType: SyncQueueModel.entityTypeProgress,
+      entityId: libroId,
+      payload: payload.toString(),
+      priority: SyncQueueModel.priorityHigh,
+      createdAt: now,
+    );
+
+    await localDatabase.syncQueueDataSource.insert(operation);
+    if (existing != null) {
+      await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(
+        existing.id!,
+        'pending',
+      );
+    }
+  }
+
+  Future<void> addReadingSessionToQueue({
+    required int libroId,
+    required int usuarioId,
+    required int progressId,
+    required int pagesRead,
+    String? notes,
+    int? timestamp,
+  }) async {
+    final payload = {
+      'libroId': libroId,
+      'usuarioId': usuarioId,
+      'progressId': progressId,
+      'pagesRead': pagesRead,
+      'notes': notes,
+      'timestamp': timestamp ?? DateTime.now().millisecondsSinceEpoch,
+    };
+
+    final operation = SyncQueueModel(
+      operation: SyncQueueModel.operationAddReadingSession,
+      entityType: SyncQueueModel.entityTypeReadingSession,
+      entityId: libroId,
+      payload: payload.toString(),
+      priority: SyncQueueModel.priorityNormal,
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+    );
+
+    await localDatabase.syncQueueDataSource.insert(operation);
+  }
+
+  Future<void> fallbackToLocal({
+    required int libroId,
+    required int usuarioId,
+    required double progreso,
+    required int page,
+    String? errorMessage,
+  }) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+    await localDatabase.bibliotecaLocalDataSource.updateProgressWithTracking(
+      id: (await localDatabase.bibliotecaLocalDataSource.getByLibroId(libroId, usuarioId))?.id ?? 0,
+      progreso: progreso,
+      page: page,
+      timestamp: timestamp,
+    );
+
+    await addProgressUpdateToQueue(
+      libroId: libroId,
+      usuarioId: usuarioId,
+      progreso: progreso,
+      page: page,
+      timestamp: timestamp,
+    );
+
+    _syncEventController.add(SyncEvent.operationFailed(
+      SyncQueueModel.operationUpdateProgress,
+      libroId,
+      errorMessage ?? 'Guardado localmente por fallo de conexion',
+    ));
+  }
+
+  Future<void> processProgressSync() async {
+    final pendingProgress = await localDatabase.syncQueueDataSource.getPendingByEntityType(
+      SyncQueueModel.entityTypeProgress,
+    );
+
+    for (final op in pendingProgress) {
+      await _processProgressOperation(op);
+    }
+  }
+
+  Future<void> _processProgressOperation(SyncQueueModel op) async {
+    final payload = op.payload != null ? _parsePayload(op.payload!) : <String, dynamic>{};
+    final libroId = payload['libroId'] as int? ?? op.entityId;
+    final progreso = (payload['progreso'] as num?)?.toDouble() ?? 0.0;
+    final page = payload['page'] as int? ?? 0;
+
+    try {
+      await localDatabase.bibliotecaLocalDataSource.updateProgressWithTracking(
+        id: (await localDatabase.bibliotecaLocalDataSource.getByLibroId(
+          libroId,
+          payload['usuarioId'] as int? ?? 0,
+        ))?.id ?? 0,
+        progreso: progreso,
+        page: page,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      );
+
+      await localDatabase.syncQueueDataSource.markAsSynced(op.id!);
+      await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(
+        (await localDatabase.bibliotecaLocalDataSource.getByLibroId(
+          libroId,
+          payload['usuarioId'] as int? ?? 0,
+        ))?.id ?? 0,
+        'synced',
+      );
+    } catch (e) {
+      await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(
+        (await localDatabase.bibliotecaLocalDataSource.getByLibroId(
+          libroId,
+          payload['usuarioId'] as int? ?? 0,
+        ))?.id ?? 0,
+        'conflict',
+      );
+    }
+  }
+
+  Future<void> resolveConflictWithLatestWrite({
+    required int libroId,
+    required int usuarioId,
+    required int serverTimestamp,
+    required double serverProgreso,
+    required int serverPage,
+  }) async {
+    final local = await localDatabase.bibliotecaLocalDataSource.getByLibroId(libroId, usuarioId);
+
+    if (local == null) return;
+
+    final localTimestamp = local.lastReadAt ?? 0;
+
+    if (serverTimestamp > localTimestamp) {
+      await localDatabase.bibliotecaLocalDataSource.updateProgressWithTracking(
+        id: local.id!,
+        progreso: serverProgreso,
+        page: serverPage,
+        timestamp: serverTimestamp,
+      );
+      await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(local.id!, 'synced');
+    }
+  }
+
+  Future<int> getPendingProgressCount() async {
+    return localDatabase.syncQueueDataSource.countPendingByEntityType(
+      SyncQueueModel.entityTypeProgress,
+    );
+  }
+
+  double? getCachedProgress(int libroId) {
+    return ProgressCache().get(libroId)?.progreso;
+  }
+
+  int? getCachedPage(int libroId) {
+    return ProgressCache().get(libroId)?.page;
+  }
+
+  void clearProgressCache(int libroId) {
+    ProgressCache().remove(libroId);
+  }
+
+  void setEpubDataSource(EpubDataSource dataSource) {
+    _epubDataSource = dataSource;
+  }
+
+  Future<void> _syncBookContents() async {
+    if (_epubDataSource == null) return;
+
+    final dataSource = localDatabase.bookContentLocalDataSource;
+
+    try {
+      final booksToSync = await dataSource.getBooksToSync();
+      final limitedBooks = booksToSync.take(_bookContentBatchSize).toList();
+
+      for (final libroId in limitedBooks) {
+        final status = await dataSource.getDownloadStatus(libroId);
+        if (status == DownloadStatus.downloading) continue;
+
+        await dataSource.updateDownloadStatus(libroId, DownloadStatus.downloading);
+        await _syncBookContentWithRetry(libroId);
+      }
+    } catch (e) {
+      // Skip book content sync on error
+    }
+  }
+
+  Future<void> _syncBookContentWithRetry(int libroId) async {
+    final dataSource = localDatabase.bookContentLocalDataSource;
+
+    for (int attempt = 0; attempt < _maxDownloadAttempts; attempt++) {
+      try {
+        await _syncBookContent(libroId);
+        await dataSource.updateDownloadStatus(libroId, DownloadStatus.completed);
+        return;
+      } catch (e) {
+        if (attempt < _maxDownloadAttempts - 1) {
+          final delay = (1 << attempt) * _retryDelay.inMilliseconds;
+          await Future.delayed(Duration(milliseconds: delay));
+        }
+      }
+    }
+
+    await dataSource.updateDownloadStatus(libroId, DownloadStatus.failed);
+  }
+
+  Future<void> _syncBookContent(int libroId) async {
+    if (_epubDataSource == null) return;
+
+    final dataSource = localDatabase.bookContentLocalDataSource;
+
+    // Version checking
+    final remoteManifest = await _epubDataSource!.getManifest(libroId);
+
+    if (remoteManifest == null) {
+      throw Exception('Manifest not found for libro $libroId');
+    }
+
+    final remoteVersion = remoteManifest.version ?? 1;
+    final localVersion = await dataSource.getVersion(libroId);
+
+    // Skip if remote version <= local version
+    if (localVersion != null && remoteVersion <= localVersion) {
+      await dataSource.updateDownloadStatus(libroId, DownloadStatus.completed);
+      return;
+    }
+
+    // Delete previous content before downloading new version
+    await dataSource.deleteContent(libroId);
+
+    // Save manifest
+    await dataSource.saveManifest(libroId, remoteManifest);
+
+    // Download resources with concurrency control
+    final pool = ConcurrencyPool(maxConcurrent: _maxConcurrentDownloads);
+    final downloadTasks = remoteManifest.readingOrder.map((item) async {
+      try {
+        final content = await _epubDataSource!.getResource(libroId, item.href);
+        if (content != null) {
+          await dataSource.saveResource(libroId, item.href, content);
+        }
+      } catch (e) {
+        // Fallo parcial - continuar con otros capítulos
+      }
+    }).toList();
+
+    await pool.run(downloadTasks);
+
+    // Verify critical resources exist
+    final hasResources = await dataSource.hasContent(libroId);
+    if (!hasResources) {
+      throw Exception('No resources downloaded for libro $libroId');
+    }
+
+    await dataSource.updateVersion(libroId, remoteVersion);
+  }
+
+  Future<void> retryDownload(int libroId) async {
+    final dataSource = localDatabase.bookContentLocalDataSource;
+    await dataSource.updateDownloadStatus(libroId, DownloadStatus.downloading);
+    await _syncBookContentWithRetry(libroId);
   }
 
   void dispose() {

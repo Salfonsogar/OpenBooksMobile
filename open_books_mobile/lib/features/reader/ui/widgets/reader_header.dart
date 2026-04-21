@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../data/models/reader_mode.dart';
 import 'reader_colors.dart';
+import 'mode_toggle_widget.dart';
 
 class ReaderHeader extends StatelessWidget {
   final String title;
@@ -8,8 +10,9 @@ class ReaderHeader extends StatelessWidget {
   final double topPadding;
   final VoidCallback onBack;
   final VoidCallback onSearch;
-  final VoidCallback onToc;
   final VoidCallback onSettings;
+  final ReaderMode currentMode;
+  final ValueChanged<ReaderMode>? onModeChanged;
 
   const ReaderHeader({
     super.key,
@@ -18,8 +21,9 @@ class ReaderHeader extends StatelessWidget {
     required this.topPadding,
     required this.onBack,
     required this.onSearch,
-    required this.onToc,
     required this.onSettings,
+    this.currentMode = ReaderMode.reading,
+    this.onModeChanged,
   });
 
   @override
@@ -54,17 +58,19 @@ class ReaderHeader extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            if (onModeChanged != null)
+              ModeToggleWidget(
+                currentMode: currentMode,
+                onModeChanged: onModeChanged!,
+                colors: colors,
+              ),
             IconButton(
-              icon: Icon(Icons.search, color: colors.icon, size: 28),
-              onPressed: onSearch,
-            ),
-            IconButton(
-              icon: Icon(Icons.list, color: colors.icon, size: 28),
-              onPressed: onToc,
-            ),
-            IconButton(
-              icon: Icon(Icons.settings, color: colors.icon, size: 28),
-              onPressed: onSettings,
+              icon: Icon(
+                currentMode == ReaderMode.audio ? Icons.settings : Icons.search,
+                color: colors.icon,
+                size: 28,
+              ),
+              onPressed: currentMode == ReaderMode.audio ? onSettings : onSearch,
             ),
           ],
         ),

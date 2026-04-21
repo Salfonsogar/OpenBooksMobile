@@ -27,7 +27,9 @@ import 'features/reader/data/datasources/bookmark_datasource.dart';
 import 'features/reader/data/datasources/epub_datasource.dart';
 import 'features/reader/data/repositories/bookmark_repository.dart';
 import 'features/reader/data/repositories/epub_repository.dart';
+import 'features/reader/data/repositories/epub_repository_impl.dart';
 import 'features/reader/logic/cubit/bookmark_cubit.dart';
+import 'features/reader/logic/cubit/audio_player_cubit.dart';
 import 'features/reader/logic/cubit/reader_settings_cubit.dart';
 import 'features/notifications/logic/cubit/notification_cubit.dart';
 import 'features/admin/dashboard/data/datasources/admin_dashboard_datasource.dart';
@@ -60,6 +62,7 @@ import 'shared/services/network_info.dart';
 import 'shared/services/local_database.dart';
 import 'shared/services/epub_local_storage_service.dart';
 import 'shared/services/sync_service.dart';
+import 'shared/services/tts_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -138,7 +141,11 @@ Future<void> setupDependencies() async {
     () => PerfilDataSource(getIt<ApiClient>()),
   );
   getIt.registerLazySingleton<PerfilRepository>(
-    () => PerfilRepository(getIt<PerfilDataSource>()),
+    () => PerfilRepository(
+      getIt<PerfilDataSource>(),
+      getIt<LocalDatabase>(),
+      getIt<NetworkInfo>(),
+    ),
   );
 
   getIt.registerLazySingleton<HistorialDataSource>(
@@ -171,11 +178,7 @@ Future<void> setupDependencies() async {
   );
 
   getIt.registerLazySingleton<GetBibliotecaUseCase>(
-    () => GetBibliotecaUseCase(
-      getIt<BibliotecaRepositoryImpl>(),
-      getIt<BibliotecaRepositoryImpl>(),
-      getIt<LibrosRepository>(),
-    ),
+    () => GetBibliotecaUseCase(getIt<BibliotecaRepositoryImpl>()),
   );
 
   getIt.registerLazySingleton<AddLibroBibliotecaUseCase>(
@@ -200,7 +203,7 @@ Future<void> setupDependencies() async {
     () => UploadLibroCubit(),
   );
 
-  getIt.registerLazySingleton<PerfilCubit>(
+  getIt.registerFactory<PerfilCubit>(
     () => PerfilCubit(
       repository: getIt<PerfilRepository>(),
       sessionCubit: getIt<SessionCubit>(),
@@ -212,6 +215,7 @@ Future<void> setupDependencies() async {
       getHistorialUseCase: getIt<GetHistorialUseCase>(),
       addToHistorialUseCase: getIt<AddToHistorialUseCase>(),
       sessionCubit: getIt<SessionCubit>(),
+      localDatabase: getIt<LocalDatabase>(),
     ),
   );
 
@@ -224,11 +228,19 @@ Future<void> setupDependencies() async {
     ),
   );
 
+  final ttsService = TtsService();
+  await ttsService.init();
+  getIt.registerLazySingleton<TtsService>(() => ttsService);
+
   getIt.registerLazySingleton<EpubDataSource>(
     () => EpubDataSource(getIt<ApiClient>()),
   );
   getIt.registerLazySingleton<EpubRepository>(
-    () => EpubRepository(getIt<EpubDataSource>()),
+    () => EpubRepositoryImpl(
+      remoteDataSource: getIt<EpubDataSource>(),
+      localDataSource: getIt<LocalDatabase>().bookContentLocalDataSource,
+      networkInfo: getIt<NetworkInfo>(),
+    ),
   );
   getIt.registerLazySingleton<EpubLocalStorageService>(
     () => EpubLocalStorageService(
@@ -237,7 +249,7 @@ Future<void> setupDependencies() async {
       networkInfo: getIt<NetworkInfo>(),
     ),
   );
-  getIt.registerLazySingleton<ReaderSettingsCubit>(
+  getIt.registerFactory<ReaderSettingsCubit>(
     () => ReaderSettingsCubit(),
   );
   getIt.registerLazySingleton<BookmarkDataSource>(
@@ -246,8 +258,12 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<BookmarkRepository>(
     () => BookmarkRepository(getIt<BookmarkDataSource>()),
   );
-  getIt.registerLazySingleton<BookmarkCubit>(
+  getIt.registerFactory<BookmarkCubit>(
     () => BookmarkCubit(getIt<BookmarkRepository>()),
+  );
+
+  getIt.registerFactoryParam<AudioPlayerCubit, int, void>(
+    (bookId, _) => AudioPlayerCubit(getIt<TtsService>(), bookId),
   );
 
   // Admin Dashboard

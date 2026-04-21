@@ -130,4 +130,14 @@ class EpubDownloadsDataSource {
     );
     return Sqflite.firstIntValue(result) ?? 0;
   }
+
+  Future<Set<int>> getAllDownloadedIds() async {
+    final maps = await _db.query(
+      _tableName,
+      columns: ['libro_id'],
+      where: 'status = ?',
+      whereArgs: [EpubDownloadModel.statusCompleted],
+    );
+    return maps.map((map) => map['libro_id'] as int).toSet();
+  }
 }

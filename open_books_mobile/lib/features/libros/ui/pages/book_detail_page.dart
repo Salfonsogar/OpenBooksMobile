@@ -31,12 +31,13 @@ class _BookDetailPageState extends State<BookDetailPage> {
   }
 
   void _showReviewDialog(int libroId) {
+    final cubit = context.read<LibroDetalleCubit>();
     showDialog(
       context: context,
-      builder: (context) => ReviewDialog(
+      builder: (dialogContext) => ReviewDialog(
         libroId: libroId,
         onSubmit: (texto) {
-          context.read<LibroDetalleCubit>().escribirResena(texto);
+          cubit.escribirResena(texto);
         },
       ),
     );
@@ -122,12 +123,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   _buildHeader(libro, portadaBase64),
                   const SizedBox(height: 32),
                   _buildBotonComprar(libro, estaEnBiblioteca),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 32),
+                  _buildEstadisticas(libro),
+                  const SizedBox(height: 32),
                   _buildEstrellas(libro),
                   const SizedBox(height: 32),
                   _buildBotonResena(libro.id),
-                  const SizedBox(height: 48),
-                  _buildEstadisticas(libro),
                   const SizedBox(height: 48),
                   _buildDescripcion(libro),
                   const SizedBox(height: 48),
@@ -257,19 +258,12 @@ class _BookDetailPageState extends State<BookDetailPage> {
   }
 
   Widget _buildBotonComprar(LibroDetalle libro, bool estaEnBiblioteca) {
-    if (estaEnBiblioteca) {
-      return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () {
-            context.push('/reader/${libro.id}');
-          },
-          child: const Text('Leer'),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
         ),
-      );
-    }
-    return Center(
-      child: OutlinedButton(
         onPressed: () {
           if (estaEnBiblioteca) {
             context.push('/reader/${libro.id}');
@@ -321,6 +315,9 @@ class _BookDetailPageState extends State<BookDetailPage> {
   Widget _buildBotonResena(int libroId) {
     return Center(
       child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: Theme.of(context).colorScheme.onSurface),
+        ),
         onPressed: () => _showReviewDialog(libroId),
         child: const Text('Escribir reseña'),
       ),
@@ -329,6 +326,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
 
   Widget _buildEstadisticas(LibroDetalle libro) {
     return Card(
+      elevation: 0,
+      color: Theme.of(context).scaffoldBackgroundColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -364,7 +366,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
   }) {
     return Column(
       children: [
-        Icon(icon, size: 24),
+        Icon(icon, size: 24, color: Theme.of(context).colorScheme.onSurface),
         const SizedBox(height: 4),
         Text(
           value,
@@ -430,9 +432,16 @@ class _BookDetailPageState extends State<BookDetailPage> {
         ),
         const SizedBox(height: 8),
         if (libro.resenas.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(child: Text('No hay reseñas todavía')),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: Text(
+                'No hay reseñas todavía',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           )
         else
           ...libro.resenas.map((resena) => _buildResenaCard(resena)),
@@ -452,6 +461,11 @@ class _BookDetailPageState extends State<BookDetailPage> {
 
   Widget _buildResenaCard(Resena resena) {
     return Card(
+      elevation: 0,
+      color: Theme.of(context).scaffoldBackgroundColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(12),

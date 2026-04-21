@@ -160,6 +160,7 @@ class ChapterContent extends StatefulWidget {
   final String chapterPath;
   final String fontFamily;
   final List<Highlight> highlights;
+  final int? activeParagraphIndex;
   final Function(String text, int startIndex, int endIndex, String color)? onTextSelected;
   final Function(Highlight highlight)? onHighlightTap;
   final Function(String)? onImageTap;
@@ -176,6 +177,7 @@ class ChapterContent extends StatefulWidget {
     this.backgroundColor = Colors.white,
     this.fontFamily = 'sans-serif',
     this.highlights = const [],
+    this.activeParagraphIndex,
     this.onTextSelected,
     this.onHighlightTap,
     this.onImageTap,
@@ -452,20 +454,29 @@ class _ChapterContentState extends State<ChapterContent> {
 
   Widget _buildBlockWithHighlight(ReaderBlock block, int blockIndex) {
     final text = block.content.toString();
+    final isActiveParagraph = widget.activeParagraphIndex != null && 
+                               blockIndex == widget.activeParagraphIndex;
+
+    final highlightColor = isActiveParagraph 
+        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+        : null;
 
     switch (block.type) {
       case 'h1':
-        return Padding(
+        return Container(
+          decoration: isActiveParagraph ? BoxDecoration(color: highlightColor) : null,
           padding: const EdgeInsets.only(bottom: 16, top: 24),
           child: _buildHighlightableText(text, blockIndex),
         );
       case 'h2':
-        return Padding(
+        return Container(
+          decoration: isActiveParagraph ? BoxDecoration(color: highlightColor) : null,
           padding: const EdgeInsets.only(bottom: 12, top: 20),
           child: _buildHighlightableText(text, blockIndex),
         );
       case 'h3':
-        return Padding(
+        return Container(
+          decoration: isActiveParagraph ? BoxDecoration(color: highlightColor) : null,
           padding: const EdgeInsets.only(bottom: 10, top: 16),
           child: _buildHighlightableText(text, blockIndex),
         );
@@ -485,12 +496,14 @@ class _ChapterContentState extends State<ChapterContent> {
           child: _buildHighlightableText(text, blockIndex),
         );
       case 'a':
-        return Padding(
+        return Container(
+          decoration: isActiveParagraph ? BoxDecoration(color: highlightColor) : null,
           padding: const EdgeInsets.only(bottom: 12),
           child: _buildHighlightableText(text, blockIndex),
         );
       default:
-        return Padding(
+        return Container(
+          decoration: isActiveParagraph ? BoxDecoration(color: highlightColor) : null,
           padding: const EdgeInsets.only(bottom: 12),
           child: _buildHighlightableText(text, blockIndex),
         );

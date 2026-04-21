@@ -2,10 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../logic/cubit/perfil_cubit.dart';
 import '../../../../shared/core/session/session_cubit.dart';
+import '../../../../shared/services/network_info.dart';
 import '../../../../shared/ui/widgets/close_header.dart';
 import '../../../../shared/ui/widgets/options_list.dart';
 
@@ -97,7 +99,13 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: IconButton(
                             icon: const Icon(Icons.edit, size: 18),
                             color: Theme.of(context).colorScheme.onPrimary,
-                            onPressed: () {
+                            onPressed: () async {
+                              final isOnline = await GetIt.instance<NetworkInfo>().isConnected;
+                              if (!context.mounted) return;
+                              if (!isOnline) {
+                                _showOfflineSnackBar(context);
+                                return;
+                              }
                               context.pushReplacement('/profile/edit', extra: usuario);
                             },
                           ),
@@ -149,7 +157,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () {
+                      onPressed: () async {
+                        final isOnline = await GetIt.instance<NetworkInfo>().isConnected;
+                        if (!context.mounted) return;
+                        if (!isOnline) {
+                          _showOfflineSnackBar(context);
+                          return;
+                        }
                         context.pushReplacement('/profile/edit', extra: usuario);
                       },
                       icon: const Icon(Icons.settings),
@@ -198,6 +212,24 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _showOfflineSnackBar(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.wifi_off, color: Theme.of(context).colorScheme.onInverseSurface),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text('Sin conexión. Gestionar tu cuenta requiere internet.'),
+            ),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
       ),
     );
   }
