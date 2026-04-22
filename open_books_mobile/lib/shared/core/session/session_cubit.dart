@@ -59,10 +59,12 @@ class SessionCubit extends Cubit<SessionState> {
     required String nombreRol,
     required int rolId,
     required bool sancionado,
-    required String token,
+    String? token,
     String? fotoPerfilBase64,
   }) async {
-    await _storage.write(key: _tokenKey, value: token);
+    if (token != null) {
+      await _storage.write(key: _tokenKey, value: token);
+    }
 
     final user = {
       'id': userId,

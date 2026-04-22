@@ -42,7 +42,6 @@ class AuthCubit extends Cubit<AuthState> {
         nombreRol: nombreRol,
         sancionado: response.usuario.sancionado,
         token: response.token,
-        fotoPerfilBase64: response.usuario.fotoPerfilBase64,
       );
 
       emit(AuthLoginSuccess(
@@ -84,10 +83,10 @@ class AuthCubit extends Cubit<AuthState> {
         userName: response.usuario.userName,
         email: response.usuario.email,
         nombreCompleto: response.usuario.nombreCompleto,
-        rolId: rolId,
+        rolId: response.usuario.rolId,
         nombreRol: nombreRol,
         sancionado: response.usuario.sancionado,
-        token: response.token,
+        token: null,
       );
 
       emit(AuthRegisterSuccess(

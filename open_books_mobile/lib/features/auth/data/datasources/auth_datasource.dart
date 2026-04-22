@@ -49,7 +49,15 @@ class AuthDataSource {
         '/api/Usuarios/Register',
         data: request.toJson(),
       );
-      return LoginResponse.fromJson(parseResponseData(response.data));
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final usuario = Usuario.fromJson(data);
+        return LoginResponse(
+          usuario: usuario,
+          token: '',
+        );
+      }
+      throw Exception('Respuesta inválida del servidor');
     } on DioException catch (e) {
       throw _handleError(e);
     }
