@@ -33,7 +33,7 @@ class _OpenBooksAppState extends State<OpenBooksApp>
 
     _sessionCubit = widget.injector.sessionCubit;
     _settingsCubit = widget.injector.settingsCubit;
-    _appRouter = AppRouter(sessionCubit: _sessionCubit);
+    _appRouter = AppRouter(sessionCubit: _sessionCubit, settingsCubit: _settingsCubit);
 
     _sessionCubit.setNotificationCubit(widget.injector.notificationCubit);
     _sessionCubit.checkSession();

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../injection_container.dart';
 import '../../../../shared/ui/widgets/close_header.dart';
 import '../../../reader/data/models/reader_settings.dart';
 import '../../../reader/logic/cubit/reader_settings_cubit.dart';
@@ -12,10 +11,7 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: getIt<ReaderSettingsCubit>(),
-      child: const _SettingsView(),
-    );
+    return const _SettingsView();
   }
 }
 

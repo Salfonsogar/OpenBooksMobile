@@ -27,6 +27,7 @@ import '../features/historial/logic/cubit/historial_cubit.dart';
 import '../features/historial/ui/pages/history_page.dart';
 import '../features/reader/ui/pages/reader_page.dart';
 import '../features/settings/ui/pages/settings_page.dart';
+import '../features/reader/logic/cubit/reader_settings_cubit.dart';
 import '../features/notifications/ui/pages/notifications_page.dart';
 import '../features/admin/ui/pages/admin_page.dart';
 import '../features/admin/dashboard/logic/cubit/admin_dashboard_cubit.dart';
@@ -50,8 +51,9 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 class AppRouter {
   final SessionCubit sessionCubit;
+  final ReaderSettingsCubit settingsCubit;
 
-  AppRouter({required this.sessionCubit});
+  AppRouter({required this.sessionCubit, required this.settingsCubit});
 
   late final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -138,8 +140,11 @@ class AppRouter {
           ),
           GoRoute(
             path: '/library/upload',
-            builder: (context, state) => BlocProvider(
-              create: (_) => getIt<UploadLibroCubit>(),
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider(create: (_) => getIt<UploadLibroCubit>()),
+                BlocProvider(create: (_) => getIt<AdminCategoriasCubit>()),
+              ],
               child: const UploadLibroPage(),
             ),
           ),
@@ -203,7 +208,10 @@ class AppRouter {
       ),
       GoRoute(
         path: '/settings',
-        builder: (context, state) => const SettingsPage(),
+        builder: (context, state) => BlocProvider.value(
+          value: settingsCubit,
+          child: const SettingsPage(),
+        ),
       ),
       GoRoute(
         path: '/notifications',

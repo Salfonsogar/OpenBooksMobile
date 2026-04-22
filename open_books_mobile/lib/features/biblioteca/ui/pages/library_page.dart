@@ -57,13 +57,40 @@ class _LibraryPageState extends State<LibraryPage> {
     }
   }
 
+  void _editarLibro(int libroId) {
+    context.push('/book/$libroId');
+  }
+
+  Future<void> _eliminarLibro(int libroId, String titulo) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar libro'),
+        content: Text('¿Estás seguro de eliminar "$titulo"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      await context.read<BibliotecaCubit>().quitarLibro(libroId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/library/upload'),
-        icon: const Icon(Icons.add),
-        label: const Text('Subir Libro'),
+        child: const Icon(Icons.add),
       ),
       body: BlocBuilder<BibliotecaCubit, BibliotecaState>(
           builder: (context, state) {
@@ -256,14 +283,55 @@ class _LibraryPageState extends State<LibraryPage> {
                 ),
               ),
               const SizedBox(width: 12),
-              IconButton(
-                onPressed: () => _descargarLibro(libro.id, libro.titulo),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'download':
+                      _descargarLibro(libro.id, libro.titulo);
+                      break;
+                    case 'edit':
+                      _editarLibro(libro.id);
+                      break;
+                    case 'delete':
+                      _eliminarLibro(libro.id, libro.titulo);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'download',
+                    child: Row(
+                      children: [
+                        Icon(Icons.download, color: Theme.of(context).colorScheme.onSurface),
+                        SizedBox(width: 8),
+                        Text('Descargar', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, color: Theme.of(context).colorScheme.onSurface),
+                        SizedBox(width: 8),
+                        Text('Editar', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+                        SizedBox(width: 8),
+                        Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      ],
+                    ),
+                  ),
+                ],
                 icon: Icon(
-                  Icons.download,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  Icons.more_vert,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],

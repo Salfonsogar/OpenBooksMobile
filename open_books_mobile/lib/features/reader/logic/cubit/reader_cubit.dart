@@ -229,8 +229,9 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
     try {
       final chapterPath = currentState.manifest.readingOrder[index].href;
       final content = await _repository.getResource(libroId, chapterPath);
-      _chapterCache.put(index, content);
-      return content;
+      final cleanContent = _cleanHtmlContent(content);
+      _chapterCache.put(index, cleanContent);
+      return cleanContent;
     } catch (e) {
       return null;
     }
@@ -312,6 +313,14 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
 
   void onReaderClosed() {
     saveProgressNow();
+  }
+
+  String _cleanHtmlContent(String html) {
+    String text = html;
+    text = text.replaceAll(RegExp(r'<[^>]*>'), '');
+    text = text.replaceAll(RegExp(r'&[^;]+;'), ' ');
+    text = text.replaceAll(RegExp(r'\s+'), ' ');
+    return text.trim();
   }
 
   @override
