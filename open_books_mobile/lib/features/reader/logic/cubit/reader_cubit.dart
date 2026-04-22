@@ -115,9 +115,12 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
   Future<void> cargarLibro() async {
     emit(ReaderLoading());
     try {
+      print('[DEBUG ReaderCubit] cargarLibro inicio libroId=$libroId');
       final manifest = await _repository.getManifest(libroId);
+      print('[DEBUG ReaderCubit] Manifest cargado: ${manifest.readingOrder.length} capítulos');
       
       if (manifest.readingOrder.isEmpty) {
+        print('[DEBUG ReaderCubit] ERROR: El libro no tiene capitulos - manifest vacío o null');
         emit(const ReaderError('El libro no tiene capitulos'));
         return;
       }
@@ -126,8 +129,10 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
           ? initialPage - 1 
           : 0;
       
+      print('[DEBUG ReaderCubit] Cargando capítulo $startIndex: ${manifest.readingOrder[startIndex].href}');
       final chapterPath = manifest.readingOrder[startIndex].href;
       final content = await _repository.getResource(libroId, chapterPath);
+      print('[DEBUG ReaderCubit] Capítulo cargado, length: ${content.length}');
       
       _chapterCache.put(startIndex, content);
 
@@ -144,7 +149,9 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
       if (startIndex > 0) {
         _onChapterChanged(startIndex, manifest.readingOrder.length);
       }
+      print('[DEBUG ReaderCubit] cargarLibro COMPLETO');
     } catch (e) {
+      print('[DEBUG ReaderCubit] ERROR cargarLibro: $e');
       emit(ReaderError(e.toString().replaceAll('Exception: ', '')));
     }
   }
@@ -228,12 +235,15 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
     
     try {
       final chapterPath = currentState.manifest.readingOrder[index].href;
+      print('[DEBUG ReaderCubit] obtenerContenido($index): Intentando cargar capítulo');
       final content = await _repository.getResource(libroId, chapterPath);
       final cleanContent = _cleanHtmlContent(content);
       _chapterCache.put(index, cleanContent);
+      print('[DEBUG ReaderCubit] obtenerContenido($index): SUCCESS, length=${cleanContent.length}');
       return cleanContent;
     } catch (e) {
-      return null;
+      print('[DEBUG ReaderCubit] obtenerContenido($index): ERROR - $e');
+      rethrow;  
     }
   }
 
@@ -241,21 +251,24 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
     final currentState = state;
     if (currentState is! ReaderLoaded) return;
 
-    final nextIndex = currentIndex + 1;
-    if (nextIndex >= currentState.manifest.readingOrder.length) return;
-    if (_chapterCache.has(nextIndex)) return;
+    for (int offset = 1; offset <= 3; offset++) {
+      final nextIndex = currentIndex + offset;
+      if (nextIndex >= currentState.manifest.readingOrder.length) break;
+      if (_chapterCache.has(nextIndex)) continue;
 
-    Future.microtask(() async {
-      try {
-        final chapterPath = currentState.manifest.readingOrder[nextIndex].href;
-        final content = await _repository.getResource(libroId, chapterPath);
-        
-        if (!isClosed) {
-          _chapterCache.put(nextIndex, content);
+      Future.microtask(() async {
+        try {
+          final chapterPath = currentState.manifest.readingOrder[nextIndex].href;
+          final content = await _repository.getResource(libroId, chapterPath);
+          
+          if (!isClosed) {
+            _chapterCache.put(nextIndex, content);
+          }
+        } catch (e) {
+          print('[DEBUG ReaderCubit] Error precarga capítulo $nextIndex: $e');
         }
-      } catch (e) {
-      }
-    });
+      });
+    }
   }
 
   void _optimizeCache(int currentIndex) {

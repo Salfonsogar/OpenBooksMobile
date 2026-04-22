@@ -11,7 +11,7 @@ import 'datasources/book_content_local_datasource.dart';
 
 class LocalDatabase {
   static const String _databaseName = 'open_books.db';
-  static const int _databaseVersion = 5;
+  static const int _databaseVersion = 6;
 
   static const int _syncedRetentionDays = 7;
   static const int _maxRetryCount = 3;
@@ -66,6 +66,8 @@ class LocalDatabase {
         is_downloaded INTEGER DEFAULT 0,
         download_status TEXT DEFAULT 'not_downloaded',
         page INTEGER,
+        sync_status TEXT,
+        last_read_at INTEGER,
         updated_at INTEGER,
         created_at INTEGER,
         

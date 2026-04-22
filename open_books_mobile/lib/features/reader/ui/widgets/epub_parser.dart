@@ -52,20 +52,50 @@ class EpubParser {
   List<ReaderBlock> parse(String htmlString) {
     final blocks = <ReaderBlock>[];
 
-    final document = html_parser.parse(htmlString);
-    final body = document.body;
+    try {
+      final document = html_parser.parse(htmlString);
+      final body = document.body;
 
-    if (body == null) return blocks;
+      if (body == null) return blocks;
 
-    _processNodes(body.nodes, blocks);
+      print('[DEBUG EpubParser] parse: body nodes count=${body.nodes.length}');
+      _processNodes(body.nodes, blocks);
+
+      print('[DEBUG EpubParser] parse returning ${blocks.length} blocks');
+    } catch (e, stack) {
+      print('[DEBUG EpubParser] PARSE ERROR: $e');
+      print('[DEBUG EpubParser] stack: $stack');
+    }
 
     return blocks;
   }
 
   void _processNodes(List<dynamic> nodes, List<ReaderBlock> blocks) {
+    if (nodes.isEmpty) return;
+    
+    if (nodes.length == 1 && nodes.first is html_dom.Element) {
+      final singleNode = nodes.first as html_dom.Element;
+      final singleTag = singleNode.localName?.toLowerCase() ?? '';
+      print('[DEBUG EpubParser] UNICO NODO: tag=$singleTag, text length=${singleNode.text.length}');
+      
+      if (singleTag.isNotEmpty && singleTag != 'body' && singleNode.hasChildNodes()) {
+        print('[DEBUG EpubParser] Procesando children del nodo $singleTag');
+        _processNodes(singleNode.nodes.toList(), blocks);
+        return;
+      }
+    }
+    
     for (var node in nodes) {
       if (node is html_dom.Element) {
         final tagName = node.localName?.toLowerCase() ?? '';
+        
+        if (tagName.isEmpty) {
+          final text = _cleanText(node.text.trim());
+          if (text.isNotEmpty) {
+            blocks.add(ReaderBlock(type: 'text', content: text));
+          }
+          continue;
+        }
 
         switch (tagName) {
           case 'h1':

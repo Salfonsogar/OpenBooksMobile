@@ -171,14 +171,21 @@ class _ReaderPageState extends State<ReaderPage> {
               backgroundColor: colors.background,
               body: BlocConsumer<ReaderCubit, ReaderState>(
                 listener: (context, state) {
+                  print('[DEBUG ReaderPage] BlocConsumer listener: ${state.runtimeType}');
                   if (state is ReaderLoaded) {
+                    print('[DEBUG ReaderPage] ReaderLoaded: ${state.manifest.readingOrder.length} capítulos, currentChapterIndex: ${state.currentChapterIndex}');
                     setState(() {
                       _chapters = state.manifest.readingOrder;
                       _currentIndex = state.currentChapterIndex;
+                      print('[DEBUG ReaderPage] _chapters actualizado a: ${_chapters.length}');
                     });
                     if (_pageController.hasClients) {
                       _pageController.jumpToPage(state.currentChapterIndex);
                     }
+                  } else if (state is ReaderError) {
+                    print('[DEBUG ReaderPage] ReaderError: ${state.message}');
+                  } else if (state is ReaderLoading) {
+                    print('[DEBUG ReaderPage] ReaderLoading');
                   }
                 },
                 builder: (context, state) {
@@ -378,16 +385,69 @@ class _ReaderPageState extends State<ReaderPage> {
       },
       itemBuilder: (context, index) {
         final chapterPath = _chapters[index].href;
+        print('[DEBUG ReaderPage] itemBuilder índice=$index, chapterPath=$chapterPath');
         return FutureBuilder<String?>(
           future: _readerCubit.obtenerContenido(index),
           builder: (context, snapshot) {
-            if (!snapshot.hasData || snapshot.data == null) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              print('[DEBUG ReaderPage] Error cargando capítulo $index: ${snapshot.error}');
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48),
+                    const SizedBox(height: 8),
+                    Text('Error al cargar capítulo ${index + 1}'),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => _readerCubit.cargarCapitulo(index),
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                ),
+              );
+            }
+            if (!snapshot.hasData || snapshot.data == null) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.cloud_off, size: 48),
+                    const SizedBox(height: 8),
+                    Text('Capítulo ${index + 1} no disponible'),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => _readerCubit.cargarCapitulo(index),
+                      child: const Text('Cargar'),
+                    ),
+                  ],
+                ),
+              );
             }
 
             final rawContent = snapshot.data!;
+            print('[DEBUG ReaderPage] rawContent índice=$index, length=${rawContent.length}');
             final fixedContent = _parser.fixImagePaths(rawContent, chapterPath);
             final blocks = _parser.parse(fixedContent);
+            print('[DEBUG ReaderPage] blocks índice=$index, count=${blocks.length}');
+
+            if (blocks.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.article_outlined, size: 48),
+                    const SizedBox(height: 8),
+                    Text('Capítulo ${index + 1} vacío (raw: ${rawContent.length} chars)'),
+                    const SizedBox(height: 8),
+                    Text('Ruta: $chapterPath'),
+                  ],
+                ),
+              );
+            }
 
             if (index == _currentIndex && _paragraphs.isEmpty) {
               _paragraphs = _extractParagraphs(fixedContent);

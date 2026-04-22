@@ -21,7 +21,8 @@ class EpubRepositoryImpl implements EpubRepository {
   @override
   Future<EpubManifest> getManifest(int libroId) async {
     final localManifest = await _localDataSource.getManifest(libroId);
-    if (localManifest != null) {
+    if (localManifest != null && localManifest.readingOrder.isNotEmpty) {
+      print('[DEBUG EpubRepository] getManifest $libroId: desde LOCAL, ${localManifest.readingOrder.length} capítulos');
       return localManifest;
     }
 
@@ -29,6 +30,7 @@ class EpubRepositoryImpl implements EpubRepository {
       throw OfflineReadingException('No hay contenido offline disponible');
     }
 
+    print('[DEBUG EpubRepository] getManifest $libroId: descargando desde REMOTO');
     final manifest = await _remoteDataSource.getManifest(libroId);
     await _localDataSource.saveManifest(libroId, manifest);
     return manifest;
@@ -37,16 +39,24 @@ class EpubRepositoryImpl implements EpubRepository {
   @override
   Future<String> getResource(int libroId, String path) async {
     final localResource = await _localDataSource.getResource(libroId, path);
-    if (localResource != null) {
+    if (localResource != null && localResource.length > 50) {
+      print('[DEBUG EpubRepository] getResource $libroId/$path: desde LOCAL, length=${localResource.length}');
       return localResource;
     }
 
     if (!await _networkInfo.isConnected) {
+      if (localResource != null && localResource.isNotEmpty) {
+        print('[DEBUG EpubRepository] getResource $libroId/$path: offline fallback con ${localResource.length} chars');
+        return localResource;
+      }
       throw OfflineReadingException('Capítulo no disponible offline');
     }
 
+    print('[DEBUG EpubRepository] getResource $libroId/$path: descargando desde REMOTO (local tiene ${localResource?.length ?? 0} chars, < 50)');
     final content = await _remoteDataSource.getResource(libroId, path);
-    await _localDataSource.saveResource(libroId, path, content);
+    if (content.length > 50) {
+      await _localDataSource.saveResource(libroId, path, content);
+    }
     return content;
   }
 }

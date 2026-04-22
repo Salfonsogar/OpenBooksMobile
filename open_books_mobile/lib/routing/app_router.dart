@@ -113,7 +113,10 @@ class AppRouter {
       ),
       GoRoute(
         path: '/recovery',
-        builder: (context, state) => const RecoveryPage(),
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<AuthCubit>(),
+          child: const RecoveryPage(),
+        ),
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
