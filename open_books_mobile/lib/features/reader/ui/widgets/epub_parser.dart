@@ -58,13 +58,19 @@ class EpubParser {
 
       if (body == null) return blocks;
 
-      print('[DEBUG EpubParser] parse: body nodes count=${body.nodes.length}');
-      _processNodes(body.nodes, blocks);
+      final nodeCount = body.nodes.length;
+      print('[DEBUG EpubParser] parse: body nodes count=$nodeCount');
+      
+      if (nodeCount == 0) {
+        print('[DEBUG EpubParser] SIN NODOS');
+        return blocks;
+      }
+      
+      _processNodes(body.nodes.toList(), blocks);
 
       print('[DEBUG EpubParser] parse returning ${blocks.length} blocks');
     } catch (e, stack) {
       print('[DEBUG EpubParser] PARSE ERROR: $e');
-      print('[DEBUG EpubParser] stack: $stack');
     }
 
     return blocks;
@@ -73,19 +79,41 @@ class EpubParser {
   void _processNodes(List<dynamic> nodes, List<ReaderBlock> blocks) {
     if (nodes.isEmpty) return;
     
-    if (nodes.length == 1 && nodes.first is html_dom.Element) {
-      final singleNode = nodes.first as html_dom.Element;
-      final singleTag = singleNode.localName?.toLowerCase() ?? '';
-      print('[DEBUG EpubParser] UNICO NODO: tag=$singleTag, text length=${singleNode.text.length}');
-      
-      if (singleTag.isNotEmpty && singleTag != 'body' && singleNode.hasChildNodes()) {
-        print('[DEBUG EpubParser] Procesando children del nodo $singleTag');
-        _processNodes(singleNode.nodes.toList(), blocks);
+    print('[DEBUG EpubParser] _processNodes: ${nodes.length} nodes, first type: ${nodes.first.runtimeType}');
+    
+    if (nodes.length == 1) {
+      final firstNode = nodes.first;
+      if (firstNode is html_dom.Element) {
+        final tagName = firstNode.localName?.toLowerCase() ?? '';
+        print('[DEBUG EpubParser] UNICO NODO: tag=$tagName, text length=${firstNode.text.length}');
+        
+        if (tagName == 'body' || tagName.isEmpty || tagName == 'div' || tagName == 'span') {
+          if (firstNode.hasChildNodes()) {
+            print('[DEBUG EpubParser] Procesando children del nodo $tagName (${firstNode.nodes.length} children)');
+            _processNodes(firstNode.nodes.toList(), blocks);
+            return;
+          }
+        }
+      } else if (firstNode is html_dom.Text) {
+        final text = _cleanText(firstNode.text.trim());
+        print('[DEBUG EpubParser] UNICO NODO Texto: "$text"');
+        if (text.isNotEmpty) {
+          blocks.add(ReaderBlock(type: 'text', content: text));
+        }
         return;
+      } else {
+        print('[DEBUG EpubParser] Primer nodo NO es Element: ${firstNode.runtimeType}');
       }
     }
     
     for (var node in nodes) {
+      if (node is html_dom.Text) {
+        final text = _cleanText(node.text.trim());
+        if (text.isNotEmpty) {
+          blocks.add(ReaderBlock(type: 'text', content: text));
+        }
+        continue;
+      }
       if (node is html_dom.Element) {
         final tagName = node.localName?.toLowerCase() ?? '';
         
@@ -98,6 +126,21 @@ class EpubParser {
         }
 
         switch (tagName) {
+          case 'div':
+          case 'span':
+            if (node.hasChildNodes()) {
+              _processNodes(node.nodes.toList(), blocks);
+            }
+            break;
+          case 'h1':
+          case 'h2':
+          case 'h3':
+          case 'h4':
+          case 'h5':
+          case 'h6':
+          case 'p':
+            _parseTextAndImages(node, tagName == 'h1' || tagName == 'h2' || tagName == 'h3' ? tagName : (tagName == 'p' ? 'p' : 'h3'), blocks);
+            break;
           case 'h1':
           case 'h2':
           case 'h3':

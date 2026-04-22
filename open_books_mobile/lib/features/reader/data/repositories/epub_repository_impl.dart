@@ -36,25 +36,31 @@ class EpubRepositoryImpl implements EpubRepository {
     return manifest;
   }
 
+  bool _isValidContent(String? content) {
+    if (content == null || content.isEmpty) return false;
+    if (content.length < 500) return false;
+    return content.contains('<') && content.contains('>');
+  }
+
   @override
   Future<String> getResource(int libroId, String path) async {
     final localResource = await _localDataSource.getResource(libroId, path);
-    if (localResource != null && localResource.length > 50) {
-      print('[DEBUG EpubRepository] getResource $libroId/$path: desde LOCAL, length=${localResource.length}');
-      return localResource;
+    if (_isValidContent(localResource)) {
+      print('[DEBUG EpubRepository] getResource $libroId/$path: desde LOCAL, length=${localResource!.length}');
+      return localResource!;
     }
 
     if (!await _networkInfo.isConnected) {
       if (localResource != null && localResource.isNotEmpty) {
         print('[DEBUG EpubRepository] getResource $libroId/$path: offline fallback con ${localResource.length} chars');
-        return localResource;
+        return localResource!;
       }
       throw OfflineReadingException('Capítulo no disponible offline');
     }
 
-    print('[DEBUG EpubRepository] getResource $libroId/$path: descargando desde REMOTO (local tiene ${localResource?.length ?? 0} chars, < 50)');
+    print('[DEBUG EpubRepository] getResource $libroId/$path: descargando desde REMOTO (local length=${localResource?.length ?? 0}, inválido)');
     final content = await _remoteDataSource.getResource(libroId, path);
-    if (content.length > 50) {
+    if (_isValidContent(content)) {
       await _localDataSource.saveResource(libroId, path, content);
     }
     return content;
