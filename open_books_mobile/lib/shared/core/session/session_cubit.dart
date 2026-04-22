@@ -86,7 +86,7 @@ class SessionCubit extends Cubit<SessionState> {
       nombreRol: nombreRol,
       rolId: rolId,
       sancionado: sancionado,
-      token: token,
+      token: token ?? '',
       fotoPerfilBase64: fotoPerfilBase64,
     ));
 

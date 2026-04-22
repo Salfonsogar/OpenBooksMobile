@@ -86,7 +86,7 @@ class AuthCubit extends Cubit<AuthState> {
         rolId: response.usuario.rolId,
         nombreRol: nombreRol,
         sancionado: response.usuario.sancionado,
-        token: null,
+        token: '',
       );
 
       emit(AuthRegisterSuccess(
