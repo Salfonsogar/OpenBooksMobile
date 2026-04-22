@@ -17,7 +17,7 @@ class RegisterRequest {
     return {
       'nombreUsuario': nombreUsuario,
       'correo': correo,
-      'contrasena': contrasena,
+      'Contraseña': contrasena,
       'rolId': rolId,
       'nombreCompleto': nombreCompleto,
     };
