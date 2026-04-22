@@ -62,7 +62,7 @@ class AuthCubit extends Cubit<AuthState> {
   }) async {
     emit(AuthLoading());
     try {
-      final response = await _authRepository.register(
+      await _authRepository.register(
         nombreUsuario: nombreUsuario,
         correo: correo,
         contrasena: contrasena,
@@ -70,29 +70,7 @@ class AuthCubit extends Cubit<AuthState> {
         nombreCompleto: nombreCompleto,
       );
 
-      String nombreRol = 'Usuario';
-      try {
-        final rol = await _rolesRepository.getRol(rolId);
-        if (rol != null) {
-          nombreRol = rol.nombre;
-        }
-      } catch (_) {}
-
-      await _sessionCubit.login(
-        userId: response.usuario.id,
-        userName: response.usuario.userName,
-        email: response.usuario.email,
-        nombreCompleto: response.usuario.nombreCompleto,
-        rolId: response.usuario.rolId,
-        nombreRol: nombreRol,
-        sancionado: response.usuario.sancionado,
-        token: '',
-      );
-
-      emit(AuthRegisterSuccess(
-        usuario: response.usuario,
-        token: response.token,
-      ));
+      emit(const AuthRegisterSuccess());
     } catch (e) {
       emit(AuthError(e.toString().replaceAll('Exception: ', '')));
     }

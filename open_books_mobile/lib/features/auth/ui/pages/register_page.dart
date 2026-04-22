@@ -197,8 +197,13 @@ class _RegisterPageState extends State<RegisterPage> {
       body: BlocListener<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthRegisterSuccess) {
-            context.read<SessionCubit>();
-            context.go('/home');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Registro exitoso. Inicia sesión.'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            context.go('/login');
           } else if (state is AuthError) {
             setState(() {
               _registerError = state.message;
