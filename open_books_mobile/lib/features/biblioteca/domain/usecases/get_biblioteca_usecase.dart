@@ -12,9 +12,7 @@ class GetBibliotecaUseCase {
     final isConnected = await networkInfo.isConnected;
 
     if (isConnected) {
-      try {
-        return await repository.getRemoto(usuarioId);
-      } catch (_) {}
+      return repository.getRemoto(usuarioId);
     }
 
     return repository.getBiblioteca(usuarioId);

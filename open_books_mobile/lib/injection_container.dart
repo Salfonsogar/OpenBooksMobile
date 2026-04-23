@@ -245,6 +245,8 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<EpubRepository>(
     () => EpubRepositoryImpl(
       dataSource: getIt<EpubDataSource>(),
+      localDatabase: getIt<LocalDatabase>(),
+      networkInfo: getIt<NetworkInfo>(),
     ),
   );
   getIt.registerLazySingleton<EpubLocalStorageService>(
