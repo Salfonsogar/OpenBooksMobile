@@ -27,10 +27,57 @@ class HistorialRepositoryImpl implements IHistorialRepository {
   }
 
   @override
+  Future<List<HistorialEntryEntity>> getRemoto(int usuarioId) async {
+    final remoteLibros = await remoteDataSource.getHistorial();
+    return remoteLibros
+        .map((libro) => HistorialEntryEntity(
+              id: libro.id,
+              libroId: libro.id,
+              usuarioId: usuarioId,
+              titulo: libro.titulo,
+              autor: libro.autor,
+              portadaBase64: libro.portadaBase64,
+              ultimaLectura: DateTime.now(),
+              status: 'synced',
+              createdAt: DateTime.now(),
+            ))
+        .toList();
+  }
+
+  @override
   Future<List<HistorialEntryEntity>> getHistorial(int usuarioId) async {
     final localData = await localDatabase.historialLocalDataSource
         .getByUsuarioId(usuarioId);
-    return HistorialMapper.fromLocalModelList(localData);
+    if (localData.isNotEmpty) {
+      return HistorialMapper.fromLocalModelList(localData);
+    }
+
+    // Fallback offline: si historial_local aun no se ha poblado, derivar desde
+    // biblioteca_local usando las marcas de ultima lectura.
+    final bibliotecaLocal = await localDatabase.bibliotecaLocalDataSource
+        .getByUsuarioId(usuarioId);
+
+    final fallbackHistorial = bibliotecaLocal
+        .where((libro) => (libro.lastReadAt ?? 0) > 0)
+        .map(
+          (libro) => HistorialEntryEntity(
+            id: libro.id ?? 0,
+            libroId: libro.libroId,
+            usuarioId: libro.usuarioId,
+            titulo: libro.titulo,
+            autor: libro.autor,
+            portadaBase64: libro.portadaBase64,
+            ultimaLectura: DateTime.fromMillisecondsSinceEpoch(
+              libro.lastReadAt!,
+            ),
+            status: 'pending_add',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(libro.createdAt),
+          ),
+        )
+        .toList()
+      ..sort((a, b) => b.ultimaLectura.compareTo(a.ultimaLectura));
+
+    return fallbackHistorial;
   }
 
   @override

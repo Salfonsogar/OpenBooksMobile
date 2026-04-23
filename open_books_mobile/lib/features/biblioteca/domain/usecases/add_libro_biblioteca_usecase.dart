@@ -1,3 +1,4 @@
+import '../entities/libro_biblioteca_entity.dart';
 import '../repositories/i_biblioteca_repository.dart';
 
 class AddLibroBibliotecaUseCase {
@@ -5,12 +6,7 @@ class AddLibroBibliotecaUseCase {
 
   AddLibroBibliotecaUseCase(this.repository);
 
-  Future<void> call(int usuarioId, int libroId) async {
-    await repository.addLibro(usuarioId, libroId);
-
-    final isConnected = await repository.isConnected;
-    if (isConnected) {
-      await repository.syncNow();
-    }
+  Future<LibroBibliotecaEntity> call(int usuarioId, int libroId) async {
+    return repository.addLibro(usuarioId, libroId);
   }
 }

@@ -20,15 +20,12 @@ class EpubDataSource {
 
   Future<String> getResource(int libroId, String path) async {
     try {
-      print('[DEBUG EpubDataSource] getResource inicio: libroId=$libroId, path=$path');
       final response = await _apiClient.get(
         '/api/Libros/$libroId/epub/resource',
         queryParameters: {'path': path},
       );
-      print('[DEBUG EpubDataSource] getResource SUCCESS: ${response.data?.toString().length ?? 0} chars');
       return response.data as String;
     } on DioException catch (e) {
-      print('[DEBUG EpubDataSource] getResource ERROR: ${e.message}, type=${e.type}, response=${e.response?.statusCode}');
       throw _handleError(e);
     }
   }

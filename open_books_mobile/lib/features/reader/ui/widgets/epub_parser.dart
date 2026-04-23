@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as html_dom;
 import 'package:path/path.dart' as p;
+import 'dart:convert';
+import 'dart:io';
 
 import '../../data/models/highlight.dart';
 import '../../../../shared/core/constants/app_constants.dart';
@@ -59,19 +61,13 @@ class EpubParser {
       if (body == null) return blocks;
 
       final nodeCount = body.nodes.length;
-      print('[DEBUG EpubParser] parse: body nodes count=$nodeCount');
       
       if (nodeCount == 0) {
-        print('[DEBUG EpubParser] SIN NODOS');
         return blocks;
       }
       
       _processNodes(body.nodes.toList(), blocks);
-
-      print('[DEBUG EpubParser] parse returning ${blocks.length} blocks');
-    } catch (e, stack) {
-      print('[DEBUG EpubParser] PARSE ERROR: $e');
-    }
+    } catch (_) {}
 
     return blocks;
   }
@@ -79,30 +75,23 @@ class EpubParser {
   void _processNodes(List<dynamic> nodes, List<ReaderBlock> blocks) {
     if (nodes.isEmpty) return;
     
-    print('[DEBUG EpubParser] _processNodes: ${nodes.length} nodes, first type: ${nodes.first.runtimeType}');
-    
     if (nodes.length == 1) {
       final firstNode = nodes.first;
       if (firstNode is html_dom.Element) {
         final tagName = firstNode.localName?.toLowerCase() ?? '';
-        print('[DEBUG EpubParser] UNICO NODO: tag=$tagName, text length=${firstNode.text.length}');
         
         if (tagName == 'body' || tagName.isEmpty || tagName == 'div' || tagName == 'span') {
           if (firstNode.hasChildNodes()) {
-            print('[DEBUG EpubParser] Procesando children del nodo $tagName (${firstNode.nodes.length} children)');
             _processNodes(firstNode.nodes.toList(), blocks);
             return;
           }
         }
       } else if (firstNode is html_dom.Text) {
         final text = _cleanText(firstNode.text.trim());
-        print('[DEBUG EpubParser] UNICO NODO Texto: "$text"');
         if (text.isNotEmpty) {
           blocks.add(ReaderBlock(type: 'text', content: text));
         }
         return;
-      } else {
-        print('[DEBUG EpubParser] Primer nodo NO es Element: ${firstNode.runtimeType}');
       }
     }
     
@@ -266,6 +255,34 @@ class _ChapterContentState extends State<ChapterContent> {
   int _selectionStart = -1;
   int _selectionEnd = -1;
   int _currentBlockIndex = 0;
+
+  // #region agent log
+  Future<void> _agentLog({
+    required String hypothesisId,
+    required String location,
+    required String message,
+    required Map<String, dynamic> data,
+    String runId = 'initial',
+  }) async {
+    try {
+      final client = HttpClient();
+      final req = await client.postUrl(Uri.parse('http://127.0.0.1:7310/ingest/c62b37a5-1955-4a1d-9e5c-ae63d7c2059b'));
+      req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+      req.headers.set('X-Debug-Session-Id', 'e5ce20');
+      req.write(jsonEncode({
+        'sessionId': 'e5ce20',
+        'runId': runId,
+        'hypothesisId': hypothesisId,
+        'location': location,
+        'message': message,
+        'data': data,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      }));
+      await req.close();
+      client.close(force: true);
+    } catch (_) {}
+  }
+  // #endregion
 
   @override
   void dispose() {
@@ -499,14 +516,50 @@ class _ChapterContentState extends State<ChapterContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: widget.backgroundColor,
-      padding: EdgeInsets.symmetric(horizontal: widget.horizontalMargin),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: _buildBlocksWithHighlights(),
-      ),
-    );
+    debugPrint('ChapterContent: building ${widget.blocks.length} blocks, chapter: ${widget.chapterPath}');
+    try {
+      final children = _buildBlocksWithHighlights();
+      // #region agent log
+      _agentLog(
+        hypothesisId: 'H4',
+        location: 'epub_parser.dart:ChapterContent.build',
+        message: 'chapter content widgets built',
+        data: {
+          'chapterPath': widget.chapterPath,
+          'blocks': widget.blocks.length,
+          'widgets': children.length,
+          'activeParagraphIndex': widget.activeParagraphIndex,
+        },
+      );
+      // #endregion
+      debugPrint('ChapterContent: built ${children.length} widgets');
+      debugPrint('ChapterContent: first widget type: ${children.isNotEmpty ? children.first.runtimeType : "empty"}');
+      if (children.isEmpty) {
+        return Center(child: Text('Sin contenido'));
+      }
+      return Container(
+        color: widget.backgroundColor,
+        padding: EdgeInsets.symmetric(horizontal: widget.horizontalMargin),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: children,
+        ),
+      );
+    } catch (e, st) {
+      debugPrint('ChapterContent ERROR: $e');
+      debugPrint(st.toString());
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48),
+            const SizedBox(height: 8),
+            Text('Error: ${e.toString().substring(0, 50)}'),
+          ],
+        ),
+      );
+    }
   }
 
   List<Widget> _buildBlocksWithHighlights() {

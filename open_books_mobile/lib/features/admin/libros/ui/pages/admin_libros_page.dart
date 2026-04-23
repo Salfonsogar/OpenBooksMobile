@@ -7,7 +7,6 @@ import 'package:open_books_mobile/shared/core/session/session_cubit.dart';
 import 'package:open_books_mobile/shared/core/session/session_state.dart';
 import 'package:open_books_mobile/features/admin/libros/data/models/admin_libro.dart';
 import 'package:open_books_mobile/features/admin/libros/logic/cubit/admin_libros_cubit.dart';
-import 'package:open_books_mobile/features/admin/libros/logic/cubit/admin_libros_state.dart';
 import 'package:open_books_mobile/features/admin/libros/ui/widgets/libro_form_dialog.dart';
 import 'package:open_books_mobile/features/admin/libros/ui/widgets/libro_delete_dialog.dart';
 import 'package:open_books_mobile/features/admin/categorias/data/models/admin_categoria.dart';

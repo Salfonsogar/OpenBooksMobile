@@ -45,6 +45,21 @@ class Highlight {
     );
   }
 
+  factory Highlight.fromJson(Map<String, dynamic> json) {
+    return Highlight(
+      id: json['id'] as int?,
+      bookId: json['bookId'] as int? ?? json['book_id'] as int,
+      chapterIndex: json['chapterIndex'] as int? ?? json['chapter_index'] as int,
+      text: json['text'] as String,
+      startIndex: json['startIndex'] as int? ?? json['start_index'] as int,
+      endIndex: json['endIndex'] as int? ?? json['end_index'] as int,
+      color: json['color'] as String,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.fromMillisecondsSinceEpoch(json['created_at'] as int? ?? 0),
+    );
+  }
+
   Highlight copyWith({
     int? id,
     int? bookId,

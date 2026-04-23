@@ -5,12 +5,12 @@ import 'network_info.dart';
 import 'models/sync_queue_model.dart';
 import 'models/reading_session_model.dart';
 import 'models/biblioteca_local_model.dart';
+import 'models/historial_local_model.dart';
 import 'progress_cache.dart';
 import '../../features/biblioteca/data/repositories/biblioteca_repository_impl.dart';
 import '../../features/historial/data/repositories/historial_repository_impl.dart';
 import '../../features/reader/data/datasources/epub_datasource.dart';
 import '../core/enums/download_status.dart';
-import '../core/utils/retry_handler.dart';
 import '../core/utils/concurrency_pool.dart';
 
 class SyncService {
@@ -243,12 +243,10 @@ class SyncService {
     required int page,
     int? timestamp,
   }) async {
-    print('[DEBUG SyncService] addProgressUpdateToQueue called: libroId=$libroId, usuarioId=$usuarioId, progreso=$progreso, page=$page');
     final now = timestamp ?? DateTime.now().millisecondsSinceEpoch;
     ProgressCache().set(libroId, progreso, page);
     
     final existing = await localDatabase.bibliotecaLocalDataSource.getByLibroId(libroId, usuarioId);
-    print('[DEBUG SyncService] Existing book found: ${existing != null}');
     if (existing != null) {
       await localDatabase.bibliotecaLocalDataSource.updateProgressWithTracking(
         id: existing.id!,
@@ -256,9 +254,7 @@ class SyncService {
         page: page,
         timestamp: now,
       );
-      print('[DEBUG SyncService] Updated local database');
     } else {
-      print('[DEBUG SyncService] Book not found in local DB - creating new entry');
       await localDatabase.bibliotecaLocalDataSource.insert(
         BibliotecaLocalModel(
           libroId: libroId,
@@ -271,8 +267,32 @@ class SyncService {
           createdAt: now,
         ),
       );
-      print('[DEBUG SyncService] Created new book entry');
     }
+
+    final baseLibro = existing ??
+        BibliotecaLocalModel(
+          libroId: libroId,
+          usuarioId: usuarioId,
+          titulo: 'Libro $libroId',
+          progreso: progreso,
+          page: page,
+          lastReadAt: now,
+          syncStatus: 'pending',
+          createdAt: now,
+        );
+
+    await localDatabase.historialLocalDataSource.insertOrUpdate(
+      HistorialLocalModel(
+        libroId: libroId,
+        usuarioId: usuarioId,
+        titulo: baseLibro.titulo,
+        autor: baseLibro.autor,
+        portadaBase64: baseLibro.portadaBase64,
+        ultimaLectura: now,
+        status: 'pending_add',
+        createdAt: baseLibro.createdAt,
+      ),
+    );
     
     final payload = {
       'libroId': libroId,
@@ -499,10 +519,6 @@ class SyncService {
     // Version checking
     final remoteManifest = await _epubDataSource!.getManifest(libroId);
 
-    if (remoteManifest == null) {
-      throw Exception('Manifest not found for libro $libroId');
-    }
-
     final remoteVersion = remoteManifest.version ?? 1;
     final localVersion = await dataSource.getVersion(libroId);
 
@@ -523,9 +539,7 @@ class SyncService {
     final downloadTasks = remoteManifest.readingOrder.map((item) async {
       try {
         final content = await _epubDataSource!.getResource(libroId, item.href);
-        if (content != null) {
-          await dataSource.saveResource(libroId, item.href, content);
-        }
+        await dataSource.saveResource(libroId, item.href, content);
       } catch (e) {
         // Fallo parcial - continuar con otros capítulos
       }

@@ -10,13 +10,9 @@ extension RoleX on Usuario {
 
 extension SessionRoleX on AuthState {
   bool get isAdmin {
-    if (this is AuthLoginSuccess) {
-      return (this as AuthLoginSuccess).usuario.nombreRol == 'Admin';
-    }
-    if (this is AuthRegisterSuccess) {
-      return (this as AuthRegisterSuccess).usuario.nombreRol == 'Admin';
-    }
-    return false;
+    final user = usuario;
+    if (user == null) return false;
+    return user.nombreRol == 'Admin';
   }
 
   Usuario? get usuario {

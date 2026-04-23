@@ -45,12 +45,16 @@ class AudioPlayerCubit extends Cubit<AudioPlaybackState> {
     }
   }
   
-  void loadParagraphs(List<String> paragraphs) {
+  void loadParagraphs(List<String> paragraphs, {int initialIndex = 0}) {
     _paragraphs = paragraphs;
-    _currentIndex = 0;
+    if (paragraphs.isEmpty) {
+      _currentIndex = 0;
+    } else {
+      _currentIndex = initialIndex.clamp(0, paragraphs.length - 1);
+    }
     emit(state.copyWith(
       status: AudioStatus.idle,
-      currentParagraphIndex: 0,
+      currentParagraphIndex: _currentIndex,
       totalParagraphs: paragraphs.length,
       errorMessage: null,
     ));

@@ -35,6 +35,18 @@ class Bookmark extends Equatable {
     );
   }
 
+  factory Bookmark.fromJson(Map<String, dynamic> json) {
+    return Bookmark(
+      id: json['id'] as int?,
+      bookId: json['bookId'] as int? ?? json['book_id'] as int,
+      chapterIndex: json['chapterIndex'] as int? ?? json['chapter_index'] as int,
+      title: json['title'] as String,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.fromMillisecondsSinceEpoch(json['created_at'] as int? ?? 0),
+    );
+  }
+
   Bookmark copyWith({
     int? id,
     int? bookId,

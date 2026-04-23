@@ -85,8 +85,16 @@ class ReaderCubit extends Cubit<ReaderState> {
 
   ReaderMode get currentMode => _currentMode;
 
-  void setOnProgressChanged(OnProgressChanged? callback) {
-    print('[DEBUG] setOnProgressChanged called with: ${callback != null}');
+ReaderCubit({
+    required EpubRepository repository,
+    required this.libroId,
+    this.initialPage = 0,
+  })  : _repository = repository,
+        super(ReaderInitial());
+
+  final int initialPage;
+
+void setOnProgressChanged(OnProgressChanged? callback) {
     _onProgressChanged = callback;
   }
 
@@ -108,19 +116,12 @@ class ReaderCubit extends Cubit<ReaderState> {
     }
   }
 
-ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(ReaderInitial());
-
-  final int initialPage;
-
   Future<void> cargarLibro() async {
     emit(ReaderLoading());
     try {
-      print('[DEBUG ReaderCubit] cargarLibro inicio libroId=$libroId');
       final manifest = await _repository.getManifest(libroId);
-      print('[DEBUG ReaderCubit] Manifest cargado: ${manifest.readingOrder.length} capítulos');
       
       if (manifest.readingOrder.isEmpty) {
-        print('[DEBUG ReaderCubit] ERROR: El libro no tiene capitulos - manifest vacío o null');
         emit(const ReaderError('El libro no tiene capitulos'));
         return;
       }
@@ -129,10 +130,8 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
           ? initialPage - 1 
           : 0;
       
-      print('[DEBUG ReaderCubit] Cargando capítulo $startIndex: ${manifest.readingOrder[startIndex].href}');
       final chapterPath = manifest.readingOrder[startIndex].href;
       final content = await _repository.getResource(libroId, chapterPath);
-      print('[DEBUG ReaderCubit] Capítulo cargado, length: ${content.length}');
       
       _chapterCache.put(startIndex, content);
 
@@ -149,9 +148,7 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
       if (startIndex > 0) {
         _onChapterChanged(startIndex, manifest.readingOrder.length);
       }
-      print('[DEBUG ReaderCubit] cargarLibro COMPLETO');
     } catch (e) {
-      print('[DEBUG ReaderCubit] ERROR cargarLibro: $e');
       emit(ReaderError(e.toString().replaceAll('Exception: ', '')));
     }
   }
@@ -235,14 +232,10 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
     
     try {
       final chapterPath = currentState.manifest.readingOrder[index].href;
-      print('[DEBUG ReaderCubit] obtenerContenido($index): Intentando cargar capítulo');
       final content = await _repository.getResource(libroId, chapterPath);
-      final cleanContent = _cleanHtmlContent(content);
-      _chapterCache.put(index, cleanContent);
-      print('[DEBUG ReaderCubit] obtenerContenido($index): SUCCESS, length=${cleanContent.length}');
-      return cleanContent;
+      _chapterCache.put(index, content);
+      return content;
     } catch (e) {
-      print('[DEBUG ReaderCubit] obtenerContenido($index): ERROR - $e');
       rethrow;  
     }
   }
@@ -264,9 +257,7 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
           if (!isClosed) {
             _chapterCache.put(nextIndex, content);
           }
-        } catch (e) {
-          print('[DEBUG ReaderCubit] Error precarga capítulo $nextIndex: $e');
-        }
+        } catch (_) {}
       });
     }
   }
@@ -288,7 +279,6 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
   List<int> get cachedIndices => _chapterCache.cachedIndices;
 
   void _onChapterChanged(int newChapterIndex, int totalChapters) {
-    print('[DEBUG] _onChapterChanged called: chapter=$newChapterIndex, total=$totalChapters');
     if (_lastSavedChapter == newChapterIndex) return;
     _lastSavedChapter = newChapterIndex;
 
@@ -299,11 +289,9 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
   }
 
   void _saveProgress(int currentChapter, int totalChapters) {
-    print('[DEBUG] _saveProgress called: chapter=$currentChapter, total=$totalChapters, callback=${_onProgressChanged != null}');
     if (_onProgressChanged == null) return;
 
     final progreso = totalChapters > 0 ? ((currentChapter + 1) / totalChapters) * 100 : 0.0;
-    print('[DEBUG] Sending progress: $progreso%, page: ${currentChapter + 1}');
     
     _onProgressChanged!(
       libroId: libroId,

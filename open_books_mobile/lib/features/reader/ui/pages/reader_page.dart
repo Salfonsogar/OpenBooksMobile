@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:convert';
+import 'dart:io';
 
 import '../../../../injection_container.dart';
 import '../../../../shared/core/session/session_cubit.dart';
@@ -49,11 +51,37 @@ class _ReaderPageState extends State<ReaderPage> {
   late BookmarkCubit _bookmarkCubit;
   late HighlightCubit _highlightCubit;
   late AudioPlayerCubit _audioPlayerCubit;
-  final HighlightDataSource _highlightDataSource = HighlightDataSource();
-  List<ReadingOrderItem> _chapters = [];
   int _currentIndex = 0;
   List<String> _paragraphs = [];
   bool _isInitialized = false;
+
+  // #region agent log
+  Future<void> _agentLog({
+    required String hypothesisId,
+    required String location,
+    required String message,
+    required Map<String, dynamic> data,
+    String runId = 'initial',
+  }) async {
+    try {
+      final client = HttpClient();
+      final req = await client.postUrl(Uri.parse('http://127.0.0.1:7310/ingest/c62b37a5-1955-4a1d-9e5c-ae63d7c2059b'));
+      req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+      req.headers.set('X-Debug-Session-Id', 'e5ce20');
+      req.write(jsonEncode({
+        'sessionId': 'e5ce20',
+        'runId': runId,
+        'hypothesisId': hypothesisId,
+        'location': location,
+        'message': message,
+        'data': data,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      }));
+      await req.close();
+      client.close(force: true);
+    } catch (_) {}
+  }
+  // #endregion
 
   @override
   void initState() {
@@ -62,7 +90,6 @@ class _ReaderPageState extends State<ReaderPage> {
   }
 
   Future<void> _initReader() async {
-    print('[DEBUG ReaderPage] _initReader started for libroId: ${widget.libroId}');
     
     try {
       final syncService = getIt<SyncService>();
@@ -70,28 +97,20 @@ class _ReaderPageState extends State<ReaderPage> {
       final localDatabase = getIt<LocalDatabase>();
       final sessionState = sessionCubit.state;
       final usuarioId = sessionState is SessionAuthenticated ? sessionState.userId : 1;
-      print('[DEBUG ReaderPage] usuarioId: $usuarioId');
       
       int savedPage = 0;
       try {
-        print('[DEBUG ReaderPage] Getting saved page from local database...');
         final libro = await localDatabase.bibliotecaLocalDataSource.getByLibroId(widget.libroId, usuarioId);
-        print('[DEBUG ReaderPage] Libro found: ${libro != null}, page: ${libro?.page}');
         if (libro != null && libro.page != null) {
           savedPage = libro.page!;
-          print('[DEBUG ReaderPage] Saved page: $savedPage');
         }
-      } catch (e) {
-        print('[DEBUG ReaderPage] Error getting book: $e');
-      }
+      } catch (_) {}
       
-      print('[DEBUG ReaderPage] Creating ReaderCubit with initialPage: $savedPage');
       _readerCubit = ReaderCubit(
-        getIt<EpubRepository>(),
-        widget.libroId,
+        repository: getIt<EpubRepository>(),
+        libroId: widget.libroId,
         initialPage: savedPage,
       );
-      print('[DEBUG ReaderPage] ReaderCubit created');
       
       _readerCubit.setOnProgressChanged(({
         required int libroId,
@@ -109,26 +128,40 @@ class _ReaderPageState extends State<ReaderPage> {
         );
       });
       
-      print('[DEBUG ReaderPage] Setting up other cubits...');
       _settingsCubit = getIt<ReaderSettingsCubit>();
       _bookmarkCubit = getIt<BookmarkCubit>();
-      _highlightCubit = HighlightCubit(_highlightDataSource);
+      _highlightCubit = HighlightCubit(getIt<HighlightDataSource>());
       _audioPlayerCubit = getIt<AudioPlayerCubit>(param1: widget.libroId);
       
-      print('[DEBUG ReaderPage] Loading data...');
       _settingsCubit.cargarSettings();
-      _readerCubit.cargarLibro();
+      
+      await _readerCubit.cargarLibro();
+      // #region agent log
+      final loadedState = _readerCubit.state;
+      await _agentLog(
+        hypothesisId: 'H1',
+        location: 'reader_page.dart:_initReader',
+        message: 'cargarLibro completed',
+        data: {
+          'stateType': loadedState.runtimeType.toString(),
+          'isReaderLoaded': loadedState is ReaderLoaded,
+          'manifestChapters': loadedState is ReaderLoaded ? loadedState.manifest.readingOrder.length : -1,
+        },
+      );
+      // #endregion
       _bookmarkCubit.cargarBookmarks(widget.libroId);
       _highlightCubit.cargarHighlights(widget.libroId);
       
-      print('[DEBUG ReaderPage] All loaded, setting state...');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (savedPage > 0 && _pageController.hasClients) {
+          _pageController.jumpToPage(savedPage - 1);
+        }
+      });
+      
       setState(() {
         _isInitialized = true;
       });
-      print('[DEBUG ReaderPage] Done!');
-    } catch (e, stack) {
-      print('[DEBUG ReaderPage] ERROR: $e');
-      print('[DEBUG ReaderPage] STACK: $stack');
+    } catch (e) {
       rethrow;
     }
   }
@@ -171,21 +204,26 @@ class _ReaderPageState extends State<ReaderPage> {
               backgroundColor: colors.background,
               body: BlocConsumer<ReaderCubit, ReaderState>(
                 listener: (context, state) {
-                  print('[DEBUG ReaderPage] BlocConsumer listener: ${state.runtimeType}');
                   if (state is ReaderLoaded) {
-                    print('[DEBUG ReaderPage] ReaderLoaded: ${state.manifest.readingOrder.length} capítulos, currentChapterIndex: ${state.currentChapterIndex}');
+                    // #region agent log
+                    _agentLog(
+                      hypothesisId: 'H1',
+                      location: 'reader_page.dart:BlocConsumer.listener',
+                      message: 'listener ReaderLoaded fired',
+                      data: {
+                        'stateChapterCount': state.manifest.readingOrder.length,
+                        'stateCurrentIndex': state.currentChapterIndex,
+                      },
+                    );
+                    // #endregion
                     setState(() {
-                      _chapters = state.manifest.readingOrder;
                       _currentIndex = state.currentChapterIndex;
-                      print('[DEBUG ReaderPage] _chapters actualizado a: ${_chapters.length}');
                     });
-                    if (_pageController.hasClients) {
-                      _pageController.jumpToPage(state.currentChapterIndex);
-                    }
-                  } else if (state is ReaderError) {
-                    print('[DEBUG ReaderPage] ReaderError: ${state.message}');
-                  } else if (state is ReaderLoading) {
-                    print('[DEBUG ReaderPage] ReaderLoading');
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (_pageController.hasClients && state.manifest.readingOrder.isNotEmpty) {
+                        _pageController.jumpToPage(state.currentChapterIndex);
+                      }
+                    });
                   }
                 },
                 builder: (context, state) {
@@ -197,13 +235,7 @@ class _ReaderPageState extends State<ReaderPage> {
                     },
                     child: Stack(
                       children: [
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          child: KeyedSubtree(
-                            key: ValueKey(_readerCubit.currentMode),
-                            child: _buildContent(state, settings, colors),
-                          ),
-                        ),
+                        _buildContent(state, settings, colors),
                         if (_showUi) _buildHeader(state, colors),
                         if (_showUi) _buildFooter(state, colors),
                       ],
@@ -230,27 +262,87 @@ class _ReaderPageState extends State<ReaderPage> {
   }
 
   Future<void> _goToChapter(int index) async {
-    if (index < 0 || index >= _chapters.length) return;
+    final readerState = _readerCubit.state;
+    if (readerState is! ReaderLoaded) return;
+    final chapterCount = readerState.manifest.readingOrder.length;
+    if (index < 0 || index >= chapterCount) return;
 
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(index);
+      return;
+    }
+
+    await _syncChapterProgress(index);
+  }
+
+  Future<void> _syncChapterProgress(int index) async {
     setState(() {
       _currentIndex = index;
       _paragraphs = [];
     });
 
-    await _readerCubit.cargarCapitulo(index);
-    
+    final currentState = _readerCubit.state;
+    if (currentState is ReaderLoaded && currentState.currentChapterIndex != index) {
+      await _readerCubit.cargarCapitulo(index);
+    }
+
+    _highlightCubit.cargarHighlightsPorCapitulo(index);
+
     if (_readerCubit.currentMode == ReaderMode.audio) {
       final content = await _readerCubit.obtenerContenido(index);
       if (content != null) {
         final paragraphs = _extractParagraphs(content);
-        _paragraphs = paragraphs;
-        _audioPlayerCubit.loadParagraphs(paragraphs);
+        final audioState = _audioPlayerCubit.state;
+        final targetParagraphIndex = paragraphs.isEmpty
+            ? 0
+            : audioState.currentParagraphIndex.clamp(0, paragraphs.length - 1);
+        setState(() {
+          _paragraphs = paragraphs;
+        });
+        _audioPlayerCubit.loadParagraphs(
+          paragraphs,
+          initialIndex: targetParagraphIndex,
+        );
       }
     }
+  }
 
-    if (_pageController.hasClients) {
-      _pageController.jumpToPage(index);
+  Future<void> _onReaderModeChanged(ReaderMode mode) async {
+    _readerCubit.setReaderMode(mode);
+
+    final currentState = _readerCubit.state;
+    if (currentState is! ReaderLoaded) return;
+
+    // Keep the same chapter when switching modes.
+    if (currentState.currentChapterIndex != _currentIndex) {
+      await _readerCubit.cargarCapitulo(_currentIndex);
     }
+
+    if (mode == ReaderMode.audio) {
+      final content = await _readerCubit.obtenerContenido(_currentIndex);
+      if (content != null) {
+        final paragraphs = _extractParagraphs(content);
+        final audioState = _audioPlayerCubit.state;
+        final targetParagraphIndex = paragraphs.isEmpty
+            ? 0
+            : audioState.currentParagraphIndex.clamp(0, paragraphs.length - 1);
+        setState(() {
+          _paragraphs = paragraphs;
+        });
+        _audioPlayerCubit.loadParagraphs(
+          paragraphs,
+          initialIndex: targetParagraphIndex,
+        );
+      }
+    } else {
+      await _audioPlayerCubit.pause();
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(_currentIndex);
+      }
+    });
   }
 
   Widget _buildContent(ReaderState state, ReaderSettings settings, ReaderColors colors) {
@@ -284,19 +376,38 @@ class _ReaderPageState extends State<ReaderPage> {
     }
 
     if (state is ReaderLoaded) {
-      if (_chapters.isEmpty) {
+      final chapters = state.manifest.readingOrder;
+      // #region agent log
+      _agentLog(
+        hypothesisId: 'H1',
+        location: 'reader_page.dart:_buildContent',
+        message: 'ReaderLoaded build content state',
+        data: {
+          'manifestChapters': chapters.length,
+          'currentMode': _readerCubit.currentMode.name,
+        },
+      );
+      // #endregion
+      if (chapters.isEmpty) {
         return const Center(child: Text('No hay capítulos'));
       }
 
       if (currentMode == ReaderMode.audio) {
         if (_paragraphs.isEmpty) {
           _paragraphs = _extractParagraphs(state.currentContent);
-          _audioPlayerCubit.loadParagraphs(_paragraphs);
+          final audioState = _audioPlayerCubit.state;
+          final targetParagraphIndex = _paragraphs.isEmpty
+              ? 0
+              : audioState.currentParagraphIndex.clamp(0, _paragraphs.length - 1);
+          _audioPlayerCubit.loadParagraphs(
+            _paragraphs,
+            initialIndex: targetParagraphIndex,
+          );
         }
-        return _buildReadingView(state, settings, colors);
+        return _buildReadingView(state, settings, colors, chapters);
       }
 
-      return _buildReadingView(state, settings, colors);
+      return _buildReadingView(state, settings, colors, chapters);
     }
 
     return const SizedBox();
@@ -346,46 +457,42 @@ class _ReaderPageState extends State<ReaderPage> {
     return paragraphs;
   }
 
-  Widget _buildReadingView(ReaderLoaded state, ReaderSettings settings, ReaderColors colors) {
+  Widget _buildReadingView(
+    ReaderLoaded state,
+    ReaderSettings settings,
+    ReaderColors colors,
+    List<ReadingOrderItem> chapters,
+  ) {
     final isAudioMode = _readerCubit.currentMode == ReaderMode.audio;
     
     if (isAudioMode) {
       return BlocBuilder<AudioPlayerCubit, AudioPlaybackState>(
         buildWhen: (prev, curr) => prev.currentParagraphIndex != curr.currentParagraphIndex,
         builder: (context, audioState) {
-          return _buildPageView(state, settings, colors, audioState.currentParagraphIndex, true);
+          return _buildPageView(state, settings, colors, chapters, audioState.currentParagraphIndex, true);
         },
       );
     }
     
-    return _buildPageView(state, settings, colors, null, false);
+    return _buildPageView(state, settings, colors, chapters, null, false);
   }
 
-  Widget _buildPageView(ReaderLoaded state, ReaderSettings settings, ReaderColors colors, int? activeParagraphIndex, bool isAudioMode) {
+  Widget _buildPageView(
+    ReaderLoaded state,
+    ReaderSettings settings,
+    ReaderColors colors,
+    List<ReadingOrderItem> chapters,
+    int? activeParagraphIndex,
+    bool isAudioMode,
+  ) {
     return PageView.builder(
       controller: _pageController,
-      itemCount: _chapters.length,
+      itemCount: chapters.length,
       onPageChanged: (index) async {
-        setState(() {
-          _currentIndex = index;
-          _paragraphs = [];
-        });
-        _highlightCubit.cargarHighlightsPorCapitulo(index);
-        
-        if (_readerCubit.currentMode == ReaderMode.audio) {
-          final content = await _readerCubit.obtenerContenido(index);
-          if (content != null) {
-            final paragraphs = _extractParagraphs(content);
-            setState(() {
-              _paragraphs = paragraphs;
-            });
-            _audioPlayerCubit.loadParagraphs(paragraphs);
-          }
-        }
+        await _syncChapterProgress(index);
       },
       itemBuilder: (context, index) {
-        final chapterPath = _chapters[index].href;
-        print('[DEBUG ReaderPage] itemBuilder índice=$index, chapterPath=$chapterPath');
+        final chapterPath = chapters[index].href;
         return FutureBuilder<String?>(
           future: _readerCubit.obtenerContenido(index),
           builder: (context, snapshot) {
@@ -393,7 +500,6 @@ class _ReaderPageState extends State<ReaderPage> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              print('[DEBUG ReaderPage] Error cargando capítulo $index: ${snapshot.error}');
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -429,10 +535,24 @@ class _ReaderPageState extends State<ReaderPage> {
             }
 
             final rawContent = snapshot.data!;
-            print('[DEBUG ReaderPage] rawContent índice=$index, length=${rawContent.length}');
             final fixedContent = _parser.fixImagePaths(rawContent, chapterPath);
             final blocks = _parser.parse(fixedContent);
-            print('[DEBUG ReaderPage] blocks índice=$index, count=${blocks.length}');
+            // #region agent log
+            _agentLog(
+              hypothesisId: 'H2',
+              location: 'reader_page.dart:_buildPageView.itemBuilder',
+              message: 'chapter parsed into blocks',
+              data: {
+                'index': index,
+                'chapterPath': chapterPath,
+                'rawLength': rawContent.length,
+                'blocks': blocks.length,
+                'isCurrentIndex': index == _currentIndex,
+              },
+            );
+            // #endregion
+
+            debugPrint('Reader: Page $index - raw: ${rawContent.length}, blocks: ${blocks.length}');
 
             if (blocks.isEmpty) {
               return Center(
@@ -455,11 +575,24 @@ class _ReaderPageState extends State<ReaderPage> {
 
             return LayoutBuilder(
               builder: (context, constraints) {
+                debugPrint('Reader: Page $index building layout ${constraints.maxWidth}x${constraints.maxHeight}');
+                // #region agent log
+                _agentLog(
+                  hypothesisId: 'H3',
+                  location: 'reader_page.dart:LayoutBuilder',
+                  message: 'page layout constraints',
+                  data: {
+                    'index': index,
+                    'maxWidth': constraints.maxWidth,
+                    'maxHeight': constraints.maxHeight,
+                  },
+                );
+                // #endregion
                 return GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onHorizontalDragEnd: (details) {
                     if (details.primaryVelocity != null) {
-                      if (details.primaryVelocity! < -100 && _currentIndex < _chapters.length - 1) {
+                      if (details.primaryVelocity! < -100 && _currentIndex < chapters.length - 1) {
                         _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
                       } else if (details.primaryVelocity! > 100 && _currentIndex > 0) {
                         _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
@@ -573,12 +706,13 @@ class _ReaderPageState extends State<ReaderPage> {
       onSearch: () => _showSearch(state, colors),
       onSettings: () => _showSettings(),
       currentMode: _readerCubit.currentMode,
-      onModeChanged: (mode) => _readerCubit.setReaderMode(mode),
+      onModeChanged: _onReaderModeChanged,
     );
   }
 
   Widget _buildFooter(ReaderState state, ReaderColors colors) {
     final currentMode = _readerCubit.currentMode;
+    final totalChapters = state is ReaderLoaded ? state.manifest.readingOrder.length : 0;
 
     if (currentMode == ReaderMode.audio) {
       return AudioFooter(
@@ -590,7 +724,7 @@ class _ReaderPageState extends State<ReaderPage> {
           }
         },
         onNextChapter: () {
-          if (_currentIndex < _chapters.length - 1) {
+          if (_currentIndex < totalChapters - 1) {
             _goToChapter(_currentIndex + 1);
           }
         },
@@ -599,14 +733,11 @@ class _ReaderPageState extends State<ReaderPage> {
 
     return ReaderFooter(
       currentIndex: _currentIndex,
-      totalChapters: _chapters.length,
+      totalChapters: totalChapters,
       colors: colors,
       bottomPadding: MediaQuery.of(context).padding.bottom,
       onPageSelected: (index) {
         _pageController.jumpToPage(index);
-        setState(() {
-          _currentIndex = index;
-        });
       },
       onPrevious: () {
         if (_currentIndex > 0) {
@@ -614,7 +745,7 @@ class _ReaderPageState extends State<ReaderPage> {
         }
       },
       onNext: () {
-        if (_currentIndex < _chapters.length - 1) {
+        if (_currentIndex < totalChapters - 1) {
           _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
         }
       },
@@ -646,6 +777,7 @@ class _ReaderPageState extends State<ReaderPage> {
     if (state is! ReaderLoaded) return;
 
     final toc = state.manifest.toc;
+    final chapters = state.manifest.readingOrder;
     if (toc.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No hay índice disponible')),
@@ -663,14 +795,10 @@ class _ReaderPageState extends State<ReaderPage> {
       toc: toc,
       bookmarks: bookmarks,
       currentChapterIndex: _currentIndex,
-      chapters: _chapters,
+      chapters: chapters,
       callbacks: TocDialogCallbacks(
         onChapterTap: (chapterIndex) {
           _pageController.jumpToPage(chapterIndex);
-          setState(() {
-            _currentIndex = chapterIndex;
-          });
-          _readerCubit.irACapitulo(chapterIndex);
         },
         onCreateBookmark: (title) {
           _bookmarkCubit.crearBookmark(
@@ -707,8 +835,9 @@ class _ReaderPageState extends State<ReaderPage> {
         onSearch: (query) async {
           final results = <SearchResult>[];
           final queryLower = query.toLowerCase();
+          final chapters = state.manifest.readingOrder;
 
-          for (var i = 0; i < _chapters.length; i++) {
+          for (var i = 0; i < chapters.length; i++) {
             final content = await _readerCubit.obtenerContenido(i);
             if (content != null && content.toLowerCase().contains(queryLower)) {
               final toc = state.manifest.toc;
@@ -731,9 +860,6 @@ class _ReaderPageState extends State<ReaderPage> {
         },
         onResultTap: (chapterIndex, text) {
           _pageController.jumpToPage(chapterIndex);
-          setState(() {
-            _currentIndex = chapterIndex;
-          });
         },
       ),
     );

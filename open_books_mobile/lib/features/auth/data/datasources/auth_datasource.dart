@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../../../shared/core/network/api_client.dart';
 import '../../../../shared/core/utils/error_utils.dart';

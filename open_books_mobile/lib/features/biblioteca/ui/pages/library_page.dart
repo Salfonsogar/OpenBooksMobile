@@ -21,7 +21,8 @@ class _LibraryPageState extends State<LibraryPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BibliotecaCubit>().cargarBiblioteca();
+      if (!mounted) return;
+      context.read<BibliotecaCubit>().refresh();
     });
   }
 

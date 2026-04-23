@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 import '../../../shared/core/environment/env.dart';
@@ -31,7 +30,7 @@ class SignalRService {
 
     try {
       final env = Env();
-      final hubUrl = '${env.signalrUrl}';
+      final hubUrl = env.signalrUrl;
 
       _hubConnection = HubConnectionBuilder()
           .withUrl(hubUrl)

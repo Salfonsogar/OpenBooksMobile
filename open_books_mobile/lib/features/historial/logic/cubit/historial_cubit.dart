@@ -51,16 +51,22 @@ class HistorialCubit extends Cubit<HistorialState> {
     required this.localDatabase,
   }) : super(HistorialInitial());
 
+  void _safeEmit(HistorialState state) {
+    if (!isClosed) emit(state);
+  }
+
   Future<void> cargarHistorial({int cantidad = 10}) async {
+    if (isClosed) return;
     final sessionState = sessionCubit.state;
     if (sessionState is! SessionAuthenticated) {
-      emit(HistorialLoaded(libros: []));
+      _safeEmit(HistorialLoaded(libros: []));
       return;
     }
 
-    emit(HistorialLoading());
+    _safeEmit(HistorialLoading());
     try {
       final entities = await getHistorialUseCase(sessionState.userId);
+      if (isClosed) return;
       
       final librosConProgreso = <HistorialEntryEntity>[];
       for (final entity in entities) {
@@ -77,9 +83,9 @@ class HistorialCubit extends Cubit<HistorialState> {
       
       librosConProgreso.sort((a, b) => b.ultimaLectura.compareTo(a.ultimaLectura));
       
-      emit(HistorialLoaded(libros: librosConProgreso));
+      _safeEmit(HistorialLoaded(libros: librosConProgreso));
     } catch (e) {
-      emit(HistorialError(e.toString().replaceAll('Exception: ', '')));
+      _safeEmit(HistorialError(e.toString().replaceAll('Exception: ', '')));
     }
   }
 

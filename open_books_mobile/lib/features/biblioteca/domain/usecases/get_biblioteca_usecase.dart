@@ -1,18 +1,19 @@
 import '../entities/libro_biblioteca_entity.dart';
 import '../repositories/i_biblioteca_repository.dart';
+import '../../../../shared/services/network_info.dart';
 
 class GetBibliotecaUseCase {
   final IBibliotecaRepository repository;
+  final NetworkInfo networkInfo;
 
-  GetBibliotecaUseCase(this.repository);
+  GetBibliotecaUseCase(this.repository, this.networkInfo);
 
   Future<List<LibroBibliotecaEntity>> call(int usuarioId) async {
-    final isConnected = await repository.isConnected;
+    final isConnected = await networkInfo.isConnected;
 
     if (isConnected) {
       try {
-        // Sincroniza desde el endpoint de biblioteca del usuario, no el catálogo
-        await repository.syncFromRemote(usuarioId);
+        return await repository.getRemoto(usuarioId);
       } catch (_) {}
     }
 

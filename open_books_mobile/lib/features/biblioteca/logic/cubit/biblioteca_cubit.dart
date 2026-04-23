@@ -64,11 +64,12 @@ class BibliotecaLoaded extends BibliotecaState {
 
 class BibliotecaError extends BibliotecaState {
   final String message;
+  final bool isOfflineError;
 
-  const BibliotecaError(this.message);
+  const BibliotecaError(this.message, {this.isOfflineError = false});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, isOfflineError];
 }
 
 class BibliotecaCubit extends Cubit<BibliotecaState> {
@@ -88,8 +89,27 @@ class BibliotecaCubit extends Cubit<BibliotecaState> {
   })  : _sessionCubit = sessionCubit,
         super(BibliotecaInitial());
 
-  Future<void> cargarBiblioteca() async {
-    if (_isLoading) return;
+  bool _isOfflineError(dynamic e) {
+    return e.toString().contains('Se requiere conexión');
+  }
+
+  String _cleanMessage(dynamic e) {
+    return e.toString().replaceAll('Exception: ', '');
+  }
+
+  Future<void> cargarBiblioteca({bool forceRefresh = false}) async {
+    if (isClosed) return;
+
+    final currentState = state;
+    if (!forceRefresh && currentState is BibliotecaLoaded && !_isLoading) {
+      return;
+    }
+
+    while (_isLoading && !isClosed) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    if (isClosed) return;
 
     final sessionState = _sessionCubit.state;
     if (sessionState is! SessionAuthenticated) {
@@ -97,10 +117,22 @@ class BibliotecaCubit extends Cubit<BibliotecaState> {
     }
 
     _isLoading = true;
+
+    if (isClosed) {
+      _isLoading = false;
+      return;
+    }
+
     emit(BibliotecaLoading());
 
     try {
       final entities = await getBibliotecaUseCase(sessionState.userId);
+
+      if (isClosed) {
+        _isLoading = false;
+        return;
+      }
+
       final libros = entities
           .map((e) => LibroBiblioteca(
                 id: e.libroId,
@@ -123,38 +155,85 @@ class BibliotecaCubit extends Cubit<BibliotecaState> {
         downloadedStatus[libro.id] = downloadedIds.contains(libro.id);
       }
 
+      if (isClosed) {
+        _isLoading = false;
+        return;
+      }
+
       emit(BibliotecaLoaded(libros: libros, downloadedStatus: downloadedStatus));
     } catch (e) {
-      emit(BibliotecaError(e.toString().replaceAll('Exception: ', '')));
+      if (isClosed) {
+        _isLoading = false;
+        return;
+      }
+      emit(BibliotecaError(_cleanMessage(e)));
     } finally {
       _isLoading = false;
     }
   }
 
   Future<void> agregarLibro(int libroId) async {
+    if (isClosed) return;
     final sessionState = _sessionCubit.state;
     if (sessionState is! SessionAuthenticated) return;
 
     try {
-      await addLibroBibliotecaUseCase(sessionState.userId, libroId);
-      await cargarBiblioteca();
+      final entity = await addLibroBibliotecaUseCase(sessionState.userId, libroId);
+
+      final currentState = state;
+      if (currentState is BibliotecaLoaded) {
+        final nuevoLibro = LibroBiblioteca(
+          id: entity.libroId,
+          titulo: entity.titulo,
+          autor: entity.autor,
+          descripcion: entity.descripcion,
+          portadaBase64: entity.portadaBase64,
+          categorias: entity.categorias,
+          progreso: entity.progreso,
+          page: entity.page,
+          syncStatus: entity.syncStatus,
+          lastReadAt: entity.lastReadAt?.millisecondsSinceEpoch,
+          readingStreak: entity.readingStreak,
+        );
+
+        final updatedLibros = [...currentState.libros, nuevoLibro];
+        emit(currentState.copyWith(libros: updatedLibros));
+      }
+
+      await _reloadBiblioteca();
     } catch (e) {
-      emit(BibliotecaError(e.toString().replaceAll('Exception: ', '')));
-      await cargarBiblioteca();
+      if (isClosed) return;
+      final isOffline = _isOfflineError(e);
+      emit(BibliotecaError(
+        isOffline
+            ? 'Sin conexión a internet'
+            : _cleanMessage(e),
+        isOfflineError: isOffline,
+      ));
     }
   }
 
   Future<void> quitarLibro(int libroId) async {
+    if (isClosed) return;
     final sessionState = _sessionCubit.state;
     if (sessionState is! SessionAuthenticated) return;
 
     try {
       await epubLocalStorageService.deleteEpub(libroId);
       await removeLibroBibliotecaUseCase(sessionState.userId, libroId);
-      await cargarBiblioteca();
+      if (isClosed) return;
+      await _reloadBiblioteca();
     } catch (e) {
-      emit(BibliotecaError(e.toString().replaceAll('Exception: ', '')));
-      await cargarBiblioteca();
+      if (isClosed) return;
+      final isOffline = _isOfflineError(e);
+      emit(BibliotecaError(
+        isOffline
+            ? 'Sin conexión a internet'
+            : _cleanMessage(e),
+        isOfflineError: isOffline,
+      ));
+      if (isClosed) return;
+      await _reloadBiblioteca();
     }
   }
 
@@ -174,17 +253,23 @@ class BibliotecaCubit extends Cubit<BibliotecaState> {
     return false;
   }
 
+  Future<void> _reloadBiblioteca() async {
+    _isLoading = false;
+    await cargarBiblioteca(forceRefresh: true);
+  }
+
   Future<void> refresh() async {
-    await cargarBiblioteca();
+    _isLoading = false;
+    await cargarBiblioteca(forceRefresh: true);
   }
 
   Future<void> descargarLibro(int libroId) async {
     await epubLocalStorageService.queueDownload(libroId);
-    await cargarBiblioteca();
+    await _reloadBiblioteca();
   }
 
   Future<void> eliminarDescarga(int libroId) async {
     await epubLocalStorageService.deleteEpub(libroId);
-    await cargarBiblioteca();
+    await _reloadBiblioteca();
   }
 }

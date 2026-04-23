@@ -7,10 +7,5 @@ class RemoveLibroBibliotecaUseCase {
 
   Future<void> call(int usuarioId, int libroId) async {
     await repository.removeLibro(usuarioId, libroId);
-
-    final isConnected = await repository.isConnected;
-    if (isConnected) {
-      await repository.syncNow();
-    }
   }
 }

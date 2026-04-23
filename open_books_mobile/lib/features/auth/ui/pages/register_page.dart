@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/core/constants/app_constants.dart';
-import '../../../../shared/core/session/session_cubit.dart';
 import '../../logic/cubit/auth_cubit.dart';
 import '../../logic/cubit/auth_state.dart';
 

@@ -9,8 +9,8 @@ class TocItem {
 
   factory TocItem.fromJson(Map<String, dynamic> json) {
     return TocItem(
-      titulo: json['titulo'] as String? ?? '',
-      href: json['href'] as String? ?? '',
+      titulo: json['titulo'] as String? ?? json['title'] as String? ?? json['label'] as String? ?? '',
+      href: json['href'] as String? ?? json['src'] as String? ?? json['path'] as String? ?? '',
     );
   }
 
@@ -33,8 +33,8 @@ class ReadingOrderItem {
 
   factory ReadingOrderItem.fromJson(Map<String, dynamic> json) {
     return ReadingOrderItem(
-      href: json['href'] as String? ?? '',
-      type: json['type'] as String? ?? '',
+      href: json['href'] as String? ?? json['src'] as String? ?? json['path'] as String? ?? '',
+      type: json['type'] as String? ?? json['contentType'] as String? ?? '',
     );
   }
 }
@@ -57,18 +57,25 @@ class EpubManifest {
   });
 
   factory EpubManifest.fromJson(Map<String, dynamic> json) {
+    final readingOrderList = json['readingOrder'] as List<dynamic>? ?? 
+                         json['chapters'] as List<dynamic>? ?? 
+                         json['pages'] as List<dynamic>? ?? 
+                         [];
+    final tocList = json['toc'] as List<dynamic>? ?? 
+                  json['tableOfContents'] as List<dynamic>? ?? 
+                  json['tableOfContent'] as List<dynamic>? ?? 
+                  [];
+    
     return EpubManifest(
-      id: json['id'] as int? ?? 0,
-      titulo: json['titulo'] as String? ?? '',
-      autor: json['autor'] as String? ?? '',
-      readingOrder: (json['readingOrder'] as List<dynamic>?)
-              ?.map((e) => ReadingOrderItem.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      toc: (json['toc'] as List<dynamic>?)
-              ?.map((e) => TocItem.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      id: json['id'] as int? ?? json['libroId'] as int? ?? 0,
+      titulo: json['titulo'] as String? ?? json['title'] as String? ?? '',
+      autor: json['autor'] as String? ?? json['author'] as String? ?? '',
+      readingOrder: readingOrderList
+              .map((e) => ReadingOrderItem.fromJson(e as Map<String, dynamic>))
+              .toList(),
+      toc: tocList
+          .map((e) => TocItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
       version: json['version'] as int?,
     );
   }

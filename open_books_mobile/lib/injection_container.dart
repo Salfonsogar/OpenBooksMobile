@@ -25,6 +25,7 @@ import 'features/historial/domain/usecases/add_to_historial_usecase.dart';
 import 'features/historial/logic/cubit/historial_cubit.dart';
 import 'features/reader/data/datasources/bookmark_datasource.dart';
 import 'features/reader/data/datasources/epub_datasource.dart';
+import 'features/reader/data/datasources/highlight_datasource.dart';
 import 'features/reader/data/repositories/bookmark_repository.dart';
 import 'features/reader/data/repositories/epub_repository.dart';
 import 'features/reader/data/repositories/epub_repository_impl.dart';
@@ -161,7 +162,10 @@ Future<void> setupDependencies() async {
   );
 
   getIt.registerLazySingleton<GetHistorialUseCase>(
-    () => GetHistorialUseCase(getIt<HistorialRepositoryImpl>()),
+    () => GetHistorialUseCase(
+      getIt<HistorialRepositoryImpl>(),
+      getIt<NetworkInfo>(),
+    ),
   );
 
   getIt.registerLazySingleton<AddToHistorialUseCase>(
@@ -178,7 +182,10 @@ Future<void> setupDependencies() async {
   );
 
   getIt.registerLazySingleton<GetBibliotecaUseCase>(
-    () => GetBibliotecaUseCase(getIt<BibliotecaRepositoryImpl>()),
+    () => GetBibliotecaUseCase(
+      getIt<BibliotecaRepositoryImpl>(),
+      getIt<NetworkInfo>(),
+    ),
   );
 
   getIt.registerLazySingleton<AddLibroBibliotecaUseCase>(
@@ -189,7 +196,7 @@ Future<void> setupDependencies() async {
     () => RemoveLibroBibliotecaUseCase(getIt<BibliotecaRepositoryImpl>()),
   );
 
-  getIt.registerLazySingleton<BibliotecaCubit>(
+  getIt.registerFactory<BibliotecaCubit>(
     () => BibliotecaCubit(
       getBibliotecaUseCase: getIt<GetBibliotecaUseCase>(),
       addLibroBibliotecaUseCase: getIt<AddLibroBibliotecaUseCase>(),
@@ -210,7 +217,7 @@ Future<void> setupDependencies() async {
     ),
   );
 
-  getIt.registerLazySingleton<HistorialCubit>(
+  getIt.registerFactory<HistorialCubit>(
     () => HistorialCubit(
       getHistorialUseCase: getIt<GetHistorialUseCase>(),
       addToHistorialUseCase: getIt<AddToHistorialUseCase>(),
@@ -237,9 +244,7 @@ Future<void> setupDependencies() async {
   );
   getIt.registerLazySingleton<EpubRepository>(
     () => EpubRepositoryImpl(
-      remoteDataSource: getIt<EpubDataSource>(),
-      localDataSource: getIt<LocalDatabase>().bookContentLocalDataSource,
-      networkInfo: getIt<NetworkInfo>(),
+      dataSource: getIt<EpubDataSource>(),
     ),
   );
   getIt.registerLazySingleton<EpubLocalStorageService>(
@@ -254,6 +259,9 @@ Future<void> setupDependencies() async {
   );
   getIt.registerLazySingleton<BookmarkDataSource>(
     () => BookmarkDataSource(),
+  );
+  getIt.registerLazySingleton<HighlightDataSource>(
+    () => HighlightDataSource(),
   );
   getIt.registerLazySingleton<BookmarkRepository>(
     () => BookmarkRepository(getIt<BookmarkDataSource>()),

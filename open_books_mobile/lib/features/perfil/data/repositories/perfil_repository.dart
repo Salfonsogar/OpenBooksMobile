@@ -16,34 +16,23 @@ class PerfilRepository {
     this._networkInfo,
   );
 
-  /// Online: fetch remoto, cachea localmente y retorna.
-  /// Offline: retorna el perfil cacheado en local. Lanza excepción si no hay cache.
-  Future<Usuario> getPerfil(int usuarioId) async {
-    final isConnected = await _networkInfo.isConnected;
+/// Online: fetch remoto siempre. No usa cache local.
+/// Offline: retorna el perfil cacheado en local. Lanza excepción si no hay cache.
+Future<Usuario> getPerfil(int usuarioId) async {
+  final isConnected = await _networkInfo.isConnected;
 
-    if (isConnected) {
-      try {
-        final usuario = await _dataSource.getPerfil(usuarioId);
-        // Cachear en local para uso offline
-        await _localDatabase.perfilLocalDataSource.upsert(usuarioId, usuario.toJson());
-        return usuario;
-      } catch (_) {
-        // Si falla el remoto, intentar con cache
-        return _getFromCache(usuarioId);
-      }
-    }
-
-    // Sin conexión: usar cache local
-    return _getFromCache(usuarioId);
+  if (isConnected) {
+    final usuario = await _dataSource.getPerfil(usuarioId);
+    await _localDatabase.perfilLocalDataSource.upsert(usuarioId, usuario.toJson());
+    return usuario;
   }
 
-  Future<Usuario> _getFromCache(int usuarioId) async {
-    final cached = await _localDatabase.perfilLocalDataSource.getPerfil(usuarioId);
-    if (cached == null) {
-      throw Exception('Sin conexión y no hay datos del perfil guardados localmente');
-    }
-    return _mapToUsuario(cached);
+  final cached = await _localDatabase.perfilLocalDataSource.getPerfil(usuarioId);
+  if (cached == null) {
+    throw Exception('Sin conexión y no hay datos del perfil guardados localmente');
   }
+  return _mapToUsuario(cached);
+}
 
   Future<Usuario> updatePerfil(int usuarioId, UpdatePerfilRequest request) async {
     final usuario = await _dataSource.updatePerfil(usuarioId, request.toJson());

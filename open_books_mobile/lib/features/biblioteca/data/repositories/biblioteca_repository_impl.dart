@@ -30,80 +30,82 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
   }
 
   @override
+  Future<List<LibroBibliotecaEntity>> getRemoto(int usuarioId) async {
+    final remoteLibros = await remoteDataSource.getLibrosBiblioteca(usuarioId);
+    return remoteLibros
+        .map((libro) => LibroBibliotecaEntity(
+              id: libro.id,
+              libroId: libro.id,
+              usuarioId: usuarioId,
+              titulo: libro.titulo,
+              autor: libro.autor,
+              descripcion: libro.descripcion,
+              portadaBase64: libro.portadaBase64,
+              categorias: libro.categorias,
+              progreso: libro.progreso,
+              isDownloaded: false,
+              syncStatus: 'synced',
+            ))
+        .toList();
+  }
+
+  @override
   Future<List<LibroBibliotecaEntity>> getBiblioteca(int usuarioId) async {
-    final localData = await localDatabase.bibliotecaLocalDataSource
-        .getByUsuarioId(usuarioId);
+    final localData = await localDatabase.bibliotecaLocalDataSource.getByUsuarioId(usuarioId);
     return BibliotecaMapper.fromLocalModelList(localData);
   }
 
   @override
-  Future<void> addLibro(int usuarioId, int libroId) async {
+  Future<LibroBibliotecaEntity> addLibro(int usuarioId, int libroId) async {
     final isConnected = await networkInfo.isConnected;
-
-    try {
-      final libroDetalle = await librosRepository.getLibroDetalle(libroId);
-      final localModel = BibliotecaLocalModel(
-        libroId: libroDetalle.id,
-        usuarioId: usuarioId,
-        titulo: libroDetalle.titulo,
-        autor: libroDetalle.autor,
-        descripcion: libroDetalle.descripcion,
-        portadaBase64: libroDetalle.portadaBase64,
-        categorias: jsonEncode(libroDetalle.categorias),
-        progreso: 0.0,
-        isDownloaded: false,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-      );
-
-      await localDatabase.bibliotecaLocalDataSource.insert(localModel);
-
-      final syncOperation = SyncQueueModel(
-        operation: SyncQueueModel.operationAddBiblioteca,
-        entityType: SyncQueueModel.entityTypeBiblioteca,
-        entityId: libroId,
-        payload: jsonEncode({
-          'usuarioId': usuarioId,
-          'libroId': libroId,
-        }),
-        priority: SyncQueueModel.priorityNormal,
-        status: SyncQueueModel.statusPending,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-      );
-
-      await localDatabase.syncQueueDataSource.insert(syncOperation);
-
-      if (isConnected) {
-        await syncAddBiblioteca(usuarioId, libroId);
-      }
-    } catch (e) {
-      rethrow;
+    if (!isConnected) {
+      throw Exception('Se requiere conexión para agregar un libro');
     }
+
+    await syncAddBiblioteca(usuarioId, libroId);
+
+    final libroDetalle = await librosRepository.getLibroDetalle(libroId);
+    final localModel = BibliotecaLocalModel(
+      libroId: libroDetalle.id,
+      usuarioId: usuarioId,
+      titulo: libroDetalle.titulo,
+      autor: libroDetalle.autor,
+      descripcion: libroDetalle.descripcion,
+      portadaBase64: libroDetalle.portadaBase64,
+      categorias: jsonEncode(libroDetalle.categorias),
+      progreso: 0.0,
+      isDownloaded: false,
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+    );
+
+    await localDatabase.bibliotecaLocalDataSource.insert(localModel);
+
+    return LibroBibliotecaEntity(
+      id: libroDetalle.id,
+      libroId: libroDetalle.id,
+      usuarioId: usuarioId,
+      titulo: libroDetalle.titulo,
+      autor: libroDetalle.autor,
+      descripcion: libroDetalle.descripcion,
+      portadaBase64: libroDetalle.portadaBase64,
+      categorias: libroDetalle.categorias,
+      progreso: 0.0,
+      isDownloaded: false,
+      syncStatus: 'synced',
+    );
   }
 
   @override
   Future<void> removeLibro(int usuarioId, int libroId) async {
+    final isConnected = await networkInfo.isConnected;
+    if (!isConnected) {
+      throw Exception('Se requiere conexión para quitar un libro');
+    }
+
     await localDatabase.bibliotecaLocalDataSource
         .deleteByLibroId(libroId, usuarioId);
 
-    final syncOperation = SyncQueueModel(
-      operation: SyncQueueModel.operationRemoveBiblioteca,
-      entityType: SyncQueueModel.entityTypeBiblioteca,
-      entityId: libroId,
-      payload: jsonEncode({
-        'usuarioId': usuarioId,
-        'libroId': libroId,
-      }),
-      priority: SyncQueueModel.priorityHigh,
-      status: SyncQueueModel.statusPending,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-    );
-
-    await localDatabase.syncQueueDataSource.insert(syncOperation);
-
-    final isConnected = await networkInfo.isConnected;
-    if (isConnected) {
-      await syncRemoveBiblioteca(usuarioId, libroId);
-    }
+    await syncRemoveBiblioteca(usuarioId, libroId);
   }
 
   @override
@@ -162,10 +164,25 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
       final remoteLibros =
           await remoteDataSource.getLibrosBiblioteca(usuarioId);
 
+      final pendingOps = await localDatabase.syncQueueDataSource
+          .getPendingByEntityType(SyncQueueModel.entityTypeBiblioteca);
+      final pendingLibroIds = <int>{};
+      for (final op in pendingOps) {
+        if (op.operation == SyncQueueModel.operationAddBiblioteca) {
+          final payload = jsonDecode(op.payload ?? '{}');
+          pendingLibroIds.add(payload['libroId'] as int);
+        }
+      }
+
       final existingLocal = await localDatabase.bibliotecaLocalDataSource
           .getByUsuarioId(usuarioId);
+      final existingIds = existingLocal.map((e) => e.libroId).toSet();
+      final remoteIds = remoteLibros.map((e) => e.id).toSet();
+
       for (final item in existingLocal) {
-        await localDatabase.bibliotecaLocalDataSource.delete(item.id!);
+        if (!remoteIds.contains(item.libroId) && !pendingLibroIds.contains(item.libroId)) {
+          await localDatabase.bibliotecaLocalDataSource.delete(item.id!);
+        }
       }
 
       for (final libro in remoteLibros) {
@@ -178,7 +195,7 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
           portadaBase64: libro.portadaBase64,
           categorias: jsonEncode(libro.categorias),
           progreso: libro.progreso,
-          isDownloaded: false,
+          isDownloaded: existingIds.contains(libro.id),
           createdAt: DateTime.now().millisecondsSinceEpoch,
         );
         await localDatabase.bibliotecaLocalDataSource.insert(localModel);
