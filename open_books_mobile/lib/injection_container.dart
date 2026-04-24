@@ -359,7 +359,7 @@ Future<void> setupDependencies() async {
     () => AdminSugerenciasCubit(getIt<AdminSugerenciasRepository>()),
   );
 
-  getIt.registerFactory<OnboardingCubit>(
-    () => OnboardingCubit(),
+  getIt.registerSingleton<OnboardingCubit>(
+    OnboardingCubit(),
   );
 }

@@ -68,8 +68,13 @@ class LocalDatabase {
         page INTEGER,
         updated_at INTEGER,
         created_at INTEGER,
-        sync_status INTEGER
-        
+
+        sync_status INTEGER,
+        last_read_at INTEGER,
+        reading_streak INTEGER,
+        local_version INTEGER,
+        portada_custom_base64 TEXT,
+
         UNIQUE(libro_id, usuario_id)
       )
     ''');
@@ -217,42 +222,11 @@ class LocalDatabase {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute('ALTER TABLE biblioteca_local ADD COLUMN last_read_at INTEGER');
-      await db.execute('ALTER TABLE biblioteca_local ADD COLUMN reading_streak INTEGER');
-      await db.execute('ALTER TABLE biblioteca_local ADD COLUMN sync_status TEXT');
-      await db.execute('ALTER TABLE biblioteca_local ADD COLUMN local_version INTEGER');
-
-      await db.execute('''
-        CREATE TABLE reading_sessions (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          progress_id INTEGER NOT NULL,
-          libro_id INTEGER NOT NULL,
-          usuario_id INTEGER NOT NULL,
-          pages_read_in_session INTEGER DEFAULT 0,
-          session_timestamp INTEGER NOT NULL,
-          notes TEXT,
-          created_at INTEGER,
-
-          UNIQUE(id)
-        )
-      ''');
-
-      await db.execute('''
-        CREATE INDEX idx_reading_sessions_libro ON reading_sessions(libro_id, usuario_id)
-      ''');
-
-      await db.execute('''
-        CREATE INDEX idx_reading_sessions_timestamp ON reading_sessions(session_timestamp)
-      ''');
-    }
-
     if (oldVersion < 3) {
       await _createPerfilTable(db);
     }
 
     if (oldVersion < 4) {
-      // Limpiar foto_perfil_base64 existente para evitar "Row too big" en CursorWindow de Android
       try {
         await db.rawUpdate(
           'UPDATE perfil_local SET foto_perfil_base64 = NULL',
