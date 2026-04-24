@@ -68,6 +68,7 @@ class LocalDatabase {
         page INTEGER,
         updated_at INTEGER,
         created_at INTEGER,
+        sync_status INTEGER
         
         UNIQUE(libro_id, usuario_id)
       )
