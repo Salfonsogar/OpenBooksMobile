@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'reader_colors.dart';
+import '../../../../shared/ui/widgets/battery_indicator.dart';
 
 class ReaderFooter extends StatelessWidget {
   final int currentIndex;
@@ -112,6 +113,11 @@ class ReaderFooter extends StatelessWidget {
                 Text(
                   '${currentIndex + 1}/$totalChapters',
                   style: TextStyle(color: colors.icon, fontSize: 12),
+                ),
+                const SizedBox(width: 16),
+                BatteryIndicator(
+                  showPercentage: true,
+                  iconSize: 14,
                 ),
               ],
             ),

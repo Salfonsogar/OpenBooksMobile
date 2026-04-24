@@ -11,7 +11,7 @@ import 'datasources/book_content_local_datasource.dart';
 
 class LocalDatabase {
   static const String _databaseName = 'open_books.db';
-  static const int _databaseVersion = 5;
+  static const int _databaseVersion = 6;
 
   static const int _syncedRetentionDays = 7;
   static const int _maxRetryCount = 3;
@@ -286,6 +286,12 @@ class LocalDatabase {
 
       await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_book_resources_libro ON book_resources(libro_id)',
+      );
+    }
+
+    if (oldVersion < 6) {
+      await db.execute(
+        'ALTER TABLE biblioteca_local ADD COLUMN portada_custom_base64 TEXT',
       );
     }
   }

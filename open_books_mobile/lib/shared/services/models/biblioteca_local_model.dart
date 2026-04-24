@@ -6,6 +6,7 @@ class BibliotecaLocalModel {
   final String? autor;
   final String? descripcion;
   final String? portadaBase64;
+  final String? portadaCustomBase64;
   final String? categorias;
   final double progreso;
   final bool isDownloaded;
@@ -25,6 +26,7 @@ class BibliotecaLocalModel {
     this.autor,
     this.descripcion,
     this.portadaBase64,
+    this.portadaCustomBase64,
     this.categorias,
     this.progreso = 0.0,
     this.isDownloaded = false,
@@ -46,6 +48,7 @@ class BibliotecaLocalModel {
       autor: map['autor'] as String?,
       descripcion: map['descripcion'] as String?,
       portadaBase64: map['portada_base64'] as String?,
+      portadaCustomBase64: map['portada_custom_base64'] as String?,
       categorias: map['categorias'] as String?,
       progreso: (map['progreso'] as num?)?.toDouble() ?? 0.0,
       isDownloaded: (map['is_downloaded'] as int?) == 1,
@@ -68,6 +71,7 @@ class BibliotecaLocalModel {
       'autor': autor,
       'descripcion': descripcion,
       'portada_base64': portadaBase64,
+      'portada_custom_base64': portadaCustomBase64,
       'categorias': categorias,
       'progreso': progreso,
       'is_downloaded': isDownloaded ? 1 : 0,
@@ -89,6 +93,7 @@ class BibliotecaLocalModel {
     String? autor,
     String? descripcion,
     String? portadaBase64,
+    String? portadaCustomBase64,
     String? categorias,
     double? progreso,
     bool? isDownloaded,
@@ -108,6 +113,7 @@ class BibliotecaLocalModel {
       autor: autor ?? this.autor,
       descripcion: descripcion ?? this.descripcion,
       portadaBase64: portadaBase64 ?? this.portadaBase64,
+      portadaCustomBase64: portadaCustomBase64 ?? this.portadaCustomBase64,
       categorias: categorias ?? this.categorias,
       progreso: progreso ?? this.progreso,
       isDownloaded: isDownloaded ?? this.isDownloaded,

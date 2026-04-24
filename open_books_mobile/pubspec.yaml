@@ -57,6 +57,12 @@ dependencies:
   
   # Environment
   flutter_dotenv: ^5.1.0
+  
+  # QR
+  qr_flutter: ^4.1.0
+  
+  # Sensores
+  battery_plus: ^6.0.3
 
 dev_dependencies:
   flutter_test:

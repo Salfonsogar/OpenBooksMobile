@@ -8,6 +8,7 @@ import '../../data/models/models.dart';
 import '../../logic/cubit/libro_detalle_cubit.dart' show OperationType, LibroDetalleCubit, LibroDetalleState, LibroDetalleLoaded, LibroDetalleError, LibroDetalleLoading;
 import '../widgets/review_dialog.dart';
 import '../widgets/denuncia_resena_dialog.dart';
+import '../widgets/share_book_qr_widget.dart';
 import '../../../../shared/ui/widgets/close_header.dart';
 import '../../../../shared/core/session/session_cubit.dart';
 import '../../../../shared/core/session/session_state.dart';
@@ -43,7 +44,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
     );
   }
 
-  void _showDescripcionCompleta(String descripcion) {
+void _showDescripcionCompleta(String descripcion) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -52,42 +53,71 @@ class _BookDetailPageState extends State<BookDetailPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
+            child: const Text('cerrar'),
           ),
         ],
       ),
     );
   }
 
+  void _showQrDialog(int libroId, String titulo, String autor) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => ShareBookQrDialog(
+        libroId: libroId,
+        titulo: titulo,
+        autor: autor,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CloseHeader(onClose: () => context.go('/home')),
-      body: BlocConsumer<LibroDetalleCubit, LibroDetalleState>(
-        listener: (context, state) {
-          if (state is LibroDetalleLoaded && state.operationType != null) {
-            if (state.operationType == OperationType.denuncia) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Denuncia enviada correctamente')),
-              );
-            } else if (state.operationType == OperationType.valoracion || 
-                       state.operationType == OperationType.resena) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Operación realizada con éxito')),
-              );
-            }
-          } else if (state is LibroDetalleError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
-          }
-        },
-        listenWhen: (previous, current) {
-          if (previous is LibroDetalleLoaded && current is LibroDetalleLoaded) {
-            return current.operationType != previous.operationType;
-          }
-          return true;
-        },
+    return BlocBuilder<LibroDetalleCubit, LibroDetalleState>(
+      builder: (context, state) {
+        final actions = state is LibroDetalleLoaded
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.qr_code),
+                  onPressed: () => _showQrDialog(
+                    state.libro.id,
+                    state.libro.titulo,
+                    state.libro.autor,
+                  ),
+                  tooltip: 'Compartir QR',
+                ),
+              ]
+            : <Widget>[];
+        return Scaffold(
+          appBar: CloseHeader(
+            onClose: () => context.go('/home'),
+            actions: actions,
+          ),
+          body: BlocConsumer<LibroDetalleCubit, LibroDetalleState>(
+            listener: (context, state) {
+              if (state is LibroDetalleLoaded && state.operationType != null) {
+                if (state.operationType == OperationType.denuncia) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Denuncia enviada correctamente')),
+                  );
+                } else if (state.operationType == OperationType.valoracion || 
+                           state.operationType == OperationType.resena) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Operación realizada con éxito')),
+                  );
+                }
+              } else if (state is LibroDetalleError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(state.message)),
+                );
+              }
+            },
+            listenWhen: (previous, current) {
+              if (previous is LibroDetalleLoaded && current is LibroDetalleLoaded) {
+                return current.operationType != previous.operationType;
+              }
+              return true;
+            },
         builder: (context, state) {
           if (state is LibroDetalleLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -139,8 +169,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
           }
 
           return const SizedBox();
-        },
-      ),
+            },
+          ),
+        );
+      },
     );
   }
 

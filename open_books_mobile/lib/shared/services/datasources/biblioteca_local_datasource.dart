@@ -118,6 +118,18 @@ class BibliotecaLocalDataSource {
     );
   }
 
+  Future<void> updatePortadaCustom(int id, String? base64Image) async {
+    await _db.update(
+      _tableName,
+      {
+        'portada_custom_base64': base64Image,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<void> updateLastReadAt(int id, int timestamp) async {
     await _db.update(
       _tableName,

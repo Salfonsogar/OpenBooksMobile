@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class CloseHeader extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onClose;
   final String? title;
+  final List<Widget>? actions;
 
   const CloseHeader({
     super.key,
     required this.onClose,
     this.title,
+    this.actions,
   });
 
   @override
@@ -26,6 +28,7 @@ class CloseHeader extends StatelessWidget implements PreferredSizeWidget {
               )
             : null,
         actions: [
+          if (actions != null) ...actions!,
           IconButton(
             icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
             onPressed: onClose,
