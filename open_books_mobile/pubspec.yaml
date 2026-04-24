@@ -43,6 +43,11 @@ dependencies:
   
   # Notificaciones
   flutter_local_notifications: ^18.0.0
+  timezone: ^0.9.4
+  
+  # Animaciones
+  lottie: ^3.1.0
+  shimmer: ^3.0.0
   
   # SignalR
   signalr_netcore: ^1.0.0
@@ -76,3 +81,4 @@ flutter:
   
   assets:
     - .env
+    - assets/animations/

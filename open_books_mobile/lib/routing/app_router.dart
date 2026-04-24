@@ -43,6 +43,8 @@ import '../features/admin/sugerencias/logic/cubit/admin_sugerencias_cubit.dart';
 import '../features/admin/sugerencias/ui/pages/admin_sugerencias_page.dart';
 import '../features/admin/usuarios/logic/cubit/admin_usuarios_cubit.dart';
 import '../features/admin/usuarios/ui/pages/admin_usuarios_page.dart';
+import '../features/onboarding/logic/cubit/onboarding_cubit.dart';
+import '../features/onboarding/ui/pages/onboarding_page.dart';
 import '../shared/ui/widgets/search_header.dart';
 import '../features/auth/data/models/usuario.dart';
 
@@ -60,11 +62,22 @@ class AppRouter {
     initialLocation: '/',
     refreshListenable: RouterRefreshNotifier(sessionCubit),
     redirect: (context, state) {
+      final onboardingCubit = getIt<OnboardingCubit>();
+      final onboardingState = onboardingCubit.state;
+      final hasSeenOnboarding = onboardingState is OnboardingChecked && onboardingState.hasSeenOnboarding;
+      
       final sessionState = sessionCubit.state;
       final isLoggedIn = sessionState is SessionAuthenticated;
       final isLoggingIn = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register' ||
-          state.matchedLocation == '/recovery';
+          state.matchedLocation == '/recovery' ||
+          state.matchedLocation == '/onboarding';
+      
+      final showOnboarding = state.matchedLocation != '/onboarding' && !hasSeenOnboarding && !isLoggedIn;
+
+      if (showOnboarding) {
+        return '/onboarding';
+      }
 
       final isAdminRoute = state.matchedLocation.startsWith('/admin');
       final isAdmin = sessionState is SessionAuthenticated &&
@@ -96,6 +109,13 @@ class AppRouter {
       GoRoute(
         path: '/',
         redirect: (context, state) => '/home',
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<OnboardingCubit>(),
+          child: const OnboardingPage(),
+        ),
       ),
       GoRoute(
         path: '/login',
@@ -380,4 +400,32 @@ class RouterRefreshNotifier extends ChangeNotifier {
     _subscription.cancel();
     super.dispose();
   }
+}
+
+CustomTransitionPage<T> _buildPageWithSlideTransition<T>(
+  BuildContext context,
+  GoRouterState state,
+  Widget child,
+) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      const begin = Offset(1.0, 0.0);
+      const end = Offset.zero;
+      const curve = Curves.easeOutCubic;
+
+      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+      var offsetAnimation = animation.drive(tween);
+
+      return SlideTransition(
+        position: offsetAnimation,
+        child: FadeTransition(
+          opacity: animation,
+          child: child,
+        ),
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 300),
+  );
 }

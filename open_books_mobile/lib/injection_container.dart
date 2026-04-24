@@ -56,6 +56,7 @@ import 'features/admin/moderacion/logic/cubit/admin_roles_cubit.dart';
 import 'features/admin/sugerencias/data/datasources/admin_sugerencias_datasource.dart';
 import 'features/admin/sugerencias/data/repositories/admin_sugerencias_repository.dart';
 import 'features/admin/sugerencias/logic/cubit/admin_sugerencias_cubit.dart';
+import 'features/onboarding/logic/cubit/onboarding_cubit.dart';
 import 'shared/core/network/api_client.dart';
 import 'shared/core/session/session_cubit.dart';
 import 'shared/services/network_info.dart';
@@ -352,5 +353,9 @@ Future<void> setupDependencies() async {
   );
   getIt.registerFactory<AdminSugerenciasCubit>(
     () => AdminSugerenciasCubit(getIt<AdminSugerenciasRepository>()),
+  );
+
+  getIt.registerFactory<OnboardingCubit>(
+    () => OnboardingCubit(),
   );
 }
