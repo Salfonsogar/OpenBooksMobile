@@ -54,8 +54,35 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _pickImage() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.camera_alt),
+            title: const Text('Tomar foto'),
+            onTap: () async {
+              Navigator.pop(ctx);
+              await _selectImage(ImageSource.camera);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library),
+            title: const Text('Seleccionar de galería'),
+            onTap: () async {
+              Navigator.pop(ctx);
+              await _selectImage(ImageSource.gallery);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selectImage(ImageSource source) async {
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
+    final image = await picker.pickImage(source: source);
     if (image != null) {
       final bytes = await image.readAsBytes();
       setState(() {
