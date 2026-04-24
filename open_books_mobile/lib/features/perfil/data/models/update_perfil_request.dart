@@ -13,10 +13,10 @@ class UpdatePerfilRequest {
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
-    if (userName != null) map['userName'] = userName;
-    if (email != null) map['email'] = email;
-    if (nombreCompleto != null) map['nombreCompleto'] = nombreCompleto;
-    if (fotoPerfilBase64 != null) map['fotoPerfil'] = fotoPerfilBase64;
+    if (userName != null && userName!.isNotEmpty) map['userName'] = userName;
+    if (email != null && email!.isNotEmpty) map['email'] = email;
+    if (nombreCompleto != null && nombreCompleto!.isNotEmpty) map['nombreCompleto'] = nombreCompleto;
+    if (fotoPerfilBase64 != null && fotoPerfilBase64!.isNotEmpty) map['fotoPerfilBase64'] = fotoPerfilBase64;
     return map;
   }
 }
