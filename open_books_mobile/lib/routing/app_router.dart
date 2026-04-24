@@ -113,7 +113,7 @@ class AppRouter {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => BlocProvider.value(
-          getIt<OnboardingCubit>(),
+          value: getIt<OnboardingCubit>(),
           child: const OnboardingPage(),
         ),
       ),
