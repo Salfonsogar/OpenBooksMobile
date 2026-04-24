@@ -68,6 +68,13 @@ dependencies:
   
   # Sensores
   battery_plus: ^6.0.3
+  
+  # Gráficos
+  fl_chart: ^0.69.0
+  
+  # Exportación
+  screenshot: ^3.0.0
+  share_plus: ^12.0.2
 
 dev_dependencies:
   flutter_test:

@@ -1,3 +1,4 @@
+import '../../../../../shared/services/local_database.dart';
 import '../datasources/admin_dashboard_datasource.dart';
 import '../models/admin_stats.dart';
 
@@ -8,5 +9,15 @@ class AdminDashboardRepository {
 
   Future<AdminStats> getStats() async {
     return await _dataSource.getStats();
+  }
+
+void setDependencies({
+    required LocalDatabase localDatabase,
+    required String token,
+  }) {
+    _dataSource.setDependencies(
+      localDatabase: localDatabase,
+      token: token,
+    );
   }
 }

@@ -99,4 +99,92 @@ class ReadingSessionsDataSource {
     );
     return maps.map((map) => ReadingSessionModel.fromMap(map)).toList();
   }
+
+  Future<int> getTotalPagesInRange(int fromTimestamp) async {
+    final result = await _db.rawQuery(
+      'SELECT SUM(pages_read_in_session) as total FROM $_tableName WHERE session_timestamp >= ?',
+      [fromTimestamp],
+    );
+    return (result.first['total'] as int?) ?? 0;
+  }
+
+  Future<int> getActiveUsersCount(int fromTimestamp) async {
+    final result = await _db.rawQuery(
+      'SELECT COUNT(DISTINCT usuario_id) as total FROM $_tableName WHERE session_timestamp >= ?',
+      [fromTimestamp],
+    );
+    return (result.first['total'] as int?) ?? 0;
+  }
+
+  Future<List<TopLibroResult>> getTopLibros() async {
+    final result = await _db.rawQuery('''
+      SELECT 
+        rs.libro_id,
+        bl.titulo,
+        COUNT(*) as total_lecturas,
+        SUM(rs.pages_read_in_session) as paginas_leidas
+      FROM $_tableName rs
+      LEFT JOIN biblioteca_local bl ON rs.libro_id = bl.libro_id
+      GROUP BY rs.libro_id
+      ORDER BY paginas_leidas DESC
+      LIMIT 10
+    ''');
+
+    return result.map((row) => TopLibroResult(
+      libroId: row['libro_id'] as int? ?? 0,
+      titulo: (row['titulo'] as String?)?.isNotEmpty == true
+          ? row['titulo'] as String
+          : 'Libro ${row['libro_id']}',
+      totalLecturas: (row['total_lecturas'] as int?) ?? 0,
+      paginasLeidas: (row['paginas_leidas'] as int?) ?? 0,
+    )).toList();
+  }
+
+  Future<List<EvolucionLecturaResult>> getEvolucionLectura(
+    int fromTimestamp,
+    int toTimestamp,
+  ) async {
+    final result = await _db.rawQuery('''
+      SELECT 
+        date(session_timestamp / 1000, 'unixepoch') as fecha,
+        SUM(pages_read_in_session) as paginas_leidas,
+        COUNT(*) as sesiones
+      FROM $_tableName
+      WHERE session_timestamp >= ? AND session_timestamp <= ?
+      GROUP BY fecha
+      ORDER BY fecha ASC
+    ''', [fromTimestamp, toTimestamp]);
+
+    return result.map((row) => EvolucionLecturaResult(
+      fecha: DateTime.tryParse(row['fecha'] as String? ?? '') ?? DateTime.now(),
+      paginasLeidas: (row['paginas_leidas'] as int?) ?? 0,
+      sesiones: (row['sesiones'] as int?) ?? 0,
+    )).toList();
+  }
+}
+
+class TopLibroResult {
+  final int libroId;
+  final String titulo;
+  final int totalLecturas;
+  final int paginasLeidas;
+
+  TopLibroResult({
+    required this.libroId,
+    required this.titulo,
+    required this.totalLecturas,
+    required this.paginasLeidas,
+  });
+}
+
+class EvolucionLecturaResult {
+  final DateTime fecha;
+  final int paginasLeidas;
+  final int sesiones;
+
+  EvolucionLecturaResult({
+    required this.fecha,
+    required this.paginasLeidas,
+    required this.sesiones,
+  });
 }

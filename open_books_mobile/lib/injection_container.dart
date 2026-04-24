@@ -275,7 +275,11 @@ Future<void> setupDependencies() async {
     () => AdminDashboardRepository(getIt<AdminDashboardDataSource>()),
   );
   getIt.registerFactory<AdminDashboardCubit>(
-    () => AdminDashboardCubit(getIt<AdminDashboardRepository>()),
+    () => AdminDashboardCubit(
+      getIt<AdminDashboardRepository>(),
+      localDatabase: getIt<LocalDatabase>(),
+      sessionCubit: getIt<SessionCubit>(),
+    ),
   );
 
   // Admin Usuarios
