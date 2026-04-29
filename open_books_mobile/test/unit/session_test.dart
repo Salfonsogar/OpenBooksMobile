@@ -1,4 +1,3 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:open_books_mobile/shared/core/session/session_cubit.dart';
@@ -36,19 +35,22 @@ void main() {
       expect(state.isAdmin, isTrue);
     });
 
-    test('SessionAuthenticated.isAdmin returns true for administrator role', () {
-      const state = SessionAuthenticated(
-        userId: 1,
-        userName: 'test',
-        email: 'test@test.com',
-        nombreCompleto: 'Test User',
-        nombreRol: 'Administrador',
-        rolId: 2,
-        sancionado: false,
-        token: 'token123',
-      );
-      expect(state.isAdmin, isTrue);
-    });
+    test(
+      'SessionAuthenticated.isAdmin returns true for administrator role',
+      () {
+        const state = SessionAuthenticated(
+          userId: 1,
+          userName: 'test',
+          email: 'test@test.com',
+          nombreCompleto: 'Test User',
+          nombreRol: 'Administrador',
+          rolId: 2,
+          sancionado: false,
+          token: 'token123',
+        );
+        expect(state.isAdmin, isTrue);
+      },
+    );
 
     test('SessionAuthenticated.isAdmin returns false for regular user', () {
       const state = SessionAuthenticated(

@@ -1,4 +1,3 @@
-import 'package:equatable/equatable.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:open_books_mobile/features/biblioteca/data/models/libro_biblioteca.dart';
 import 'package:open_books_mobile/features/biblioteca/logic/cubit/biblioteca_cubit.dart';
@@ -24,14 +23,14 @@ void main() {
 
   group('BibliotecaLoaded', () {
     final testLibros = [
-      const LibroBiblioteca(
+      LibroBiblioteca(
         id: 1,
         titulo: 'Book 1',
         autor: 'Author 1',
         descripcion: 'Desc 1',
         categorias: ['Fiction'],
       ),
-      const LibroBiblioteca(
+      LibroBiblioteca(
         id: 2,
         titulo: 'Book 2',
         autor: 'Author 2',
@@ -91,7 +90,10 @@ void main() {
 
     test('getDownloadStatus returns notDownloaded for unknown books', () {
       final state = BibliotecaLoaded(libros: testLibros);
-      expect(state.getDownloadStatus(999), equals(DownloadStatus.notDownloaded));
+      expect(
+        state.getDownloadStatus(999),
+        equals(DownloadStatus.notDownloaded),
+      );
     });
 
     test('copyWith creates new instance with updated values', () {

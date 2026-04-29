@@ -61,9 +61,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           children: [
             Text(
               'Dashboard',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
@@ -74,10 +74,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ),
           ],
         ),
-        ExportButton(
-          repaintKey: _repaintKey,
-          title: 'Exportar',
-        ),
+        ExportButton(repaintKey: _repaintKey, title: 'Exportar'),
       ],
     );
   }
@@ -179,9 +176,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       children: [
         Text(
           'Resumen General',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         GridView.count(
@@ -264,9 +261,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       children: [
         Text(
           'Análisis Detallado',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         _buildChartsGrid(stats),
@@ -372,9 +369,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       children: [
         Text(
           'Módulos',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         _ModuleCard(

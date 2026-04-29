@@ -4,15 +4,12 @@ import 'package:open_books_mobile/shared/ui/widgets/shimmer_loading.dart';
 
 void main() {
   group('ShimmerLoading', () {
-    testWidgets('renders with specified dimensions', (WidgetTester tester) async {
+    testWidgets('renders with specified dimensions', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: ShimmerLoading(
-              width: 100,
-              height: 50,
-            ),
-          ),
+          home: Scaffold(body: ShimmerLoading(width: 100, height: 50)),
         ),
       );
 
@@ -21,37 +18,31 @@ void main() {
       expect(container.constraints?.maxHeight, equals(50));
     });
 
-    testWidgets('card factory creates widget with rounded shape', (WidgetTester tester) async {
+    testWidgets('card factory creates widget with rounded shape', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ShimmerLoading.card(),
-          ),
-        ),
+        MaterialApp(home: Scaffold(body: ShimmerLoading.card())),
       );
 
       expect(find.byType(ShimmerLoading), findsOneWidget);
     });
 
-    testWidgets('avatar factory creates circle shape', (WidgetTester tester) async {
+    testWidgets('avatar factory creates circle shape', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ShimmerLoading.avatar(),
-          ),
-        ),
+        MaterialApp(home: Scaffold(body: ShimmerLoading.avatar())),
       );
 
       expect(find.byType(ShimmerLoading), findsOneWidget);
     });
 
-    testWidgets('text factory creates rectangle shape', (WidgetTester tester) async {
+    testWidgets('text factory creates rectangle shape', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ShimmerLoading.text(),
-          ),
-        ),
+        MaterialApp(home: Scaffold(body: ShimmerLoading.text())),
       );
 
       expect(find.byType(ShimmerLoading), findsOneWidget);
@@ -59,13 +50,11 @@ void main() {
   });
 
   group('ShimmerList', () {
-    testWidgets('renders list with specified item count', (WidgetTester tester) async {
+    testWidgets('renders list with specified item count', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ShimmerList(itemCount: 3),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: ShimmerList(itemCount: 3))),
       );
 
       expect(find.byType(ShimmerList), findsOneWidget);
@@ -74,13 +63,11 @@ void main() {
   });
 
   group('ShimmerGrid', () {
-    testWidgets('renders grid with specified cross axis count', (WidgetTester tester) async {
+    testWidgets('renders grid with specified cross axis count', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ShimmerGrid(crossAxisCount: 3),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: ShimmerGrid(crossAxisCount: 3))),
       );
 
       expect(find.byType(ShimmerGrid), findsOneWidget);

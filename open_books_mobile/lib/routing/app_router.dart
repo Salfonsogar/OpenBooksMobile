@@ -64,24 +64,30 @@ class AppRouter {
     redirect: (context, state) {
       final onboardingCubit = getIt<OnboardingCubit>();
       final onboardingState = onboardingCubit.state;
-      final hasSeenOnboarding = onboardingState is OnboardingChecked && onboardingState.hasSeenOnboarding;
-      
+      final hasSeenOnboarding =
+          onboardingState is OnboardingChecked &&
+          onboardingState.hasSeenOnboarding;
+
       final sessionState = sessionCubit.state;
       final isLoggedIn = sessionState is SessionAuthenticated;
-      final isLoggingIn = state.matchedLocation == '/login' ||
+      final isLoggingIn =
+          state.matchedLocation == '/login' ||
           state.matchedLocation == '/register' ||
           state.matchedLocation == '/recovery' ||
           state.matchedLocation == '/onboarding';
-      
-      final showOnboarding = state.matchedLocation != '/onboarding' && !hasSeenOnboarding && !isLoggedIn;
+
+      final showOnboarding =
+          state.matchedLocation != '/onboarding' &&
+          !hasSeenOnboarding &&
+          !isLoggedIn;
 
       if (showOnboarding) {
         return '/onboarding';
       }
 
       final isAdminRoute = state.matchedLocation.startsWith('/admin');
-      final isAdmin = sessionState is SessionAuthenticated &&
-          sessionState.isAdmin;
+      final isAdmin =
+          sessionState is SessionAuthenticated && sessionState.isAdmin;
 
       if (!isLoggedIn && !isLoggingIn) {
         return '/login';
@@ -96,8 +102,20 @@ class AppRouter {
       }
 
       if (!isAdminRoute && isAdmin) {
-        final exemptRoutes = ['/profile', '/settings', '/notifications', '/search', '/book', '/reader', '/library', '/history', '/ayuda-comentarios'];
-        final isExempt = exemptRoutes.any((route) => state.matchedLocation.startsWith(route));
+        final exemptRoutes = [
+          '/profile',
+          '/settings',
+          '/notifications',
+          '/search',
+          '/book',
+          '/reader',
+          '/library',
+          '/history',
+          '/ayuda-comentarios',
+        ];
+        final isExempt = exemptRoutes.any(
+          (route) => state.matchedLocation.startsWith(route),
+        );
         if (!isExempt) {
           return '/admin';
         }
@@ -106,10 +124,7 @@ class AppRouter {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/',
-        redirect: (context, state) => '/home',
-      ),
+      GoRoute(path: '/', redirect: (context, state) => '/home'),
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => BlocProvider.value(
@@ -249,9 +264,9 @@ class AppRouter {
           final route = state.matchedLocation;
           final title = _getModuleTitle(route);
           return AdminPage(
-            child: child,
             moduleTitle: title,
             moduleRoute: route,
+            child: child,
           );
         },
         routes: [
@@ -346,18 +361,36 @@ class MainShell extends StatelessWidget {
         onDestinationSelected: (index) => _onItemTapped(index, context),
         destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            selectedIcon: Icon(Icons.home, color: Theme.of(context).colorScheme.onPrimaryContainer),
+            icon: Icon(
+              Icons.home_outlined,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            selectedIcon: Icon(
+              Icons.home,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
             label: 'Inicio',
           ),
           NavigationDestination(
-            icon: Icon(Icons.library_books_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            selectedIcon: Icon(Icons.library_books, color: Theme.of(context).colorScheme.onPrimaryContainer),
+            icon: Icon(
+              Icons.library_books_outlined,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            selectedIcon: Icon(
+              Icons.library_books,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
             label: 'Biblioteca',
           ),
           NavigationDestination(
-            icon: Icon(Icons.history_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            selectedIcon: Icon(Icons.history, color: Theme.of(context).colorScheme.onPrimaryContainer),
+            icon: Icon(
+              Icons.history_outlined,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            selectedIcon: Icon(
+              Icons.history,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
             label: 'Historial',
           ),
         ],
@@ -400,32 +433,4 @@ class RouterRefreshNotifier extends ChangeNotifier {
     _subscription.cancel();
     super.dispose();
   }
-}
-
-CustomTransitionPage<T> _buildPageWithSlideTransition<T>(
-  BuildContext context,
-  GoRouterState state,
-  Widget child,
-) {
-  return CustomTransitionPage<T>(
-    key: state.pageKey,
-    child: child,
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      const begin = Offset(1.0, 0.0);
-      const end = Offset.zero;
-      const curve = Curves.easeOutCubic;
-
-      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-      var offsetAnimation = animation.drive(tween);
-
-      return SlideTransition(
-        position: offsetAnimation,
-        child: FadeTransition(
-          opacity: animation,
-          child: child,
-        ),
-      );
-    },
-    transitionDuration: const Duration(milliseconds: 300),
-  );
 }

@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../../../shared/core/network/api_client.dart';
 import '../../../../shared/core/utils/error_utils.dart';
@@ -16,12 +15,12 @@ class AuthDataSource {
         '/api/Usuarios/Login',
         data: request.toJson(),
       );
-      
+
       final statusCode = response.statusCode ?? 0;
       if (statusCode >= 400) {
         throw _handleErrorFromResponse(response.statusCode, response.data);
       }
-      
+
       return LoginResponse.fromJson(parseResponseData(response.data));
     } on DioException catch (e) {
       throw _handleError(e);
@@ -30,7 +29,7 @@ class AuthDataSource {
 
   Exception _handleErrorFromResponse(int? statusCode, dynamic data) {
     final message = getErrorMessage(data);
-    
+
     if (statusCode == 401) {
       return Exception(message);
     }
@@ -88,10 +87,7 @@ class AuthDataSource {
 
   Future<Usuario> updateUsuario(int id, Map<String, dynamic> data) async {
     try {
-      final response = await _apiClient.patch(
-        '/api/Usuarios/$id',
-        data: data,
-      );
+      final response = await _apiClient.patch('/api/Usuarios/$id', data: data);
       return Usuario.fromJson(parseResponseData(response.data));
     } on DioException catch (e) {
       throw _handleError(e);
@@ -101,9 +97,9 @@ class AuthDataSource {
   Exception _handleError(DioException e) {
     final statusCode = e.response?.statusCode;
     final rawData = e.response?.data;
-    
+
     final message = getErrorMessage(rawData);
-    
+
     if (statusCode == 401) {
       return Exception(message);
     }
