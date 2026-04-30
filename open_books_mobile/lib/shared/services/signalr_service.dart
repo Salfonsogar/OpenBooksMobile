@@ -55,8 +55,7 @@ class SignalRService {
   void _handleNotification(Map<String, dynamic> data) {
     try {
       final notification = AppNotification(
-        id:
-            data['id']?.toString() ??
+        id: data['id']?.toString() ??
             DateTime.now().millisecondsSinceEpoch.toString(),
         titulo: data['titulo'] ?? 'Notificación',
         mensaje: data['mensaje'] ?? '',
@@ -65,6 +64,8 @@ class SignalRService {
             ? DateTime.tryParse(data['fecha'].toString()) ?? DateTime.now()
             : DateTime.now(),
         leida: false,
+        data: data['data'] as Map<String, dynamic>? ??
+            (data['extra'] as Map<String, dynamic>?),
       );
 
       onNotificationReceived?.call(notification);

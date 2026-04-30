@@ -8,10 +8,11 @@ import 'datasources/epub_downloads_datasource.dart';
 import 'datasources/reading_sessions_datasource.dart';
 import 'datasources/perfil_local_datasource.dart';
 import 'datasources/book_content_local_datasource.dart';
+import '../../features/notifications/data/datasources/notification_local_datasource.dart';
 
 class LocalDatabase {
   static const String _databaseName = 'open_books.db';
-  static const int _databaseVersion = 6;
+  static const int _databaseVersion = 7;
 
   static const int _syncedRetentionDays = 7;
   static const int _maxRetryCount = 3;
@@ -25,6 +26,7 @@ class LocalDatabase {
   late ReadingSessionsDataSource readingSessionsDataSource;
   late PerfilLocalDataSource perfilLocalDataSource;
   late BookContentLocalDataSource bookContentLocalDataSource;
+  late NotificationLocalDataSource notificationLocalDataSource;
 
   Future<void> init() async {
     final databasePath = await getDatabasesPath();
@@ -49,6 +51,7 @@ class LocalDatabase {
     readingSessionsDataSource = ReadingSessionsDataSource(_database!);
     perfilLocalDataSource = PerfilLocalDataSource(_database!);
     bookContentLocalDataSource = BookContentLocalDataSourceImpl(_database!);
+    notificationLocalDataSource = NotificationLocalDataSource(_database!);
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -200,6 +203,13 @@ class LocalDatabase {
     );
 
     await _createPerfilTable(db);
+
+    await _createNotificationsTable(db);
+  }
+
+  Future<void> _createNotificationsTable(Database db) async {
+    await db.execute(NotificationLocalDataSource.createTableQuery);
+    await db.execute(NotificationLocalDataSource.createIndexQuery);
   }
 
   Future<void> _createPerfilTable(Database db) async {
@@ -268,6 +278,11 @@ class LocalDatabase {
       await db.execute(
         'ALTER TABLE biblioteca_local ADD COLUMN portada_custom_base64 TEXT',
       );
+    }
+
+    if (oldVersion < 7) {
+      await db.execute(NotificationLocalDataSource.createTableQuery);
+      await db.execute(NotificationLocalDataSource.createIndexQuery);
     }
   }
 

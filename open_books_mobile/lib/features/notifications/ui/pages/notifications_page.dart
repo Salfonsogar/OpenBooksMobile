@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../logic/cubit/notification_cubit.dart';
 import '../../logic/cubit/notification_state.dart';
+import '../../data/models/app_notification.dart';
 import '../widgets/notification_item.dart';
 
 class NotificationsPage extends StatelessWidget {
@@ -129,9 +131,10 @@ class NotificationsPage extends StatelessWidget {
                   notification: notification,
                   onTap: () {
                     context.read<NotificationCubit>().markAsRead(notification.id);
+                    _handleNotificationTap(context, notification);
                   },
                   onDismiss: () {
-                    context.read<NotificationCubit>().markAsRead(notification.id);
+                    context.read<NotificationCubit>().deleteNotification(notification.id);
                   },
                 );
               },
@@ -142,5 +145,30 @@ class NotificationsPage extends StatelessWidget {
         },
       ),
     );
+  }
+
+  void _handleNotificationTap(BuildContext context, AppNotification notification) {
+    final tipo = notification.tipo.toLowerCase();
+    final data = notification.data;
+
+    switch (tipo) {
+      case 'libro':
+      case 'new_book':
+      case 'recommendation':
+        final libroId = data?['libroId'] ?? data?['bookId'];
+        if (libroId != null) {
+          context.go('/book-detail/$libroId');
+        }
+        break;
+      case 'sancion':
+      case 'sugerencia':
+      case 'announcement':
+      case 'system':
+      default:
+        if (data != null && data['route'] != null) {
+          context.go(data['route'] as String);
+        }
+        break;
+    }
   }
 }

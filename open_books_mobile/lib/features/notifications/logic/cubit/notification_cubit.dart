@@ -1,61 +1,139 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/models/app_notification.dart';
+import '../../data/repositories/notification_repository_impl.dart';
 import 'notification_state.dart';
 
 class NotificationCubit extends Cubit<NotificationState> {
-  final List<AppNotification> _notifications = [];
-  int _unreadCount = 0;
+  final NotificationRepositoryImpl repository;
 
-  NotificationCubit() : super(NotificationInitial());
+  NotificationCubit({required this.repository}) : super(NotificationInitial());
 
-  void addNotification(AppNotification notification) {
-    _notifications.insert(0, notification);
-    _unreadCount++;
-    
-    emit(NotificationLoaded(
-      notifications: List.from(_notifications),
-      unreadCount: _unreadCount,
-    ));
-  }
-
-  void markAsRead(String notificationId) {
-    final index = _notifications.indexWhere((n) => n.id == notificationId);
-    if (index != -1 && !_notifications[index].leida) {
-      _notifications[index] = _notifications[index].copyWith(leida: true);
-      _unreadCount = _unreadCount > 0 ? _unreadCount - 1 : 0;
-      
-      emit(NotificationLoaded(
-        notifications: List.from(_notifications),
-        unreadCount: _unreadCount,
-      ));
+  Future<void> loadNotifications() async {
+    emit(NotificationLoading());
+    try {
+      final result = await repository.getNotifications();
+      result.fold(
+        (failure) => emit(NotificationError(failure.message)),
+        (notifications) {
+          final unreadCount = notifications.where((n) => !n.leida).length;
+          emit(NotificationLoaded(
+            notifications: notifications,
+            unreadCount: unreadCount,
+          ));
+        },
+      );
+    } catch (e) {
+      emit(NotificationError('Error inesperado: $e'));
     }
   }
 
-  void markAllAsRead() {
-    _notifications.clear();
-    _notifications.addAll(
-      _notifications.map((n) => n.copyWith(leida: true)),
-    );
-    _unreadCount = 0;
-    
-    emit(NotificationLoaded(
-      notifications: List.from(_notifications),
-      unreadCount: _unreadCount,
-    ));
+  Future<void> addNotification(AppNotification notification) async {
+    try {
+      final result = await repository.addNotification(notification);
+      result.fold(
+        (failure) => emit(NotificationError(failure.message)),
+        (_) {
+          final currentState = state;
+          if (currentState is NotificationLoaded) {
+            final updatedList = [notification, ...currentState.notifications];
+            emit(NotificationLoaded(
+              notifications: updatedList,
+              unreadCount: currentState.unreadCount + 1,
+            ));
+          }
+          emit(NotificationReceived(notification));
+        },
+      );
+    } catch (e) {
+      emit(NotificationError('Error al agregar notificación: $e'));
+    }
   }
 
-  void clearNotifications() {
-    _notifications.clear();
-    _unreadCount = 0;
-    
-    emit(const NotificationLoaded(
-      notifications: [],
-      unreadCount: 0,
-    ));
+  Future<void> markAsRead(String notificationId) async {
+    try {
+      final result = await repository.markAsRead(notificationId);
+      result.fold(
+        (failure) => emit(NotificationError(failure.message)),
+        (_) {
+          final currentState = state;
+          if (currentState is NotificationLoaded) {
+            final updatedList = currentState.notifications.map((n) {
+              return n.id == notificationId ? n.copyWith(leida: true) : n;
+            }).toList();
+            final unreadCount = updatedList.where((n) => !n.leida).length;
+            emit(NotificationLoaded(
+              notifications: updatedList,
+              unreadCount: unreadCount,
+            ));
+          }
+        },
+      );
+    } catch (e) {
+      emit(NotificationError('Error al marcar como leída: $e'));
+    }
   }
 
-  int get unreadCount => _unreadCount;
+  Future<void> markAllAsRead() async {
+    try {
+      final result = await repository.markAllAsRead();
+      result.fold(
+        (failure) => emit(NotificationError(failure.message)),
+        (_) {
+          final currentState = state;
+          if (currentState is NotificationLoaded) {
+            final updatedList = currentState.notifications
+                .map((n) => n.copyWith(leida: true))
+                .toList();
+            emit(NotificationLoaded(
+              notifications: updatedList,
+              unreadCount: 0,
+            ));
+          }
+        },
+      );
+    } catch (e) {
+      emit(NotificationError('Error al marcar todas como leídas: $e'));
+    }
+  }
 
-  List<AppNotification> get notifications => List.unmodifiable(_notifications);
+  Future<void> deleteNotification(String notificationId) async {
+    try {
+      final result = await repository.deleteNotification(notificationId);
+      result.fold(
+        (failure) => emit(NotificationError(failure.message)),
+        (_) {
+          final currentState = state;
+          if (currentState is NotificationLoaded) {
+            final updatedList = currentState.notifications
+                .where((n) => n.id != notificationId)
+                .toList();
+            final unreadCount = updatedList.where((n) => !n.leida).length;
+            emit(NotificationLoaded(
+              notifications: updatedList,
+              unreadCount: unreadCount,
+            ));
+          }
+        },
+      );
+    } catch (e) {
+      emit(NotificationError('Error al eliminar notificación: $e'));
+    }
+  }
+
+  Future<void> clearNotifications() async {
+    try {
+      final result = await repository.clearAll();
+      result.fold(
+        (failure) => emit(NotificationError(failure.message)),
+        (_) => emit(const NotificationLoaded(
+          notifications: [],
+          unreadCount: 0,
+        )),
+      );
+    } catch (e) {
+      emit(NotificationError('Error al limpiar notificaciones: $e'));
+    }
+  }
 }
+

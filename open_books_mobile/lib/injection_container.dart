@@ -34,6 +34,7 @@ import 'features/reader/logic/cubit/bookmark_cubit.dart';
 import 'features/reader/logic/cubit/highlight_cubit.dart';
 import 'features/reader/logic/cubit/audio_player_cubit.dart';
 import 'features/reader/logic/cubit/reader_settings_cubit.dart';
+import 'features/notifications/data/repositories/notification_repository_impl.dart';
 import 'features/notifications/logic/cubit/notification_cubit.dart';
 import 'features/admin/dashboard/data/datasources/admin_dashboard_datasource.dart';
 import 'features/admin/dashboard/data/repositories/admin_dashboard_repository.dart';
@@ -81,7 +82,15 @@ Future<void> setupDependencies() async {
 
   getIt.registerLazySingleton<SessionCubit>(() => SessionCubit());
 
-  getIt.registerLazySingleton<NotificationCubit>(() => NotificationCubit());
+  getIt.registerLazySingleton<NotificationRepositoryImpl>(
+    () => NotificationRepositoryImpl(
+      localDataSource: getIt<LocalDatabase>().notificationLocalDataSource,
+    ),
+  );
+
+  getIt.registerLazySingleton<NotificationCubit>(
+    () => NotificationCubit(repository: getIt<NotificationRepositoryImpl>()),
+  );
 
   getIt.registerLazySingleton<AuthDataSource>(
     () => AuthDataSource(getIt<ApiClient>()),

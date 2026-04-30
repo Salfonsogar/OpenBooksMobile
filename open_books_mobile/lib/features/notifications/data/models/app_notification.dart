@@ -8,6 +8,7 @@ class AppNotification extends Equatable {
   final String tipo;
   final DateTime createdAt;
   final bool leida;
+  final Map<String, dynamic>? data;
 
   const AppNotification({
     required this.id,
@@ -16,6 +17,7 @@ class AppNotification extends Equatable {
     required this.tipo,
     required this.createdAt,
     this.leida = false,
+    this.data,
   });
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class AppNotification extends Equatable {
           ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
           : DateTime.now(),
       leida: json['leida'] ?? false,
+      data: json['data'] as Map<String, dynamic>?,
     );
   }
 
@@ -39,6 +42,7 @@ class AppNotification extends Equatable {
       'tipo': tipo,
       'createdAt': createdAt.toIso8601String(),
       'leida': leida,
+      'data': data,
     };
   }
 
@@ -79,6 +83,7 @@ class AppNotification extends Equatable {
     String? tipo,
     DateTime? createdAt,
     bool? leida,
+    Map<String, dynamic>? data,
   }) {
     return AppNotification(
       id: id ?? this.id,
@@ -87,9 +92,10 @@ class AppNotification extends Equatable {
       tipo: tipo ?? this.tipo,
       createdAt: createdAt ?? this.createdAt,
       leida: leida ?? this.leida,
+      data: data ?? this.data,
     );
   }
 
   @override
-  List<Object?> get props => [id, titulo, mensaje, tipo, createdAt, leida];
+  List<Object?> get props => [id, titulo, mensaje, tipo, createdAt, leida, data];
 }
