@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../logic/cubit/admin_dashboard_cubit.dart';
 import '../../logic/cubit/admin_dashboard_state.dart';
+import '../../data/models/admin_stats.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/top_libros_bar_chart.dart';
 import '../widgets/evolucion_lectura_line_chart.dart';
@@ -170,7 +171,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildKpiSection(stats) {
+  Widget _buildKpiSection(AdminStats stats) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -221,7 +222,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildReadingStatsSection(stats) {
+  Widget _buildReadingStatsSection(AdminStats stats) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -255,7 +256,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildChartsSection(stats) {
+  Widget _buildChartsSection(AdminStats stats) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -271,7 +272,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildChartsGrid(stats) {
+  Widget _buildChartsGrid(AdminStats stats) {
     return Column(
       children: [
         Card(

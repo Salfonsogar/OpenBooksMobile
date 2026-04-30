@@ -37,7 +37,7 @@ class AdminCategoriasCubit extends Cubit<AdminCategoriasState> {
         await refresh();
         return true;
       }
-      emit(AdminCategoriasCreateError('Error al crear categoría'));
+      emit(const AdminCategoriasCreateError('Error al crear categoría'));
       return false;
     } catch (e) {
       emit(AdminCategoriasCreateError(e.toString()));
@@ -54,7 +54,7 @@ class AdminCategoriasCubit extends Cubit<AdminCategoriasState> {
         await refresh();
         return true;
       }
-      emit(AdminCategoriasUpdateError('Error al actualizar categoría'));
+      emit(const AdminCategoriasUpdateError('Error al actualizar categoría'));
       return false;
     } catch (e) {
       emit(AdminCategoriasUpdateError(e.toString()));
@@ -71,7 +71,7 @@ class AdminCategoriasCubit extends Cubit<AdminCategoriasState> {
         await refresh();
         return true;
       }
-      emit(AdminCategoriasDeleteError('Error al eliminar categoría'));
+      emit(const AdminCategoriasDeleteError('Error al eliminar categoría'));
       return false;
     } catch (e) {
       emit(AdminCategoriasDeleteError(e.toString()));

@@ -1,5 +1,5 @@
-import '../datasources/datasources.dart';
-import '../models/models.dart';
+import '../datasources/index.dart';
+import '../models/index.dart';
 
 class LibrosRepository {
   final LibrosDataSource _librosDataSource;

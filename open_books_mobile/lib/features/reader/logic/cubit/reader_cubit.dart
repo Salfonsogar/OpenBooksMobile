@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/chapter_cache.dart';
@@ -82,11 +83,14 @@ class ReaderCubit extends Cubit<ReaderState> {
   Timer? _debounceTimer;
   static const Duration _debounceDelay = Duration(seconds: 1);
   int _lastSavedChapter = -1;
+  final int initialPage;
+
+  ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(ReaderInitial());
 
   ReaderMode get currentMode => _currentMode;
 
   void setOnProgressChanged(OnProgressChanged? callback) {
-    print('[DEBUG] setOnProgressChanged called with: ${callback != null}');
+    debugPrint('[DEBUG] setOnProgressChanged called with: ${callback != null}');
     _onProgressChanged = callback;
   }
 
@@ -108,11 +112,7 @@ class ReaderCubit extends Cubit<ReaderState> {
     }
   }
 
-ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(ReaderInitial());
-
-  final int initialPage;
-
-  Future<void> cargarLibro() async {
+  Future<void> cargarLibro({int? initialPage}) async {
     emit(ReaderLoading());
     try {
       final manifest = await _repository.getManifest(libroId);
@@ -122,8 +122,8 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
         return;
       }
 
-      final startIndex = initialPage > 0 && initialPage < manifest.readingOrder.length 
-          ? initialPage - 1 
+      final startIndex = (initialPage ?? this.initialPage) > 0 && (initialPage ?? this.initialPage) < manifest.readingOrder.length 
+          ? (initialPage ?? this.initialPage) - 1 
           : 0;
       
       final chapterPath = manifest.readingOrder[startIndex].href;
@@ -183,7 +183,7 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
       ));
 
       _precargarSiguienteCapitulo(index);
-      _optimizeCache(currentState.currentChapterIndex);
+      _optimizeCache(currentState.currentChapterIndex, currentState.manifest.readingOrder.length);
       _onChapterChanged(index, currentState.manifest.readingOrder.length);
     } catch (e) {
       emit(ReaderError(e.toString().replaceAll('Exception: ', '')));
@@ -254,16 +254,17 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
           _chapterCache.put(nextIndex, content);
         }
       } catch (e) {
+        debugPrint('[ReaderCubit] Error precargando: $e');
       }
     });
   }
 
-  void _optimizeCache(int currentIndex) {
+  void _optimizeCache(int currentIndex, int totalChapters) {
     const windowSize = 5;
     final indicesToKeep = <int>{};
     
     for (int i = currentIndex - windowSize; i <= currentIndex + windowSize; i++) {
-      if (i >= 0 && i < _chapterCache.length) {
+      if (i >= 0 && i < totalChapters) {
         indicesToKeep.add(i);
       }
     }
@@ -275,7 +276,7 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
   List<int> get cachedIndices => _chapterCache.cachedIndices;
 
   void _onChapterChanged(int newChapterIndex, int totalChapters) {
-    print('[DEBUG] _onChapterChanged called: chapter=$newChapterIndex, total=$totalChapters');
+    debugPrint('[DEBUG] _onChapterChanged called: chapter=$newChapterIndex, total=$totalChapters');
     if (_lastSavedChapter == newChapterIndex) return;
     _lastSavedChapter = newChapterIndex;
 
@@ -286,11 +287,11 @@ ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(Read
   }
 
   void _saveProgress(int currentChapter, int totalChapters) {
-    print('[DEBUG] _saveProgress called: chapter=$currentChapter, total=$totalChapters, callback=${_onProgressChanged != null}');
+    debugPrint('[DEBUG] _saveProgress called: chapter=$currentChapter, total=$totalChapters, callback=${_onProgressChanged != null}');
     if (_onProgressChanged == null) return;
 
     final progreso = totalChapters > 0 ? ((currentChapter + 1) / totalChapters) * 100 : 0.0;
-    print('[DEBUG] Sending progress: $progreso%, page: ${currentChapter + 1}');
+    debugPrint('[DEBUG] Sending progress: $progreso%, page: ${currentChapter + 1}');
     
     _onProgressChanged!(
       libroId: libroId,

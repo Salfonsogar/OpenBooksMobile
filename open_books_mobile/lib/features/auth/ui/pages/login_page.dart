@@ -102,7 +102,7 @@ class _LoginPageState extends State<LoginPage> {
       ),
       child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.error_outline,
             color: AppColors.error,
             size: 20,
@@ -111,7 +111,7 @@ class _LoginPageState extends State<LoginPage> {
           Expanded(
             child: Text(
               message,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.error,
                 fontSize: 14,
               ),

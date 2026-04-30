@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../data/models/usuario.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/roles_repository.dart';
 import '../../../../shared/core/session/session_cubit.dart';
@@ -32,17 +33,20 @@ class AuthCubit extends Cubit<AuthState> {
         }
       } catch (_) {}
 
-      await _sessionCubit.login(
-        userId: response.usuario.id,
+      final user = Usuario(
+        id: response.usuario.id,
         userName: response.usuario.userName,
-        email: response.usuario.email,
         nombreCompleto: response.usuario.nombreCompleto,
-        rolId: response.usuario.rolId,
-        nombreRol: nombreRol,
+        email: response.usuario.email,
+        estado: true,
         sancionado: response.usuario.sancionado,
-        token: response.token,
+        fechaRegistro: DateTime.now(),
+        nombreRol: nombreRol,
+        rolId: response.usuario.rolId,
         fotoPerfilBase64: response.usuario.fotoPerfilBase64,
       );
+
+      await _sessionCubit.login(user: user, token: response.token);
 
       emit(AuthLoginSuccess(usuario: response.usuario, token: response.token));
     } catch (e) {
@@ -75,16 +79,20 @@ class AuthCubit extends Cubit<AuthState> {
         }
       } catch (_) {}
 
-      await _sessionCubit.login(
-        userId: response.usuario.id,
+      final user = Usuario(
+        id: response.usuario.id,
         userName: response.usuario.userName,
-        email: response.usuario.email,
         nombreCompleto: response.usuario.nombreCompleto,
-        rolId: rolId,
-        nombreRol: nombreRol,
+        email: response.usuario.email,
+        estado: true,
         sancionado: response.usuario.sancionado,
-        token: response.token,
+        fechaRegistro: DateTime.now(),
+        nombreRol: nombreRol,
+        rolId: rolId,
+        fotoPerfilBase64: response.usuario.fotoPerfilBase64,
       );
+
+      await _sessionCubit.login(user: user, token: response.token);
 
       emit(
         AuthRegisterSuccess(usuario: response.usuario, token: response.token),

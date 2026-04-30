@@ -123,7 +123,7 @@ class LocalNotificationService {
     final settings = await _getSettings();
     if (!settings['remindersEnabled']) return;
 
-    final androidDetails = AndroidNotificationDetails(
+    final androidDetails = const AndroidNotificationDetails(
       _channelId,
       _channelName,
       channelDescription: _channelDescription,

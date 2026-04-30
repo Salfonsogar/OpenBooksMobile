@@ -115,7 +115,7 @@ class ReaderFooter extends StatelessWidget {
                   style: TextStyle(color: colors.icon, fontSize: 12),
                 ),
                 const SizedBox(width: 16),
-                BatteryIndicator(
+                const BatteryIndicator(
                   showPercentage: true,
                   iconSize: 14,
                 ),

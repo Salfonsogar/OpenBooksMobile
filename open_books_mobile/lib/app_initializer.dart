@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_classes_with_only_static_members
+
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'features/onboarding/logic/cubit/onboarding_cubit.dart';
 import 'injection_container.dart';

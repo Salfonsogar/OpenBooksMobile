@@ -71,7 +71,7 @@ class _AppThemeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themes = [
-      _ThemeOption(
+      const _ThemeOption(
         id: 'light',
         name: 'Claro',
         icon: Icons.light_mode,
@@ -85,12 +85,12 @@ class _AppThemeSelector extends StatelessWidget {
         background: Colors.grey[900]!,
         text: Colors.white,
       ),
-      _ThemeOption(
+      const _ThemeOption(
         id: 'sepia',
         name: 'Sepia',
         icon: Icons.wb_sunny,
-        background: const Color(0xFFF4ECD8),
-        text: const Color(0xFF5B4636),
+        background: Color(0xFFF4ECD8),
+        text: Color(0xFF5B4636),
       ),
     ];
 
@@ -146,7 +146,7 @@ class _ReaderThemeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themes = [
-      _ThemeOption(
+      const _ThemeOption(
         id: 'light',
         name: 'Claro',
         icon: Icons.light_mode,
@@ -160,12 +160,12 @@ class _ReaderThemeSelector extends StatelessWidget {
         background: Colors.grey[900]!,
         text: Colors.white,
       ),
-      _ThemeOption(
+      const _ThemeOption(
         id: 'sepia',
         name: 'Sepia',
         icon: Icons.wb_sunny,
-        background: const Color(0xFFF4ECD8),
-        text: const Color(0xFF5B4636),
+        background: Color(0xFFF4ECD8),
+        text: Color(0xFF5B4636),
       ),
     ];
 

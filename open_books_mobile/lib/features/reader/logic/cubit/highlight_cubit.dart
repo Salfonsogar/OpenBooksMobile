@@ -65,21 +65,22 @@ class HighlightCubit extends Cubit<HighlightState> {
       final id = await _dataSource.insertHighlight(highlight);
       final newHighlight = highlight.copyWith(id: id);
 
-      if (state is HighlightLoaded) {
-        final currentState = state as HighlightLoaded;
-        if (currentState.currentChapter == chapterIndex) {
-          final updatedHighlights = [...currentState.highlights, newHighlight];
-          updatedHighlights.sort((a, b) {
-            if (a.startIndex != b.startIndex) {
-              return a.startIndex.compareTo(b.startIndex);
-            }
-            return a.endIndex.compareTo(b.endIndex);
-          });
-          emit(HighlightLoaded(
-            highlights: updatedHighlights,
-            currentChapter: currentState.currentChapter,
-          ));
-        }
+      final currentState = state;
+      if (currentState is HighlightLoaded && 
+          currentState.currentChapter == chapterIndex) {
+        final updatedHighlights = [...currentState.highlights, newHighlight];
+        updatedHighlights.sort((a, b) {
+          if (a.startIndex != b.startIndex) {
+            return a.startIndex.compareTo(b.startIndex);
+          }
+          return a.endIndex.compareTo(b.endIndex);
+        });
+        emit(HighlightLoaded(
+          highlights: updatedHighlights,
+          currentChapter: currentState.currentChapter,
+        ));
+      } else {
+        await cargarHighlightsPorCapitulo(chapterIndex);
       }
 
       return newHighlight;
@@ -92,8 +93,8 @@ class HighlightCubit extends Cubit<HighlightState> {
     try {
       await _dataSource.deleteHighlight(id);
 
-      if (state is HighlightLoaded) {
-        final currentState = state as HighlightLoaded;
+      final currentState = state;
+      if (currentState is HighlightLoaded) {
         final updatedHighlights = currentState.highlights
             .where((h) => h.id != id)
             .toList();
@@ -111,14 +112,13 @@ class HighlightCubit extends Cubit<HighlightState> {
     try {
       await _dataSource.deleteHighlightsByChapter(bookId, chapterIndex);
 
-      if (state is HighlightLoaded) {
-        final currentState = state as HighlightLoaded;
-        if (currentState.currentChapter == chapterIndex) {
-          emit(HighlightLoaded(
-            highlights: [],
-            currentChapter: chapterIndex,
-          ));
-        }
+      final currentState = state;
+      if (currentState is HighlightLoaded && 
+          currentState.currentChapter == chapterIndex) {
+        emit(HighlightLoaded(
+          highlights: const [],
+          currentChapter: chapterIndex,
+        ));
       }
     } catch (e) {
       // Silently fail

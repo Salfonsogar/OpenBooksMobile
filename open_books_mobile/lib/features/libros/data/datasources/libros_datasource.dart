@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../shared/core/network/api_client.dart';
 import '../../../../shared/core/utils/error_utils.dart';
-import '../models/models.dart';
+import '../models/index.dart';
 
 class LibrosDataSource {
   final ApiClient _apiClient;

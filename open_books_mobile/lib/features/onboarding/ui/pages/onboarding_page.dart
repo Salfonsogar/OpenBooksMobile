@@ -19,19 +19,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
   int _currentPage = 0;
 
   final List<OnboardingSlide> _slides = [
-    OnboardingSlide(
+    const OnboardingSlide(
       title: 'Bienvenido a OpenBooks',
       subtitle: 'Tu biblioteca personal de libros gratuitos. Descubre, Lee y Comparte.',
       animationPath: 'assets/animations/book_onboarding.json',
       color: AppColors.primary,
     ),
-    OnboardingSlide(
+    const OnboardingSlide(
       title: 'Tu Biblioteca',
       subtitle: 'Guarda tus libros favoritos y gestionalos fácilmente.',
       animationPath: 'assets/animations/library_onboarding.json',
       color: AppColors.secondary,
     ),
-    OnboardingSlide(
+    const OnboardingSlide(
       title: 'Comparte y Descubre',
       subtitle: 'Comparte tus libros con amigos y encuentra nuevas lecturas.',
       animationPath: 'assets/animations/share_onboarding.json',
@@ -114,7 +114,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: _completeOnboarding,
-                      child: Text(
+                      child: const Text(
                         'Saltar',
                         style: TextStyle(
                           color: AppColors.textSecondary,

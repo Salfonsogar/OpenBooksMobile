@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../../logic/cubit/audio_player_cubit.dart';
 import '../../data/models/audio_player_state.dart';
 import '../widgets/epub_parser.dart';
+import '../widgets/reader_blocks.dart';
 
 class ListeningView extends StatefulWidget {
   final List<String> paragraphs;

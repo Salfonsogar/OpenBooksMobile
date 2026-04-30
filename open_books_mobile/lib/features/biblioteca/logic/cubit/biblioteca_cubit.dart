@@ -100,7 +100,16 @@ class BibliotecaCubit extends Cubit<BibliotecaState> {
     emit(BibliotecaLoading());
 
     try {
-      final entities = await getBibliotecaUseCase(sessionState.userId);
+      final result = await getBibliotecaUseCase(sessionState.userId);
+      
+      if (result.isLeft()) {
+        final failure = result.fold((l) => l, (r) => null);
+        emit(BibliotecaError(failure?.message ?? 'Unknown error'));
+        _isLoading = false;
+        return;
+      }
+
+      final entities = result.getOrElse(() => []);
       final libros = entities
           .map((e) => LibroBiblioteca(
                 id: e.libroId,
@@ -136,7 +145,12 @@ class BibliotecaCubit extends Cubit<BibliotecaState> {
     if (sessionState is! SessionAuthenticated) return;
 
     try {
-      await addLibroBibliotecaUseCase(sessionState.userId, libroId);
+      final result = await addLibroBibliotecaUseCase(sessionState.userId, libroId);
+      if (result.isLeft()) {
+        final failure = result.fold((l) => l, (r) => null);
+        emit(BibliotecaError(failure?.message ?? 'Unknown error'));
+        return;
+      }
       await cargarBiblioteca();
     } catch (e) {
       emit(BibliotecaError(e.toString().replaceAll('Exception: ', '')));
@@ -150,7 +164,12 @@ class BibliotecaCubit extends Cubit<BibliotecaState> {
 
     try {
       await epubLocalStorageService.deleteEpub(libroId);
-      await removeLibroBibliotecaUseCase(sessionState.userId, libroId);
+      final result = await removeLibroBibliotecaUseCase(sessionState.userId, libroId);
+      if (result.isLeft()) {
+        final failure = result.fold((l) => l, (r) => null);
+        emit(BibliotecaError(failure?.message ?? 'Unknown error'));
+        return;
+      }
       await cargarBiblioteca();
     } catch (e) {
       emit(BibliotecaError(e.toString().replaceAll('Exception: ', '')));

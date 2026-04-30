@@ -104,7 +104,7 @@ void main() {
     testWidgets('does not call onPressed when null', (WidgetTester tester) async {
       var pressed = false;
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: AppButton(
               label: 'Disabled',

@@ -167,7 +167,7 @@ Widget _buildSearchBar() {
                   focusedBorder: InputBorder.none,
                   filled: true,
                   fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 onChanged: (value) {
                   _onSearchChanged(value);

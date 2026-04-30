@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:open_books_mobile/features/auth/data/models/usuario.dart';
 import 'package:open_books_mobile/shared/core/session/session_cubit.dart';
 import 'package:open_books_mobile/shared/core/session/session_state.dart';
 
@@ -22,72 +23,70 @@ void main() {
     });
 
     test('SessionAuthenticated.isAdmin returns true for rolId 1', () {
-      const state = SessionAuthenticated(
-        userId: 1,
+      final user = Usuario(
+        id: 1,
         userName: 'test',
-        email: 'test@test.com',
         nombreCompleto: 'Test User',
+        email: 'test@test.com',
+        estado: true,
+        sancionado: false,
+        fechaRegistro: DateTime.now(),
         nombreRol: 'Usuario',
         rolId: 1,
-        sancionado: false,
-        token: 'token123',
       );
+      final state = SessionAuthenticated(user: user, token: 'token123');
       expect(state.isAdmin, isTrue);
     });
 
     test(
       'SessionAuthenticated.isAdmin returns true for administrator role',
       () {
-        const state = SessionAuthenticated(
-          userId: 1,
+        final user = Usuario(
+          id: 1,
           userName: 'test',
-          email: 'test@test.com',
           nombreCompleto: 'Test User',
+          email: 'test@test.com',
+          estado: true,
+          sancionado: false,
+          fechaRegistro: DateTime.now(),
           nombreRol: 'Administrador',
           rolId: 2,
-          sancionado: false,
-          token: 'token123',
         );
+        final state = SessionAuthenticated(user: user, token: 'token123');
         expect(state.isAdmin, isTrue);
       },
     );
 
     test('SessionAuthenticated.isAdmin returns false for regular user', () {
-      const state = SessionAuthenticated(
-        userId: 1,
+      final user = Usuario(
+        id: 1,
         userName: 'test',
-        email: 'test@test.com',
         nombreCompleto: 'Test User',
+        email: 'test@test.com',
+        estado: true,
+        sancionado: false,
+        fechaRegistro: DateTime.now(),
         nombreRol: 'Usuario',
         rolId: 2,
-        sancionado: false,
-        token: 'token123',
       );
+      final state = SessionAuthenticated(user: user, token: 'token123');
       expect(state.isAdmin, isFalse);
     });
 
     test('SessionAuthenticated props are correct', () {
-      const state = SessionAuthenticated(
-        userId: 1,
+      final user = Usuario(
+        id: 1,
         userName: 'test',
-        email: 'test@test.com',
         nombreCompleto: 'Test User',
+        email: 'test@test.com',
+        estado: true,
+        sancionado: false,
+        fechaRegistro: DateTime.now(),
         nombreRol: 'Usuario',
         rolId: 2,
-        sancionado: false,
-        token: 'token123',
       );
-      expect(state.props, [
-        1,
-        'test',
-        'test@test.com',
-        'Test User',
-        'Usuario',
-        2,
-        false,
-        'token123',
-        null,
-      ]);
+      final state = SessionAuthenticated(user: user, token: 'token123');
+      expect(state.props, [user, 'token123']);
     });
   });
 

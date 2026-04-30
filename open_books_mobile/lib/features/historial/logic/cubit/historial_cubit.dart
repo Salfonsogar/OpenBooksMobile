@@ -54,7 +54,7 @@ class HistorialCubit extends Cubit<HistorialState> {
   Future<void> cargarHistorial({int cantidad = 10}) async {
     final sessionState = sessionCubit.state;
     if (sessionState is! SessionAuthenticated) {
-      emit(HistorialLoaded(libros: []));
+      emit(const HistorialLoaded(libros: []));
       return;
     }
 

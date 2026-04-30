@@ -91,7 +91,7 @@ class ShimmerList extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: itemCount,
-      separatorBuilder: (_, __) => SizedBox(height: itemSpacing),
+      separatorBuilder: (_, _) => SizedBox(height: itemSpacing),
       itemBuilder: (context, index) => ShimmerLoading.card(height: itemHeight),
     );
   }
@@ -122,7 +122,7 @@ class ShimmerGrid extends StatelessWidget {
         crossAxisSpacing: spacing,
         mainAxisSpacing: spacing,
       ),
-      itemBuilder: (context, index) => ShimmerLoading(
+      itemBuilder: (context, index) => const ShimmerLoading(
         width: double.infinity,
         height: double.infinity,
         borderRadius: 12,

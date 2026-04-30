@@ -4,10 +4,11 @@ import 'features/auth/data/datasources/auth_datasource.dart';
 import 'features/auth/data/datasources/roles_datasource.dart';
 import 'features/auth/data/repositories/auth_repository.dart';
 import 'features/auth/data/repositories/roles_repository.dart';
+
 import 'features/auth/logic/cubit/auth_cubit.dart';
-import 'features/libros/data/datasources/datasources.dart';
+import 'features/libros/data/datasources/index.dart';
 import 'features/libros/data/repositories/libros_repository.dart';
-import 'features/libros/logic/cubit/cubit.dart';
+import 'features/libros/logic/cubit/index.dart';
 import 'features/biblioteca/data/datasources/biblioteca_datasource.dart';
 import 'features/biblioteca/data/repositories/biblioteca_repository_impl.dart';
 import 'features/biblioteca/domain/usecases/get_biblioteca_usecase.dart';
@@ -25,10 +26,12 @@ import 'features/historial/domain/usecases/add_to_historial_usecase.dart';
 import 'features/historial/logic/cubit/historial_cubit.dart';
 import 'features/reader/data/datasources/bookmark_datasource.dart';
 import 'features/reader/data/datasources/epub_datasource.dart';
+import 'features/reader/data/datasources/highlight_datasource.dart';
 import 'features/reader/data/repositories/bookmark_repository.dart';
 import 'features/reader/data/repositories/epub_repository.dart';
 import 'features/reader/data/repositories/epub_repository_impl.dart';
 import 'features/reader/logic/cubit/bookmark_cubit.dart';
+import 'features/reader/logic/cubit/highlight_cubit.dart';
 import 'features/reader/logic/cubit/audio_player_cubit.dart';
 import 'features/reader/logic/cubit/reader_settings_cubit.dart';
 import 'features/notifications/logic/cubit/notification_cubit.dart';
@@ -256,11 +259,17 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<BookmarkDataSource>(
     () => BookmarkDataSource(),
   );
+  getIt.registerLazySingleton<HighlightDataSource>(
+    () => HighlightDataSource(),
+  );
   getIt.registerLazySingleton<BookmarkRepository>(
     () => BookmarkRepository(getIt<BookmarkDataSource>()),
   );
   getIt.registerFactory<BookmarkCubit>(
     () => BookmarkCubit(getIt<BookmarkRepository>()),
+  );
+  getIt.registerFactoryParam<HighlightCubit, HighlightDataSource, void>(
+    (dataSource, _) => HighlightCubit(dataSource),
   );
 
   getIt.registerFactoryParam<AudioPlayerCubit, int, void>(

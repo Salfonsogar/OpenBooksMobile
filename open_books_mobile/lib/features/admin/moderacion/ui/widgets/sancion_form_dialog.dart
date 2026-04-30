@@ -137,7 +137,7 @@ class _SancionFormDialogState extends State<SancionFormDialog> {
                 ),
               if (!isEditing) const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _tipoSancion,
+                initialValue: _tipoSancion,
                 decoration: const InputDecoration(
                   labelText: 'Tipo de Sanción',
                   border: OutlineInputBorder(),

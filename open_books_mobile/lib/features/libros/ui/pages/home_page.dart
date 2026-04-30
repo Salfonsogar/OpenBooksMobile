@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../data/models/models.dart';
+import '../../data/models/index.dart';
 import '../../logic/cubit/libros_cubit.dart';
 import '../widgets/libro_card.dart';
 

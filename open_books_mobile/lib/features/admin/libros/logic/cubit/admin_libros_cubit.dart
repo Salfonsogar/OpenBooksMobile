@@ -116,7 +116,7 @@ class AdminLibrosCubit extends Cubit<AdminLibrosState> {
         await refresh();
         return true;
       }
-      emit(AdminLibrosCreateError('Error al crear libro'));
+      emit(const AdminLibrosCreateError('Error al crear libro'));
       return false;
     } catch (e) {
       emit(AdminLibrosCreateError(e.toString()));
@@ -133,7 +133,7 @@ class AdminLibrosCubit extends Cubit<AdminLibrosState> {
         await refresh();
         return true;
       }
-      emit(AdminLibrosUpdateError('Error al actualizar libro'));
+      emit(const AdminLibrosUpdateError('Error al actualizar libro'));
       return false;
     } catch (e) {
       emit(AdminLibrosUpdateError(e.toString()));
@@ -150,7 +150,7 @@ class AdminLibrosCubit extends Cubit<AdminLibrosState> {
         await refresh();
         return true;
       }
-      emit(AdminLibrosDeleteError('Error al eliminar libro'));
+      emit(const AdminLibrosDeleteError('Error al eliminar libro'));
       return false;
     } catch (e) {
       emit(AdminLibrosDeleteError(e.toString()));

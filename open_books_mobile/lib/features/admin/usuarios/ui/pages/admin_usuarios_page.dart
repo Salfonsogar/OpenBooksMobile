@@ -95,7 +95,7 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
       builder: (dialogContext) => UsuarioFormDialog(
         roles: _roles,
         onSave: (request) async {
-          final cubit = this.context.read<AdminUsuariosCubit>();
+          final cubit = context.read<AdminUsuariosCubit>();
           return await cubit.createUsuario(request as CreateUsuarioRequest);
         },
       ),
@@ -109,7 +109,7 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
         usuario: usuario,
         roles: _roles,
         onSave: (request) async {
-          final cubit = this.context.read<AdminUsuariosCubit>();
+          final cubit = context.read<AdminUsuariosCubit>();
           return await cubit.updateUsuario(usuario.id, request as UpdateUsuarioRequest);
         },
       ),
@@ -122,7 +122,7 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
       builder: (dialogContext) => UsuarioDeleteDialog(
         usuario: usuario,
         onConfirm: () async {
-          final cubit = this.context.read<AdminUsuariosCubit>();
+          final cubit = context.read<AdminUsuariosCubit>();
           return await cubit.deleteUsuario(usuario.id);
         },
       ),
