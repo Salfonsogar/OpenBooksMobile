@@ -85,7 +85,7 @@ class AdminSancionesCubit extends Cubit<AdminSancionesState> {
         await refresh();
         return true;
       }
-      emit(AdminSancionesCreateError('Error al crear sanción'));
+      emit(const AdminSancionesCreateError('Error al crear sanción'));
       return false;
     } catch (e) {
       emit(AdminSancionesCreateError(e.toString()));
@@ -102,7 +102,7 @@ class AdminSancionesCubit extends Cubit<AdminSancionesState> {
         await refresh();
         return true;
       }
-      emit(AdminSancionesUpdateError('Error al actualizar sanción'));
+      emit(const AdminSancionesUpdateError('Error al actualizar sanción'));
       return false;
     } catch (e) {
       emit(AdminSancionesUpdateError(e.toString()));
@@ -119,7 +119,7 @@ class AdminSancionesCubit extends Cubit<AdminSancionesState> {
         await refresh();
         return true;
       }
-      emit(AdminSancionesDeleteError('Error al eliminar sanción'));
+      emit(const AdminSancionesDeleteError('Error al eliminar sanción'));
       return false;
     } catch (e) {
       emit(AdminSancionesDeleteError(e.toString()));

@@ -160,7 +160,7 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
       child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.error_outline,
             color: AppColors.error,
             size: 20,
@@ -169,7 +169,7 @@ class _RegisterPageState extends State<RegisterPage> {
           Expanded(
             child: Text(
               message,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.error,
                 fontSize: 14,
               ),

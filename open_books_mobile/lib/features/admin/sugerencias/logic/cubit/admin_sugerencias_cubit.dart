@@ -85,7 +85,7 @@ class AdminSugerenciasCubit extends Cubit<AdminSugerenciasState> {
         await refresh();
         return true;
       }
-      emit(AdminSugerenciasDeleteError('Error al eliminar sugerencia'));
+      emit(const AdminSugerenciasDeleteError('Error al eliminar sugerencia'));
       return false;
     } catch (e) {
       emit(AdminSugerenciasDeleteError(e.toString()));

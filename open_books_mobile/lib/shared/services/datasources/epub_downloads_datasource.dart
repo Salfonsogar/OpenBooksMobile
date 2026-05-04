@@ -77,7 +77,7 @@ class EpubDownloadsDataSource {
       _tableName,
       {
         'status': status,
-        if (errorMessage != null) 'error_message': errorMessage,
+        'error_message': errorMessage,
       },
       where: 'libro_id = ?',
       whereArgs: [libroId],

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../../features/auth/data/models/usuario.dart';
 import '../../../features/notifications/data/models/app_notification.dart';
 import '../../../features/notifications/logic/cubit/notification_cubit.dart';
 import '../../services/signalr_service.dart';
@@ -30,17 +31,11 @@ class SessionCubit extends Cubit<SessionState> {
       final userData = await _storage.read(key: _userKey);
 
       if (token != null && userData != null) {
-        final user = jsonDecode(userData);
+        final userJson = jsonDecode(userData) as Map<String, dynamic>;
+        final user = Usuario.fromJson(userJson);
         emit(SessionAuthenticated(
-          userId: user['id'],
-          userName: user['userName'] ?? '',
-          email: user['email'] ?? '',
-          nombreCompleto: user['nombreCompleto'] ?? '',
-          nombreRol: user['nombreRol'] ?? 'Usuario',
-          rolId: user['rolId'] ?? 2,
-          sancionado: user['sancionado'] ?? false,
+          user: user,
           token: token,
-          fotoPerfilBase64: user['fotoPerfilBase64'],
         ));
         _connectSignalR();
       } else {
@@ -52,40 +47,15 @@ class SessionCubit extends Cubit<SessionState> {
   }
 
   Future<void> login({
-    required int userId,
-    required String userName,
-    required String email,
-    required String nombreCompleto,
-    required String nombreRol,
-    required int rolId,
-    required bool sancionado,
+    required Usuario user,
     required String token,
-    String? fotoPerfilBase64,
   }) async {
     await _storage.write(key: _tokenKey, value: token);
-
-    final user = {
-      'id': userId,
-      'userName': userName,
-      'email': email,
-      'nombreCompleto': nombreCompleto,
-      'nombreRol': nombreRol,
-      'rolId': rolId,
-      'sancionado': sancionado,
-      'fotoPerfilBase64': fotoPerfilBase64,
-    };
-    await _storage.write(key: _userKey, value: jsonEncode(user));
+    await _storage.write(key: _userKey, value: jsonEncode(user.toJson()));
 
     emit(SessionAuthenticated(
-      userId: userId,
-      userName: userName,
-      email: email,
-      nombreCompleto: nombreCompleto,
-      nombreRol: nombreRol,
-      rolId: rolId,
-      sancionado: sancionado,
+      user: user,
       token: token,
-      fotoPerfilBase64: fotoPerfilBase64,
     ));
 
     _connectSignalR();
@@ -125,28 +95,24 @@ class SessionCubit extends Cubit<SessionState> {
   }) async {
     final currentState = state;
     if (currentState is SessionAuthenticated) {
-      final user = {
-        'id': currentState.userId,
-        'userName': userName ?? currentState.userName,
-        'email': email ?? currentState.email,
-        'nombreCompleto': nombreCompleto ?? currentState.nombreCompleto,
-        'nombreRol': currentState.nombreRol,
-        'rolId': currentState.rolId,
-        'sancionado': currentState.sancionado,
-        'fotoPerfilBase64': fotoPerfilBase64 ?? currentState.fotoPerfilBase64,
-      };
-      await _storage.write(key: _userKey, value: jsonEncode(user));
+      final updatedUser = Usuario(
+        id: currentState.user.id,
+        userName: userName ?? currentState.user.userName,
+        nombreCompleto: nombreCompleto ?? currentState.user.nombreCompleto,
+        email: email ?? currentState.user.email,
+        estado: currentState.user.estado,
+        sancionado: currentState.user.sancionado,
+        fechaRegistro: currentState.user.fechaRegistro,
+        nombreRol: currentState.user.nombreRol,
+        rolId: currentState.user.rolId,
+        fotoPerfilBase64: fotoPerfilBase64 ?? currentState.user.fotoPerfilBase64,
+      );
+      
+      await _storage.write(key: _userKey, value: jsonEncode(updatedUser.toJson()));
 
       emit(SessionAuthenticated(
-        userId: currentState.userId,
-        userName: userName ?? currentState.userName,
-        email: email ?? currentState.email,
-        nombreCompleto: nombreCompleto ?? currentState.nombreCompleto,
-        nombreRol: currentState.nombreRol,
-        rolId: currentState.rolId,
-        sancionado: currentState.sancionado,
+        user: updatedUser,
         token: currentState.token,
-        fotoPerfilBase64: fotoPerfilBase64 ?? currentState.fotoPerfilBase64,
       ));
     }
   }

@@ -6,7 +6,7 @@ class ProgressCache {
   final Map<int, _CachedProgress> _cache = {};
   static const Duration _cacheExpiration = Duration(minutes: 5);
 
-  _CachedProgress? get(int libroId) {
+  dynamic get(int libroId) {
     final cached = _cache[libroId];
     if (cached == null) return null;
     

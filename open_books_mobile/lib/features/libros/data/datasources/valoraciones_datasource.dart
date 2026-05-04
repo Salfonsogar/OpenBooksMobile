@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/network/api_client.dart';
-import '../models/models.dart';
+import '../models/index.dart';
 
 class ValoracionesDataSource {
   final ApiClient _apiClient;

@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../models/admin_libro.dart';
@@ -63,7 +62,7 @@ class AdminLibrosDataSource {
 
   PagedLibros _parsePagedResponse(dynamic data) {
     if (data == null) return PagedLibros.empty();
-    
+
     if (data is List) {
       return PagedLibros(
         items: data.map((e) => AdminLibro.fromJson(e)).toList(),
@@ -73,16 +72,25 @@ class AdminLibrosDataSource {
         totalPages: 1,
       );
     }
-    
+
     if (data is! Map<String, dynamic>) return PagedLibros.empty();
-    
-    final List<dynamic> dataList = data['data'] as List? ?? data['results'] as List? ?? data['items'] as List? ?? [];
-    
+
+    final List<dynamic> dataList =
+        data['data'] as List? ??
+        data['results'] as List? ??
+        data['items'] as List? ??
+        [];
+
     return PagedLibros(
-        items: dataList.map((e) => AdminLibro.fromJson(e)).toList(),
-      pageNumber: data['page'] ?? data['currentPage'] ?? data['pageNumber'] ?? 1,
+      items: dataList.map((e) => AdminLibro.fromJson(e)).toList(),
+      pageNumber:
+          data['page'] ?? data['currentPage'] ?? data['pageNumber'] ?? 1,
       pageSize: data['pageSize'] ?? 10,
-      totalCount: data['total'] ?? data['totalRecords'] ?? data['totalCount'] ?? dataList.length,
+      totalCount:
+          data['total'] ??
+          data['totalRecords'] ??
+          data['totalCount'] ??
+          dataList.length,
       totalPages: data['totalPages'] ?? 1,
     );
   }
@@ -106,11 +114,8 @@ class AdminLibrosDataSource {
   Future<AdminLibro?> createLibro(CreateLibroRequest request) async {
     try {
       final formData = FormData.fromMap(request.toFormData());
-      
-      final response = await _dio.post(
-        '/api/Libros/upload',
-        data: formData,
-      );
+
+      final response = await _dio.post('/api/Libros/upload', data: formData);
 
       if (response.statusCode == 201 && response.data != null) {
         return AdminLibro.fromJson(response.data);
@@ -125,11 +130,8 @@ class AdminLibrosDataSource {
   Future<AdminLibro?> updateLibro(int id, UpdateLibroRequest request) async {
     try {
       final formData = FormData.fromMap(request.toFormData());
-      
-      final response = await _dio.patch(
-        '/api/Libros/$id',
-        data: formData,
-      );
+
+      final response = await _dio.patch('/api/Libros/$id', data: formData);
 
       if (response.statusCode == 200 && response.data != null) {
         return AdminLibro.fromJson(response.data);

@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter/foundation.dart';
 
+import '../../data/models/usuario.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/roles_repository.dart';
 import '../../../../shared/core/session/session_cubit.dart';
@@ -15,16 +15,16 @@ class AuthCubit extends Cubit<AuthState> {
     required AuthRepository authRepository,
     required RolesRepository rolesRepository,
     required SessionCubit sessionCubit,
-  })  : _authRepository = authRepository,
-        _rolesRepository = rolesRepository,
-        _sessionCubit = sessionCubit,
-        super(AuthInitial());
+  }) : _authRepository = authRepository,
+       _rolesRepository = rolesRepository,
+       _sessionCubit = sessionCubit,
+       super(AuthInitial());
 
   Future<void> login(String correo, String contrasena) async {
     emit(AuthLoading());
     try {
       final response = await _authRepository.login(correo, contrasena);
-      
+
       String nombreRol = 'Usuario';
       try {
         final rol = await _rolesRepository.getRol(response.usuario.rolId);
@@ -33,22 +33,22 @@ class AuthCubit extends Cubit<AuthState> {
         }
       } catch (_) {}
 
-      await _sessionCubit.login(
-        userId: response.usuario.id,
+      final user = Usuario(
+        id: response.usuario.id,
         userName: response.usuario.userName,
-        email: response.usuario.email,
         nombreCompleto: response.usuario.nombreCompleto,
-        rolId: response.usuario.rolId,
-        nombreRol: nombreRol,
+        email: response.usuario.email,
+        estado: true,
         sancionado: response.usuario.sancionado,
-        token: response.token,
+        fechaRegistro: DateTime.now(),
+        nombreRol: nombreRol,
+        rolId: response.usuario.rolId,
         fotoPerfilBase64: response.usuario.fotoPerfilBase64,
       );
 
-      emit(AuthLoginSuccess(
-        usuario: response.usuario,
-        token: response.token,
-      ));
+      await _sessionCubit.login(user: user, token: response.token);
+
+      emit(AuthLoginSuccess(usuario: response.usuario, token: response.token));
     } catch (e) {
       emit(AuthError(e.toString().replaceAll('Exception: ', '')));
     }
@@ -79,21 +79,24 @@ class AuthCubit extends Cubit<AuthState> {
         }
       } catch (_) {}
 
-      await _sessionCubit.login(
-        userId: response.usuario.id,
+      final user = Usuario(
+        id: response.usuario.id,
         userName: response.usuario.userName,
-        email: response.usuario.email,
         nombreCompleto: response.usuario.nombreCompleto,
-        rolId: rolId,
-        nombreRol: nombreRol,
+        email: response.usuario.email,
+        estado: true,
         sancionado: response.usuario.sancionado,
-        token: response.token,
+        fechaRegistro: DateTime.now(),
+        nombreRol: nombreRol,
+        rolId: rolId,
+        fotoPerfilBase64: response.usuario.fotoPerfilBase64,
       );
 
-      emit(AuthRegisterSuccess(
-        usuario: response.usuario,
-        token: response.token,
-      ));
+      await _sessionCubit.login(user: user, token: response.token);
+
+      emit(
+        AuthRegisterSuccess(usuario: response.usuario, token: response.token),
+      );
     } catch (e) {
       emit(AuthError(e.toString().replaceAll('Exception: ', '')));
     }
@@ -103,7 +106,11 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     try {
       await _authRepository.solicitarRecuperacion(correo);
-      emit(const AuthRecoverySent('Se ha enviado un correo de recuperación a tu email'));
+      emit(
+        const AuthRecoverySent(
+          'Se ha enviado un correo de recuperación a tu email',
+        ),
+      );
     } catch (e) {
       emit(AuthError(e.toString().replaceAll('Exception: ', '')));
     }

@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_classes_with_only_static_members
 import '../../domain/entities/historial_entry_entity.dart';
 import '../../../../shared/services/models/historial_local_model.dart';
 import '../../../libros/data/models/libro.dart';

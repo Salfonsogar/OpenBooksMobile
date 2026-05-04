@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../data/models/models.dart';
+import '../../data/models/index.dart';
 
 class DenunciaResenaDialog extends StatefulWidget {
   final Resena resena;
@@ -45,25 +45,28 @@ class _DenunciaResenaDialogState extends State<DenunciaResenaDialog> {
                 style: TextStyle(color: colors.colorScheme.onSurface),
               ),
               const SizedBox(height: 16),
-              ...motivosDenuncia.map((motivo) => ListTile(
-                leading: Radio<String>(
-                  value: motivo,
-                  groupValue: _motivoSeleccionado,
-                  onChanged: (value) {
-                    setState(() {
-                      _motivoSeleccionado = value;
-                    });
-                  },
-                ),
-                title: Text(motivo, style: TextStyle(fontSize: 14, color: colors.colorScheme.onSurface)),
-                onTap: () {
+              RadioGroup<String>(
+                groupValue: _motivoSeleccionado,
+                onChanged: (value) {
                   setState(() {
-                    _motivoSeleccionado = motivo;
+                    _motivoSeleccionado = value;
                   });
                 },
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-              )),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: motivosDenuncia.map((motivo) => ListTile(
+                    leading: Radio<String>(value: motivo),
+                    title: Text(motivo, style: TextStyle(fontSize: 14, color: colors.colorScheme.onSurface)),
+                    onTap: () {
+                      setState(() {
+                        _motivoSeleccionado = motivo;
+                      });
+                    },
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  )).toList(),
+                ),
+              ),
               const SizedBox(height: 8),
               if (_motivoSeleccionado == 'Otro') ...[
                 TextFormField(

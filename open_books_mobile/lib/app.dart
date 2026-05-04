@@ -39,6 +39,9 @@ class _OpenBooksAppState extends State<OpenBooksApp>
     _sessionCubit.checkSession();
     _settingsCubit.cargarSettings();
     widget.injector.syncService.onAppInit();
+    
+    // Load notifications from local storage
+    widget.injector.notificationCubit.loadNotifications();
   }
 
   @override

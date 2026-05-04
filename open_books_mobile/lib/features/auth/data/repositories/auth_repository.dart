@@ -1,5 +1,5 @@
 import '../datasources/auth_datasource.dart';
-import '../models/models.dart';
+import '../models/index.dart';
 
 class AuthRepository {
   final AuthDataSource _dataSource;

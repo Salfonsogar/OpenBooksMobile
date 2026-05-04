@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/models/models.dart';
+import '../../data/models/index.dart';
 import '../../data/repositories/libros_repository.dart';
 
 abstract class CategoriasState extends Equatable {

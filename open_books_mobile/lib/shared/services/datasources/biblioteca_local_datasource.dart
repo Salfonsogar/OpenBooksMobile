@@ -211,4 +211,44 @@ class BibliotecaLocalDataSource {
     );
     return maps.map((map) => BibliotecaLocalModel.fromMap(map)).toList();
   }
+
+  Future<int> getCount() async {
+    final result = await _db.rawQuery('SELECT COUNT(*) as total FROM $_tableName');
+    return (result.first['total'] as int?) ?? 0;
+  }
+
+  Future<List<CategoriaDistribucionResult>> getDistribucionCategorias() async {
+    final result = await _db.rawQuery('''
+      SELECT 
+        COALESCE(categorias, 'Sin categoría') as categoria,
+        COUNT(*) as cantidad
+      FROM $_tableName
+      GROUP BY categoria
+      ORDER BY cantidad DESC
+      LIMIT 6
+    ''');
+
+    final total = result.fold<int>(0, (sum, row) => sum + ((row['cantidad'] as int?) ?? 0));
+
+    return result.map((row) {
+      final cantidad = (row['cantidad'] as int?) ?? 0;
+      return CategoriaDistribucionResult(
+        nombre: row['categoria'] as String? ?? 'Sin categoría',
+        cantidad: cantidad,
+        porcentaje: total > 0 ? (cantidad / total) * 100 : 0.0,
+      );
+    }).toList();
+  }
+}
+
+class CategoriaDistribucionResult {
+  final String nombre;
+  final int cantidad;
+  final double porcentaje;
+
+  CategoriaDistribucionResult({
+    required this.nombre,
+    required this.cantidad,
+    required this.porcentaje,
+  });
 }

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../data/models/models.dart';
+import '../../data/models/index.dart';
 import '../../logic/cubit/libro_detalle_cubit.dart' show OperationType, LibroDetalleCubit, LibroDetalleState, LibroDetalleLoaded, LibroDetalleError, LibroDetalleLoading;
 import '../widgets/review_dialog.dart';
 import '../widgets/denuncia_resena_dialog.dart';

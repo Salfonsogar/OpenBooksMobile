@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/models/models.dart';
+import '../../data/models/index.dart';
 import '../../data/repositories/libros_repository.dart';
 import '../../../../shared/core/session/session_cubit.dart';
 import '../../../../shared/core/session/session_state.dart';
@@ -297,7 +297,7 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
     final errorStr = error.toString();
     if (errorStr.contains('401') || errorStr.toLowerCase().contains('unauthorized')) {
       await _sessionCubit.logout();
-      emit(LibroDetalleError('Sesión expirada. Inicia sesión nuevamente.'));
+      emit(const LibroDetalleError('Sesión expirada. Inicia sesión nuevamente.'));
     } else {
       emit(LibroDetalleError(errorStr.replaceAll('Exception: ', '')));
     }

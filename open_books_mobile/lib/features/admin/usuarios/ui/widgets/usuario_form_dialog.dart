@@ -216,7 +216,7 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
                   )
                 else
                   DropdownButtonFormField<int>(
-                    value: _roles.any((r) => r.id == _selectedRolId) 
+                    initialValue: _roles.any((r) => r.id == _selectedRolId) 
                         ? _selectedRolId 
                         : (_roles.isNotEmpty ? _roles.first.id : null),
                     decoration: const InputDecoration(

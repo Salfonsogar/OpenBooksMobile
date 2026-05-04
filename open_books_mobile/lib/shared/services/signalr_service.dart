@@ -1,8 +1,5 @@
 import 'dart:async';
-
-import 'package:flutter/foundation.dart';
 import 'package:signalr_netcore/signalr_client.dart';
-
 import '../../../shared/core/environment/env.dart';
 import '../../features/notifications/data/models/app_notification.dart';
 
@@ -31,7 +28,7 @@ class SignalRService {
 
     try {
       final env = Env();
-      final hubUrl = '${env.signalrUrl}';
+      final hubUrl = env.signalrUrl;
 
       _hubConnection = HubConnectionBuilder()
           .withUrl(hubUrl)
@@ -58,7 +55,8 @@ class SignalRService {
   void _handleNotification(Map<String, dynamic> data) {
     try {
       final notification = AppNotification(
-        id: data['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        id: data['id']?.toString() ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
         titulo: data['titulo'] ?? 'Notificación',
         mensaje: data['mensaje'] ?? '',
         tipo: data['tipo'] ?? 'sistema',
@@ -66,6 +64,8 @@ class SignalRService {
             ? DateTime.tryParse(data['fecha'].toString()) ?? DateTime.now()
             : DateTime.now(),
         leida: false,
+        data: data['data'] as Map<String, dynamic>? ??
+            (data['extra'] as Map<String, dynamic>?),
       );
 
       onNotificationReceived?.call(notification);

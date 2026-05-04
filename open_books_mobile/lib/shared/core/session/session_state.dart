@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../features/auth/data/models/usuario.dart';
+
 abstract class SessionState extends Equatable {
   const SessionState();
 
@@ -12,32 +14,26 @@ class SessionInitial extends SessionState {}
 class SessionLoading extends SessionState {}
 
 class SessionAuthenticated extends SessionState {
-  final int userId;
-  final String userName;
-  final String email;
-  final String nombreCompleto;
-  final String nombreRol;
-  final int rolId;
-  final bool sancionado;
+  final Usuario user;
   final String token;
-  final String? fotoPerfilBase64;
 
   const SessionAuthenticated({
-    required this.userId,
-    required this.userName,
-    required this.email,
-    required this.nombreCompleto,
-    required this.nombreRol,
-    required this.rolId,
-    required this.sancionado,
+    required this.user,
     required this.token,
-    this.fotoPerfilBase64,
   });
 
-  bool get isAdmin => rolId == 1 || nombreRol.toLowerCase() == 'administrador';
+  int get userId => user.id;
+  String get userName => user.userName;
+  String get email => user.email;
+  String get nombreCompleto => user.nombreCompleto;
+  String get nombreRol => user.nombreRol;
+  int get rolId => user.rolId;
+  bool get sancionado => user.sancionado;
+  String? get fotoPerfilBase64 => user.fotoPerfilBase64;
+  bool get isAdmin => user.isAdmin;
 
   @override
-  List<Object?> get props => [userId, userName, email, nombreCompleto, nombreRol, rolId, sancionado, token, fotoPerfilBase64];
+  List<Object?> get props => [user, token];
 }
 
 class SessionUnauthenticated extends SessionState {}

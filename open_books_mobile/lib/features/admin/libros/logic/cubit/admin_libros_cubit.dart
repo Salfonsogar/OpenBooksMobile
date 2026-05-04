@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/models/admin_libro.dart';
@@ -27,11 +26,13 @@ class AdminLibrosCubit extends Cubit<AdminLibrosState> {
         pageSize: pageSize,
         searchQuery: searchQuery,
       );
-      emit(AdminLibrosLoaded(
-        libros: libros,
-        currentPage: pageNumber,
-        searchQuery: searchQuery ?? '',
-      ));
+      emit(
+        AdminLibrosLoaded(
+          libros: libros,
+          currentPage: pageNumber,
+          searchQuery: searchQuery ?? '',
+        ),
+      );
     } catch (e) {
       emit(AdminLibrosError(e.toString()));
     }
@@ -45,11 +46,9 @@ class AdminLibrosCubit extends Cubit<AdminLibrosState> {
         pageSize: 10,
         searchQuery: query,
       );
-      emit(AdminLibrosLoaded(
-        libros: libros,
-        currentPage: 1,
-        searchQuery: query,
-      ));
+      emit(
+        AdminLibrosLoaded(libros: libros, currentPage: 1, searchQuery: query),
+      );
     } catch (e) {
       emit(AdminLibrosError(e.toString()));
     }
@@ -68,7 +67,9 @@ class AdminLibrosCubit extends Cubit<AdminLibrosState> {
       final libros = await _repository.getLibros(
         pageNumber: nextPage,
         pageSize: 10,
-        searchQuery: currentState.searchQuery.isNotEmpty ? currentState.searchQuery : null,
+        searchQuery: currentState.searchQuery.isNotEmpty
+            ? currentState.searchQuery
+            : null,
       );
 
       final allItems = [...currentState.libros.items, ...libros.items];
@@ -80,11 +81,13 @@ class AdminLibrosCubit extends Cubit<AdminLibrosState> {
         totalPages: libros.totalPages,
       );
 
-      emit(AdminLibrosLoaded(
-        libros: pagedLibros,
-        currentPage: nextPage,
-        searchQuery: currentState.searchQuery,
-      ));
+      emit(
+        AdminLibrosLoaded(
+          libros: pagedLibros,
+          currentPage: nextPage,
+          searchQuery: currentState.searchQuery,
+        ),
+      );
     } catch (e) {
       emit(currentState.copyWith(isLoadingMore: false));
     }
@@ -95,7 +98,9 @@ class AdminLibrosCubit extends Cubit<AdminLibrosState> {
     if (currentState is AdminLibrosLoaded) {
       await loadLibros(
         pageNumber: 1,
-        searchQuery: currentState.searchQuery.isNotEmpty ? currentState.searchQuery : null,
+        searchQuery: currentState.searchQuery.isNotEmpty
+            ? currentState.searchQuery
+            : null,
       );
     } else {
       await loadLibros();
@@ -111,7 +116,7 @@ class AdminLibrosCubit extends Cubit<AdminLibrosState> {
         await refresh();
         return true;
       }
-      emit(AdminLibrosCreateError('Error al crear libro'));
+      emit(const AdminLibrosCreateError('Error al crear libro'));
       return false;
     } catch (e) {
       emit(AdminLibrosCreateError(e.toString()));
@@ -128,7 +133,7 @@ class AdminLibrosCubit extends Cubit<AdminLibrosState> {
         await refresh();
         return true;
       }
-      emit(AdminLibrosUpdateError('Error al actualizar libro'));
+      emit(const AdminLibrosUpdateError('Error al actualizar libro'));
       return false;
     } catch (e) {
       emit(AdminLibrosUpdateError(e.toString()));
@@ -145,7 +150,7 @@ class AdminLibrosCubit extends Cubit<AdminLibrosState> {
         await refresh();
         return true;
       }
-      emit(AdminLibrosDeleteError('Error al eliminar libro'));
+      emit(const AdminLibrosDeleteError('Error al eliminar libro'));
       return false;
     } catch (e) {
       emit(AdminLibrosDeleteError(e.toString()));

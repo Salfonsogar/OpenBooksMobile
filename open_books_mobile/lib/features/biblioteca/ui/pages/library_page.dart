@@ -41,7 +41,7 @@ class _LibraryPageState extends State<LibraryPage> {
       
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Libro descargado'),
           backgroundColor: Colors.green,
         ),
@@ -303,7 +303,7 @@ class _LibraryPageState extends State<LibraryPage> {
                     child: Row(
                       children: [
                         Icon(Icons.download, color: Theme.of(context).colorScheme.onSurface),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text('Descargar', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                       ],
                     ),
@@ -313,7 +313,7 @@ class _LibraryPageState extends State<LibraryPage> {
                     child: Row(
                       children: [
                         Icon(Icons.edit, color: Theme.of(context).colorScheme.onSurface),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text('Editar', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                       ],
                     ),
@@ -323,7 +323,7 @@ class _LibraryPageState extends State<LibraryPage> {
                     child: Row(
                       children: [
                         Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
                       ],
                     ),

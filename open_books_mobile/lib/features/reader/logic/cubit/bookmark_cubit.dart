@@ -29,7 +29,12 @@ class BookmarkCubit extends Cubit<BookmarkState> {
         chapterIndex: chapterIndex,
         title: title,
       );
-      await cargarBookmarks(bookId);
+
+      final currentState = state;
+      if (currentState is BookmarkLoaded && currentState.bookId == bookId) {
+        final bookmarks = await _repository.obtenerPorLibro(bookId);
+        emit(BookmarkLoaded(bookmarks: bookmarks, bookId: bookId));
+      }
     } catch (e) {
       emit(BookmarkError(e.toString()));
     }
@@ -38,7 +43,17 @@ class BookmarkCubit extends Cubit<BookmarkState> {
   Future<void> eliminarBookmark(int id, int bookId) async {
     try {
       await _repository.eliminarBookmark(id);
-      await cargarBookmarks(bookId);
+
+      final currentState = state;
+      if (currentState is BookmarkLoaded && currentState.bookId == bookId) {
+        final updatedBookmarks = currentState.bookmarks
+            .where((b) => b.id != id)
+            .toList();
+        emit(BookmarkLoaded(
+          bookmarks: updatedBookmarks,
+          bookId: bookId,
+        ));
+      }
     } catch (e) {
       emit(BookmarkError(e.toString()));
     }
@@ -52,7 +67,20 @@ class BookmarkCubit extends Cubit<BookmarkState> {
   }) async {
     try {
       await _repository.actualizarBookmark(id: id, title: title);
-      await cargarBookmarks(bookId);
+
+      final currentState = state;
+      if (currentState is BookmarkLoaded && currentState.bookId == bookId) {
+        final updatedBookmarks = currentState.bookmarks.map((b) {
+          if (b.id == id) {
+            return b.copyWith(title: title);
+          }
+          return b;
+        }).toList();
+        emit(BookmarkLoaded(
+          bookmarks: updatedBookmarks,
+          bookId: bookId,
+        ));
+      }
     } catch (e) {
       emit(BookmarkError(e.toString()));
     }

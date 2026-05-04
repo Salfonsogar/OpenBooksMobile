@@ -4,10 +4,11 @@ import 'features/auth/data/datasources/auth_datasource.dart';
 import 'features/auth/data/datasources/roles_datasource.dart';
 import 'features/auth/data/repositories/auth_repository.dart';
 import 'features/auth/data/repositories/roles_repository.dart';
+
 import 'features/auth/logic/cubit/auth_cubit.dart';
-import 'features/libros/data/datasources/datasources.dart';
+import 'features/libros/data/datasources/index.dart';
 import 'features/libros/data/repositories/libros_repository.dart';
-import 'features/libros/logic/cubit/cubit.dart';
+import 'features/libros/logic/cubit/index.dart';
 import 'features/biblioteca/data/datasources/biblioteca_datasource.dart';
 import 'features/biblioteca/data/repositories/biblioteca_repository_impl.dart';
 import 'features/biblioteca/domain/usecases/get_biblioteca_usecase.dart';
@@ -25,12 +26,16 @@ import 'features/historial/domain/usecases/add_to_historial_usecase.dart';
 import 'features/historial/logic/cubit/historial_cubit.dart';
 import 'features/reader/data/datasources/bookmark_datasource.dart';
 import 'features/reader/data/datasources/epub_datasource.dart';
+import 'features/reader/data/datasources/highlight_datasource.dart';
 import 'features/reader/data/repositories/bookmark_repository.dart';
 import 'features/reader/data/repositories/epub_repository.dart';
 import 'features/reader/data/repositories/epub_repository_impl.dart';
 import 'features/reader/logic/cubit/bookmark_cubit.dart';
+import 'features/reader/logic/cubit/highlight_cubit.dart';
 import 'features/reader/logic/cubit/audio_player_cubit.dart';
+import 'features/reader/logic/cubit/reader_cubit.dart';
 import 'features/reader/logic/cubit/reader_settings_cubit.dart';
+import 'features/notifications/data/repositories/notification_repository_impl.dart';
 import 'features/notifications/logic/cubit/notification_cubit.dart';
 import 'features/admin/dashboard/data/datasources/admin_dashboard_datasource.dart';
 import 'features/admin/dashboard/data/repositories/admin_dashboard_repository.dart';
@@ -56,6 +61,7 @@ import 'features/admin/moderacion/logic/cubit/admin_roles_cubit.dart';
 import 'features/admin/sugerencias/data/datasources/admin_sugerencias_datasource.dart';
 import 'features/admin/sugerencias/data/repositories/admin_sugerencias_repository.dart';
 import 'features/admin/sugerencias/logic/cubit/admin_sugerencias_cubit.dart';
+import 'features/onboarding/logic/cubit/onboarding_cubit.dart';
 import 'shared/core/network/api_client.dart';
 import 'shared/core/session/session_cubit.dart';
 import 'shared/services/network_info.dart';
@@ -77,7 +83,15 @@ Future<void> setupDependencies() async {
 
   getIt.registerLazySingleton<SessionCubit>(() => SessionCubit());
 
-  getIt.registerLazySingleton<NotificationCubit>(() => NotificationCubit());
+  getIt.registerLazySingleton<NotificationRepositoryImpl>(
+    () => NotificationRepositoryImpl(
+      localDataSource: getIt<LocalDatabase>().notificationLocalDataSource,
+    ),
+  );
+
+  getIt.registerLazySingleton<NotificationCubit>(
+    () => NotificationCubit(repository: getIt<NotificationRepositoryImpl>()),
+  );
 
   getIt.registerLazySingleton<AuthDataSource>(
     () => AuthDataSource(getIt<ApiClient>()),
@@ -249,17 +263,26 @@ Future<void> setupDependencies() async {
       networkInfo: getIt<NetworkInfo>(),
     ),
   );
+  getIt.registerFactoryParam<ReaderCubit, int, void>(
+    (libroId, _) => ReaderCubit(getIt<EpubRepository>(), libroId),
+  );
   getIt.registerFactory<ReaderSettingsCubit>(
     () => ReaderSettingsCubit(),
   );
   getIt.registerLazySingleton<BookmarkDataSource>(
     () => BookmarkDataSource(),
   );
+  getIt.registerLazySingleton<HighlightDataSource>(
+    () => HighlightDataSource(),
+  );
   getIt.registerLazySingleton<BookmarkRepository>(
     () => BookmarkRepository(getIt<BookmarkDataSource>()),
   );
   getIt.registerFactory<BookmarkCubit>(
     () => BookmarkCubit(getIt<BookmarkRepository>()),
+  );
+  getIt.registerFactoryParam<HighlightCubit, HighlightDataSource, void>(
+    (dataSource, _) => HighlightCubit(dataSource),
   );
 
   getIt.registerFactoryParam<AudioPlayerCubit, int, void>(
@@ -274,7 +297,11 @@ Future<void> setupDependencies() async {
     () => AdminDashboardRepository(getIt<AdminDashboardDataSource>()),
   );
   getIt.registerFactory<AdminDashboardCubit>(
-    () => AdminDashboardCubit(getIt<AdminDashboardRepository>()),
+    () => AdminDashboardCubit(
+      getIt<AdminDashboardRepository>(),
+      localDatabase: getIt<LocalDatabase>(),
+      sessionCubit: getIt<SessionCubit>(),
+    ),
   );
 
   // Admin Usuarios
@@ -352,5 +379,9 @@ Future<void> setupDependencies() async {
   );
   getIt.registerFactory<AdminSugerenciasCubit>(
     () => AdminSugerenciasCubit(getIt<AdminSugerenciasRepository>()),
+  );
+
+  getIt.registerSingleton<OnboardingCubit>(
+    OnboardingCubit(),
   );
 }

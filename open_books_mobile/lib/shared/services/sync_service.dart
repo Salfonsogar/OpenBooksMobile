@@ -10,7 +10,6 @@ import '../../features/biblioteca/data/repositories/biblioteca_repository_impl.d
 import '../../features/historial/data/repositories/historial_repository_impl.dart';
 import '../../features/reader/data/datasources/epub_datasource.dart';
 import '../core/enums/download_status.dart';
-import '../core/utils/retry_handler.dart';
 import '../core/utils/concurrency_pool.dart';
 
 class SyncService {
@@ -27,7 +26,8 @@ class SyncService {
   static const int _maxDownloadAttempts = 3;
 
   StreamSubscription<bool>? _connectivitySubscription;
-  final StreamController<SyncEvent> _syncEventController = StreamController<SyncEvent>.broadcast();
+  final StreamController<SyncEvent> _syncEventController =
+      StreamController<SyncEvent>.broadcast();
 
   SyncService({
     required this.localDatabase,
@@ -41,7 +41,9 @@ class SyncService {
   Stream<SyncEvent> get syncEvents => _syncEventController.stream;
 
   void _initConnectivityListener() {
-    _connectivitySubscription = networkInfo.onConnectivityChanged.listen((isConnected) {
+    _connectivitySubscription = networkInfo.onConnectivityChanged.listen((
+      isConnected,
+    ) {
       if (isConnected) {
         onInternetBack();
       }
@@ -97,11 +99,13 @@ class SyncService {
           op.id!,
           'Max retry count exceeded',
         );
-        _syncEventController.add(SyncEvent.operationFailed(
-          op.operation,
-          op.entityId,
-          'Max retry count exceeded',
-        ));
+        _syncEventController.add(
+          SyncEvent.operationFailed(
+            op.operation,
+            op.entityId,
+            'Max retry count exceeded',
+          ),
+        );
         continue;
       }
 
@@ -110,20 +114,17 @@ class SyncService {
       try {
         await _executeOperation(op);
         await localDatabase.syncQueueDataSource.markAsSynced(op.id!);
-        _syncEventController.add(SyncEvent.operationSucceeded(
-          op.operation,
-          op.entityId,
-        ));
+        _syncEventController.add(
+          SyncEvent.operationSucceeded(op.operation, op.entityId),
+        );
       } catch (e) {
         await localDatabase.syncQueueDataSource.markAsFailed(
           op.id!,
           e.toString(),
         );
-        _syncEventController.add(SyncEvent.operationFailed(
-          op.operation,
-          op.entityId,
-          e.toString(),
-        ));
+        _syncEventController.add(
+          SyncEvent.operationFailed(op.operation, op.entityId, e.toString()),
+        );
 
         if (op.retryCount < _maxRetryCount - 1) {
           await _scheduleRetry(op);
@@ -136,7 +137,9 @@ class SyncService {
   }
 
   Future<void> _executeOperation(SyncQueueModel op) async {
-    final payload = op.payload != null ? _parsePayload(op.payload!) : <String, dynamic>{};
+    final payload = op.payload != null
+        ? _parsePayload(op.payload!)
+        : <String, dynamic>{};
     final usuarioId = payload['usuarioId'] as int? ?? 0;
     final libroId = payload['libroId'] as int? ?? op.entityId;
 
@@ -166,9 +169,13 @@ class SyncService {
     final usuarioId = payload['usuarioId'] as int? ?? 0;
     final progreso = (payload['progreso'] as num?)?.toDouble() ?? 0.0;
     final page = payload['page'] as int? ?? 0;
-    final timestamp = payload['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch;
+    final timestamp =
+        payload['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch;
 
-    final existing = await localDatabase.bibliotecaLocalDataSource.getByLibroId(libroId, usuarioId);
+    final existing = await localDatabase.bibliotecaLocalDataSource.getByLibroId(
+      libroId,
+      usuarioId,
+    );
     if (existing != null) {
       await localDatabase.bibliotecaLocalDataSource.updateProgressWithTracking(
         id: existing.id!,
@@ -176,7 +183,10 @@ class SyncService {
         page: page,
         timestamp: timestamp,
       );
-      await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(existing.id!, 'synced');
+      await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(
+        existing.id!,
+        'synced',
+      );
     }
   }
 
@@ -186,7 +196,8 @@ class SyncService {
     final progressId = payload['progressId'] as int? ?? 0;
     final pagesRead = payload['pagesRead'] as int? ?? 0;
     final notes = payload['notes'] as String?;
-    final timestamp = payload['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch;
+    final timestamp =
+        payload['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch;
 
     final session = ReadingSessionModel(
       progressId: progressId,
@@ -243,12 +254,13 @@ class SyncService {
     required int page,
     int? timestamp,
   }) async {
-    print('[DEBUG SyncService] addProgressUpdateToQueue called: libroId=$libroId, usuarioId=$usuarioId, progreso=$progreso, page=$page');
     final now = timestamp ?? DateTime.now().millisecondsSinceEpoch;
     ProgressCache().set(libroId, progreso, page);
-    
-    final existing = await localDatabase.bibliotecaLocalDataSource.getByLibroId(libroId, usuarioId);
-    print('[DEBUG SyncService] Existing book found: ${existing != null}');
+
+    final existing = await localDatabase.bibliotecaLocalDataSource.getByLibroId(
+      libroId,
+      usuarioId,
+    );
     if (existing != null) {
       await localDatabase.bibliotecaLocalDataSource.updateProgressWithTracking(
         id: existing.id!,
@@ -256,9 +268,7 @@ class SyncService {
         page: page,
         timestamp: now,
       );
-      print('[DEBUG SyncService] Updated local database');
     } else {
-      print('[DEBUG SyncService] Book not found in local DB - creating new entry');
       await localDatabase.bibliotecaLocalDataSource.insert(
         BibliotecaLocalModel(
           libroId: libroId,
@@ -271,9 +281,8 @@ class SyncService {
           createdAt: now,
         ),
       );
-      print('[DEBUG SyncService] Created new book entry');
     }
-    
+
     final payload = {
       'libroId': libroId,
       'usuarioId': usuarioId,
@@ -338,7 +347,12 @@ class SyncService {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
     await localDatabase.bibliotecaLocalDataSource.updateProgressWithTracking(
-      id: (await localDatabase.bibliotecaLocalDataSource.getByLibroId(libroId, usuarioId))?.id ?? 0,
+      id:
+          (await localDatabase.bibliotecaLocalDataSource.getByLibroId(
+            libroId,
+            usuarioId,
+          ))?.id ??
+          0,
       progreso: progreso,
       page: page,
       timestamp: timestamp,
@@ -352,17 +366,18 @@ class SyncService {
       timestamp: timestamp,
     );
 
-    _syncEventController.add(SyncEvent.operationFailed(
-      SyncQueueModel.operationUpdateProgress,
-      libroId,
-      errorMessage ?? 'Guardado localmente por fallo de conexion',
-    ));
+    _syncEventController.add(
+      SyncEvent.operationFailed(
+        SyncQueueModel.operationUpdateProgress,
+        libroId,
+        errorMessage ?? 'Guardado localmente por fallo de conexion',
+      ),
+    );
   }
 
   Future<void> processProgressSync() async {
-    final pendingProgress = await localDatabase.syncQueueDataSource.getPendingByEntityType(
-      SyncQueueModel.entityTypeProgress,
-    );
+    final pendingProgress = await localDatabase.syncQueueDataSource
+        .getPendingByEntityType(SyncQueueModel.entityTypeProgress);
 
     for (final op in pendingProgress) {
       await _processProgressOperation(op);
@@ -370,17 +385,21 @@ class SyncService {
   }
 
   Future<void> _processProgressOperation(SyncQueueModel op) async {
-    final payload = op.payload != null ? _parsePayload(op.payload!) : <String, dynamic>{};
+    final payload = op.payload != null
+        ? _parsePayload(op.payload!)
+        : <String, dynamic>{};
     final libroId = payload['libroId'] as int? ?? op.entityId;
     final progreso = (payload['progreso'] as num?)?.toDouble() ?? 0.0;
     final page = payload['page'] as int? ?? 0;
 
     try {
       await localDatabase.bibliotecaLocalDataSource.updateProgressWithTracking(
-        id: (await localDatabase.bibliotecaLocalDataSource.getByLibroId(
-          libroId,
-          payload['usuarioId'] as int? ?? 0,
-        ))?.id ?? 0,
+        id:
+            (await localDatabase.bibliotecaLocalDataSource.getByLibroId(
+              libroId,
+              payload['usuarioId'] as int? ?? 0,
+            ))?.id ??
+            0,
         progreso: progreso,
         page: page,
         timestamp: DateTime.now().millisecondsSinceEpoch,
@@ -389,17 +408,19 @@ class SyncService {
       await localDatabase.syncQueueDataSource.markAsSynced(op.id!);
       await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(
         (await localDatabase.bibliotecaLocalDataSource.getByLibroId(
-          libroId,
-          payload['usuarioId'] as int? ?? 0,
-        ))?.id ?? 0,
+              libroId,
+              payload['usuarioId'] as int? ?? 0,
+            ))?.id ??
+            0,
         'synced',
       );
     } catch (e) {
       await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(
         (await localDatabase.bibliotecaLocalDataSource.getByLibroId(
-          libroId,
-          payload['usuarioId'] as int? ?? 0,
-        ))?.id ?? 0,
+              libroId,
+              payload['usuarioId'] as int? ?? 0,
+            ))?.id ??
+            0,
         'conflict',
       );
     }
@@ -412,7 +433,10 @@ class SyncService {
     required double serverProgreso,
     required int serverPage,
   }) async {
-    final local = await localDatabase.bibliotecaLocalDataSource.getByLibroId(libroId, usuarioId);
+    final local = await localDatabase.bibliotecaLocalDataSource.getByLibroId(
+      libroId,
+      usuarioId,
+    );
 
     if (local == null) return;
 
@@ -425,7 +449,10 @@ class SyncService {
         page: serverPage,
         timestamp: serverTimestamp,
       );
-      await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(local.id!, 'synced');
+      await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(
+        local.id!,
+        'synced',
+      );
     }
   }
 
@@ -464,7 +491,10 @@ class SyncService {
         final status = await dataSource.getDownloadStatus(libroId);
         if (status == DownloadStatus.downloading) continue;
 
-        await dataSource.updateDownloadStatus(libroId, DownloadStatus.downloading);
+        await dataSource.updateDownloadStatus(
+          libroId,
+          DownloadStatus.downloading,
+        );
         await _syncBookContentWithRetry(libroId);
       }
     } catch (e) {
@@ -478,7 +508,10 @@ class SyncService {
     for (int attempt = 0; attempt < _maxDownloadAttempts; attempt++) {
       try {
         await _syncBookContent(libroId);
-        await dataSource.updateDownloadStatus(libroId, DownloadStatus.completed);
+        await dataSource.updateDownloadStatus(
+          libroId,
+          DownloadStatus.completed,
+        );
         return;
       } catch (e) {
         if (attempt < _maxDownloadAttempts - 1) {
@@ -498,10 +531,6 @@ class SyncService {
 
     // Version checking
     final remoteManifest = await _epubDataSource!.getManifest(libroId);
-
-    if (remoteManifest == null) {
-      throw Exception('Manifest not found for libro $libroId');
-    }
 
     final remoteVersion = remoteManifest.version ?? 1;
     final localVersion = await dataSource.getVersion(libroId);
@@ -523,9 +552,7 @@ class SyncService {
     final downloadTasks = remoteManifest.readingOrder.map((item) async {
       try {
         final content = await _epubDataSource!.getResource(libroId, item.href);
-        if (content != null) {
-          await dataSource.saveResource(libroId, item.href, content);
-        }
+        await dataSource.saveResource(libroId, item.href, content);
       } catch (e) {
         // Fallo parcial - continuar con otros capítulos
       }
@@ -581,24 +608,36 @@ class SyncEvent {
   });
 
   factory SyncEvent.syncStarted() => SyncEvent(type: SyncEventType.syncStarted);
-  factory SyncEvent.syncCompleted() => SyncEvent(type: SyncEventType.syncCompleted);
-  factory SyncEvent.internetBackStarted() => SyncEvent(type: SyncEventType.internetBackStarted);
-  factory SyncEvent.internetBackCompleted() => SyncEvent(type: SyncEventType.internetBackCompleted);
-  factory SyncEvent.appInitStarted() => SyncEvent(type: SyncEventType.appInitStarted);
-  factory SyncEvent.appInitCompleted() => SyncEvent(type: SyncEventType.appInitCompleted);
-  factory SyncEvent.appResumedStarted() => SyncEvent(type: SyncEventType.appResumedStarted);
-  factory SyncEvent.appResumedCompleted() => SyncEvent(type: SyncEventType.appResumedCompleted);
-  factory SyncEvent.operationSucceeded(String operation, int entityId) => SyncEvent(
+  factory SyncEvent.syncCompleted() =>
+      SyncEvent(type: SyncEventType.syncCompleted);
+  factory SyncEvent.internetBackStarted() =>
+      SyncEvent(type: SyncEventType.internetBackStarted);
+  factory SyncEvent.internetBackCompleted() =>
+      SyncEvent(type: SyncEventType.internetBackCompleted);
+  factory SyncEvent.appInitStarted() =>
+      SyncEvent(type: SyncEventType.appInitStarted);
+  factory SyncEvent.appInitCompleted() =>
+      SyncEvent(type: SyncEventType.appInitCompleted);
+  factory SyncEvent.appResumedStarted() =>
+      SyncEvent(type: SyncEventType.appResumedStarted);
+  factory SyncEvent.appResumedCompleted() =>
+      SyncEvent(type: SyncEventType.appResumedCompleted);
+  factory SyncEvent.operationSucceeded(String operation, int entityId) =>
+      SyncEvent(
         type: SyncEventType.operationSucceeded,
         operation: operation,
         entityId: entityId,
       );
-  factory SyncEvent.operationFailed(String operation, int entityId, String errorMessage) => SyncEvent(
-        type: SyncEventType.operationFailed,
-        operation: operation,
-        entityId: entityId,
-        errorMessage: errorMessage,
-      );
+  factory SyncEvent.operationFailed(
+    String operation,
+    int entityId,
+    String errorMessage,
+  ) => SyncEvent(
+    type: SyncEventType.operationFailed,
+    operation: operation,
+    entityId: entityId,
+    errorMessage: errorMessage,
+  );
 
   String get name {
     switch (type) {
@@ -635,11 +674,11 @@ class JsonDecoder {
   dynamic _parseJson(String input) {
     input = input.trim();
     if (input.isEmpty) return null;
-    
+
     if (input == 'null') return null;
     if (input == 'true') return true;
     if (input == 'false') return false;
-    
+
     if (input.startsWith('{') && input.endsWith('}')) {
       final map = <String, dynamic>{};
       final content = input.substring(1, input.length - 1).trim();
@@ -655,7 +694,7 @@ class JsonDecoder {
       }
       return map;
     }
-    
+
     if (input.startsWith('[') && input.endsWith(']')) {
       final list = <dynamic>[];
       final content = input.substring(1, input.length - 1).trim();
@@ -667,7 +706,7 @@ class JsonDecoder {
       }
       return list;
     }
-    
+
     return _parseValue(input);
   }
 
@@ -675,7 +714,7 @@ class JsonDecoder {
     final pairs = <String>[];
     var depth = 0;
     var start = 0;
-    
+
     for (var i = 0; i < content.length; i++) {
       final char = content[i];
       if (char == '{' || char == '[') depth++;
@@ -693,7 +732,7 @@ class JsonDecoder {
     final elements = <String>[];
     var depth = 0;
     var start = 0;
-    
+
     for (var i = 0; i < content.length; i++) {
       final char = content[i];
       if (char == '{' || char == '[') depth++;
@@ -715,13 +754,13 @@ class JsonDecoder {
     if (value == 'null') return null;
     if (value == 'true') return true;
     if (value == 'false') return false;
-    
+
     final intValue = int.tryParse(value);
     if (intValue != null) return intValue;
-    
+
     final doubleValue = double.tryParse(value);
     if (doubleValue != null) return doubleValue;
-    
+
     return value;
   }
 }

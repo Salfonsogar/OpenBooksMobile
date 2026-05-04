@@ -11,7 +11,7 @@ import '../features/auth/logic/cubit/auth_cubit.dart';
 import '../features/auth/ui/pages/login_page.dart';
 import '../features/auth/ui/pages/register_page.dart';
 import '../features/auth/ui/pages/recovery_page.dart';
-import '../features/libros/logic/cubit/cubit.dart';
+import '../features/libros/logic/cubit/index.dart';
 import '../features/libros/ui/pages/home_page.dart';
 import '../features/libros/ui/pages/search_page.dart';
 import '../features/libros/ui/pages/book_detail_page.dart';
@@ -28,6 +28,11 @@ import '../features/historial/ui/pages/history_page.dart';
 import '../features/reader/ui/pages/reader_page.dart';
 import '../features/settings/ui/pages/settings_page.dart';
 import '../features/reader/logic/cubit/reader_settings_cubit.dart';
+import '../features/reader/logic/cubit/reader_cubit.dart';
+import '../features/reader/logic/cubit/bookmark_cubit.dart';
+import '../features/reader/logic/cubit/highlight_cubit.dart';
+import '../features/reader/logic/cubit/audio_player_cubit.dart';
+import '../features/reader/data/datasources/highlight_datasource.dart';
 import '../features/notifications/ui/pages/notifications_page.dart';
 import '../features/admin/ui/pages/admin_page.dart';
 import '../features/admin/dashboard/logic/cubit/admin_dashboard_cubit.dart';
@@ -43,8 +48,10 @@ import '../features/admin/sugerencias/logic/cubit/admin_sugerencias_cubit.dart';
 import '../features/admin/sugerencias/ui/pages/admin_sugerencias_page.dart';
 import '../features/admin/usuarios/logic/cubit/admin_usuarios_cubit.dart';
 import '../features/admin/usuarios/ui/pages/admin_usuarios_page.dart';
+import '../features/onboarding/logic/cubit/onboarding_cubit.dart';
+import '../features/onboarding/ui/pages/onboarding_page.dart';
 import '../shared/ui/widgets/search_header.dart';
-import '../features/auth/data/models/usuario.dart';
+import '../features/auth/data/models/index.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -60,15 +67,32 @@ class AppRouter {
     initialLocation: '/',
     refreshListenable: RouterRefreshNotifier(sessionCubit),
     redirect: (context, state) {
+      final onboardingCubit = getIt<OnboardingCubit>();
+      final onboardingState = onboardingCubit.state;
+      final hasSeenOnboarding =
+          onboardingState is OnboardingChecked &&
+          onboardingState.hasSeenOnboarding;
+
       final sessionState = sessionCubit.state;
       final isLoggedIn = sessionState is SessionAuthenticated;
-      final isLoggingIn = state.matchedLocation == '/login' ||
+      final isLoggingIn =
+          state.matchedLocation == '/login' ||
           state.matchedLocation == '/register' ||
-          state.matchedLocation == '/recovery';
+          state.matchedLocation == '/recovery' ||
+          state.matchedLocation == '/onboarding';
+
+      final showOnboarding =
+          state.matchedLocation != '/onboarding' &&
+          !hasSeenOnboarding &&
+          !isLoggedIn;
+
+      if (showOnboarding) {
+        return '/onboarding';
+      }
 
       final isAdminRoute = state.matchedLocation.startsWith('/admin');
-      final isAdmin = sessionState is SessionAuthenticated &&
-          sessionState.isAdmin;
+      final isAdmin =
+          sessionState is SessionAuthenticated && sessionState.isAdmin;
 
       if (!isLoggedIn && !isLoggingIn) {
         return '/login';
@@ -83,8 +107,20 @@ class AppRouter {
       }
 
       if (!isAdminRoute && isAdmin) {
-        final exemptRoutes = ['/profile', '/settings', '/notifications', '/search', '/book', '/reader', '/library', '/history', '/ayuda-comentarios'];
-        final isExempt = exemptRoutes.any((route) => state.matchedLocation.startsWith(route));
+        final exemptRoutes = [
+          '/profile',
+          '/settings',
+          '/notifications',
+          '/search',
+          '/book',
+          '/reader',
+          '/library',
+          '/history',
+          '/ayuda-comentarios',
+        ];
+        final isExempt = exemptRoutes.any(
+          (route) => state.matchedLocation.startsWith(route),
+        );
         if (!isExempt) {
           return '/admin';
         }
@@ -93,9 +129,13 @@ class AppRouter {
       return null;
     },
     routes: [
+      GoRoute(path: '/', redirect: (context, state) => '/home'),
       GoRoute(
-        path: '/',
-        redirect: (context, state) => '/home',
+        path: '/onboarding',
+        builder: (context, state) => BlocProvider.value(
+          value: getIt<OnboardingCubit>(),
+          child: const OnboardingPage(),
+        ),
       ),
       GoRoute(
         path: '/login',
@@ -186,7 +226,16 @@ class AppRouter {
         path: '/reader/:id',
         builder: (context, state) {
           final id = int.parse(state.pathParameters['id']!);
-          return ReaderPage(libroId: id);
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => getIt<ReaderCubit>(param1: id)),
+              BlocProvider.value(value: getIt<ReaderSettingsCubit>()),
+              BlocProvider(create: (_) => getIt<BookmarkCubit>()),
+              BlocProvider(create: (_) => getIt<HighlightCubit>(param1: getIt<HighlightDataSource>())),
+              BlocProvider(create: (_) => getIt<AudioPlayerCubit>(param1: id)),
+            ],
+            child: ReaderPage(libroId: id),
+          );
         },
       ),
       GoRoute(
@@ -229,9 +278,9 @@ class AppRouter {
           final route = state.matchedLocation;
           final title = _getModuleTitle(route);
           return AdminPage(
-            child: child,
             moduleTitle: title,
             moduleRoute: route,
+            child: child,
           );
         },
         routes: [
@@ -326,18 +375,36 @@ class MainShell extends StatelessWidget {
         onDestinationSelected: (index) => _onItemTapped(index, context),
         destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            selectedIcon: Icon(Icons.home, color: Theme.of(context).colorScheme.onPrimaryContainer),
+            icon: Icon(
+              Icons.home_outlined,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            selectedIcon: Icon(
+              Icons.home,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
             label: 'Inicio',
           ),
           NavigationDestination(
-            icon: Icon(Icons.library_books_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            selectedIcon: Icon(Icons.library_books, color: Theme.of(context).colorScheme.onPrimaryContainer),
+            icon: Icon(
+              Icons.library_books_outlined,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            selectedIcon: Icon(
+              Icons.library_books,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
             label: 'Biblioteca',
           ),
           NavigationDestination(
-            icon: Icon(Icons.history_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            selectedIcon: Icon(Icons.history, color: Theme.of(context).colorScheme.onPrimaryContainer),
+            icon: Icon(
+              Icons.history_outlined,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            selectedIcon: Icon(
+              Icons.history,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
             label: 'Historial',
           ),
         ],

@@ -85,7 +85,7 @@ class AdminDenunciasCubit extends Cubit<AdminDenunciasState> {
         await refresh();
         return true;
       }
-      emit(AdminDenunciasDeleteError('Error al eliminar denuncia'));
+      emit(const AdminDenunciasDeleteError('Error al eliminar denuncia'));
       return false;
     } catch (e) {
       emit(AdminDenunciasDeleteError(e.toString()));
