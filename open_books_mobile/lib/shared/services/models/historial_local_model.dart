@@ -8,6 +8,8 @@ class HistorialLocalModel {
   final int ultimaLectura;
   final String status;
   final int createdAt;
+  final int currentChapterIndex;
+  final double scrollPosition;
 
   HistorialLocalModel({
     this.id,
@@ -19,6 +21,8 @@ class HistorialLocalModel {
     required this.ultimaLectura,
     this.status = 'synced',
     required this.createdAt,
+    this.currentChapterIndex = 0,
+    this.scrollPosition = 0.0,
   });
 
   factory HistorialLocalModel.fromMap(Map<String, dynamic> map) {
@@ -32,6 +36,8 @@ class HistorialLocalModel {
       ultimaLectura: map['ultima_lectura'] as int,
       status: map['status'] as String? ?? 'synced',
       createdAt: map['created_at'] as int,
+      currentChapterIndex: map['current_chapter_index'] as int? ?? 0,
+      scrollPosition: map['scroll_position'] as double? ?? 0.0,
     );
   }
 
@@ -46,6 +52,8 @@ class HistorialLocalModel {
       'ultima_lectura': ultimaLectura,
       'status': status,
       'created_at': createdAt,
+      'current_chapter_index': currentChapterIndex,
+      'scroll_position': scrollPosition,
     };
   }
 
@@ -59,6 +67,8 @@ class HistorialLocalModel {
     int? ultimaLectura,
     String? status,
     int? createdAt,
+    int? currentChapterIndex,
+    double? scrollPosition,
   }) {
     return HistorialLocalModel(
       id: id ?? this.id,
@@ -70,6 +80,8 @@ class HistorialLocalModel {
       ultimaLectura: ultimaLectura ?? this.ultimaLectura,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      currentChapterIndex: currentChapterIndex ?? this.currentChapterIndex,
+      scrollPosition: scrollPosition ?? this.scrollPosition,
     );
   }
 }

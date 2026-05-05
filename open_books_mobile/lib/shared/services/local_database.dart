@@ -12,7 +12,7 @@ import '../../features/notifications/data/datasources/notification_local_datasou
 
 class LocalDatabase {
   static const String _databaseName = 'open_books.db';
-  static const int _databaseVersion = 7;
+  static const int _databaseVersion = 8;
 
   static const int _syncedRetentionDays = 7;
   static const int _maxRetryCount = 3;
@@ -93,6 +93,8 @@ class LocalDatabase {
         ultima_lectura INTEGER,
         status TEXT DEFAULT 'synced',
         created_at INTEGER,
+        current_chapter_index INTEGER DEFAULT 0,
+        scroll_position REAL DEFAULT 0.0,
         
         UNIQUE(libro_id, usuario_id)
       )
@@ -283,6 +285,15 @@ class LocalDatabase {
     if (oldVersion < 7) {
       await db.execute(NotificationLocalDataSource.createTableQuery);
       await db.execute(NotificationLocalDataSource.createIndexQuery);
+    }
+
+    if (oldVersion < 8) {
+      await db.execute(
+        'ALTER TABLE historial_local ADD COLUMN current_chapter_index INTEGER DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE historial_local ADD COLUMN scroll_position REAL DEFAULT 0.0',
+      );
     }
   }
 

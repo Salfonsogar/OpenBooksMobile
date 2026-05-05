@@ -122,4 +122,52 @@ class HistorialLocalDataSource {
     );
     return maps.map((map) => HistorialLocalModel.fromMap(map)).toList();
   }
+
+  Future<HistorialLocalModel?> getProgress(int libroId, int usuarioId) async {
+    final maps = await _db.query(
+      _tableName,
+      where: 'libro_id = ? AND usuario_id = ?',
+      whereArgs: [libroId, usuarioId],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return HistorialLocalModel.fromMap(maps.first);
+  }
+
+  Future<void> saveProgress(
+    int libroId,
+    int usuarioId,
+    int chapterIndex,
+    double scrollPosition,
+    String titulo,
+  ) async {
+    final existing = await getByLibroId(libroId, usuarioId);
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+    if (existing != null) {
+      await _db.update(
+        _tableName,
+        {
+          'current_chapter_index': chapterIndex,
+          'scroll_position': scrollPosition,
+          'ultima_lectura': timestamp,
+        },
+        where: 'id = ?',
+        whereArgs: [existing.id],
+      );
+    } else {
+      await insert(
+        HistorialLocalModel(
+          libroId: libroId,
+          usuarioId: usuarioId,
+          titulo: titulo,
+          ultimaLectura: timestamp,
+          createdAt: timestamp,
+          currentChapterIndex: chapterIndex,
+          scrollPosition: scrollPosition,
+          status: 'pending_add',
+        ),
+      );
+    }
+  }
 }

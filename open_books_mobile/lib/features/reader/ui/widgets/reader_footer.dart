@@ -13,6 +13,7 @@ class ReaderFooter extends StatelessWidget {
   final VoidCallback onNext;
   final VoidCallback? onToc;
   final VoidCallback? onSettings;
+  final double progressFraction;
 
   const ReaderFooter({
     super.key,
@@ -25,6 +26,7 @@ class ReaderFooter extends StatelessWidget {
     required this.onNext,
     this.onToc,
     this.onSettings,
+    this.progressFraction = 0.0,
   });
 
   @override
@@ -33,7 +35,8 @@ class ReaderFooter extends StatelessWidget {
       return const SizedBox();
     }
 
-    final progress = ((currentIndex + 1) / totalChapters * 100).toInt();
+    final effectiveProgress = (currentIndex + progressFraction) / totalChapters;
+    final progress = (effectiveProgress * 100).toInt();
 
     return Positioned(
       bottom: 0,
@@ -82,7 +85,7 @@ class ReaderFooter extends StatelessWidget {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(6),
                           child: LinearProgressIndicator(
-                            value: (currentIndex + 1) / totalChapters,
+                            value: effectiveProgress,
                             backgroundColor: colors.text.withValues(alpha: 0.3),
                             valueColor: AlwaysStoppedAnimation<Color>(colors.text),
                             minHeight: 12,

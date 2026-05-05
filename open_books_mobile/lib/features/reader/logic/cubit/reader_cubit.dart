@@ -8,6 +8,7 @@ import '../../data/chapter_cache.dart';
 import '../../data/models/epub_manifest.dart';
 import '../../data/models/reader_mode.dart';
 import '../../data/repositories/epub_repository.dart';
+import '../../../../shared/services/datasources/historial_local_datasource.dart';
 
 abstract class ReaderState extends Equatable {
   const ReaderState();
@@ -18,7 +19,14 @@ abstract class ReaderState extends Equatable {
 
 class ReaderInitial extends ReaderState {}
 
-class ReaderLoading extends ReaderState {}
+class ReaderLoading extends ReaderState {
+  final String step;
+
+  const ReaderLoading({this.step = 'manifest'});
+
+  @override
+  List<Object?> get props => [step];
+}
 
 class ReaderLoaded extends ReaderState {
   final EpubManifest manifest;
@@ -26,6 +34,7 @@ class ReaderLoaded extends ReaderState {
   final String currentContent;
   final Set<int> cachedChapterIndices;
   final ReaderMode mode;
+  final Map<int, double> scrollPositions;
 
   const ReaderLoaded({
     required this.manifest,
@@ -33,10 +42,11 @@ class ReaderLoaded extends ReaderState {
     required this.currentContent,
     this.cachedChapterIndices = const {},
     this.mode = ReaderMode.reading,
+    this.scrollPositions = const {},
   });
 
   @override
-  List<Object?> get props => [manifest, currentChapterIndex, currentContent, cachedChapterIndices, mode];
+  List<Object?> get props => [manifest, currentChapterIndex, currentContent, cachedChapterIndices, mode, scrollPositions];
 
   ReaderLoaded copyWith({
     EpubManifest? manifest,
@@ -44,6 +54,7 @@ class ReaderLoaded extends ReaderState {
     String? currentContent,
     Set<int>? cachedChapterIndices,
     ReaderMode? mode,
+    Map<int, double>? scrollPositions,
   }) {
     return ReaderLoaded(
       manifest: manifest ?? this.manifest,
@@ -51,14 +62,17 @@ class ReaderLoaded extends ReaderState {
       currentContent: currentContent ?? this.currentContent,
       cachedChapterIndices: cachedChapterIndices ?? this.cachedChapterIndices,
       mode: mode ?? this.mode,
+      scrollPositions: scrollPositions ?? this.scrollPositions,
     );
   }
 
   bool hasChapterCached(int index) => cachedChapterIndices.contains(index);
 
+  double get scrollPosition => scrollPositions[currentChapterIndex] ?? 0.0;
+
   double get progressPercent => manifest.readingOrder.isEmpty
       ? 0.0
-      : ((currentChapterIndex + 1) / manifest.readingOrder.length) * 100;
+      : ((currentChapterIndex + scrollPosition) / manifest.readingOrder.length) * 100;
 }
 
 class ReaderError extends ReaderState {
@@ -74,33 +88,77 @@ class ReaderCubit extends Cubit<ReaderState> {
   final EpubRepository _repository;
   final int libroId;
   final ChapterCache _chapterCache = ChapterCache();
-  ReaderMode _currentMode = ReaderMode.reading;
+  final HistorialLocalDataSource? _historialDataSource;
   final int initialPage;
+  int _usuarioId = 0;
 
-  ReaderCubit(this._repository, this.libroId, {this.initialPage = 0}) : super(ReaderInitial());
+  ReaderCubit(
+    this._repository,
+    this.libroId, {
+    HistorialLocalDataSource? historialDataSource,
+    this.initialPage = 0,
+  }) : _historialDataSource = historialDataSource,
+        super(ReaderInitial());
 
-  ReaderMode get currentMode => _currentMode;
+  HistorialLocalDataSource? get historialDataSource => _historialDataSource;
 
-  void setReaderMode(ReaderMode mode) {
-    _currentMode = mode;
+  ReaderMode get currentMode {
     final currentState = state;
     if (currentState is ReaderLoaded) {
+      return currentState.mode;
+    }
+    return ReaderMode.reading;
+  }
+
+  Future<void> setReaderMode(ReaderMode mode) async {
+    final currentState = state;
+    if (currentState is ReaderLoaded && currentState.mode != mode) {
+      await _saveProgressBeforeModeChange(currentState);
       emit(currentState.copyWith(mode: mode));
     }
   }
 
-  void toggleMode() {
-    _currentMode = _currentMode == ReaderMode.reading
-        ? ReaderMode.audio
-        : ReaderMode.reading;
+  Future<void> toggleMode() async {
     final currentState = state;
     if (currentState is ReaderLoaded) {
-      emit(currentState.copyWith(mode: _currentMode));
+      final newMode = currentState.mode == ReaderMode.reading
+          ? ReaderMode.audio
+          : ReaderMode.reading;
+      await _saveProgressBeforeModeChange(currentState);
+      emit(currentState.copyWith(mode: newMode));
     }
   }
 
-  Future<void> cargarLibro({int? initialPage}) async {
-    emit(ReaderLoading());
+  Future<void> _saveProgressBeforeModeChange(ReaderLoaded state) async {
+    if (_historialDataSource != null && _usuarioId > 0) {
+      try {
+        final scrollFraction = state.scrollPositions[state.currentChapterIndex] ?? 0.0;
+        await _historialDataSource.saveProgress(
+          libroId,
+          _usuarioId,
+          state.currentChapterIndex,
+          scrollFraction,
+          state.manifest.titulo,
+        );
+      } catch (e) {
+        debugPrint('[ReaderCubit] Error saving progress before mode change: $e');
+      }
+    }
+  }
+
+  Future<void> cargarLibro({int? initialPage, int? usuarioId}) async {
+    if (usuarioId != null && usuarioId > 0) {
+      _usuarioId = usuarioId;
+    }
+
+    // Preserve current mode if already in ReaderLoaded
+    ReaderMode modeToRestore = ReaderMode.reading;
+    final currentState = state;
+    if (currentState is ReaderLoaded) {
+      modeToRestore = currentState.mode;
+    }
+
+    emit(const ReaderLoading(step: 'manifest'));
     try {
       final manifest = await _repository.getManifest(libroId);
 
@@ -109,11 +167,25 @@ class ReaderCubit extends Cubit<ReaderState> {
         return;
       }
 
-      final startIndex = (initialPage ?? this.initialPage) > 0 &&
-              (initialPage ?? this.initialPage) < manifest.readingOrder.length
-          ? (initialPage ?? this.initialPage) - 1
-          : 0;
+      int startIndex = 0;
+      double scrollPosition = 0.0;
+      final scrollPositions = <int, double>{};
 
+      if (initialPage != null && initialPage > 0 && initialPage < manifest.readingOrder.length) {
+        startIndex = initialPage - 1;
+      } else if (this.initialPage > 0 && this.initialPage < manifest.readingOrder.length) {
+        startIndex = this.initialPage - 1;
+      } else if (_usuarioId > 0) {
+        emit(const ReaderLoading(step: 'progress'));
+        final progress = await _restoreProgress();
+        if (progress != null) {
+          startIndex = progress['chapterIndex'] as int;
+          scrollPosition = progress['scrollPosition'] as double;
+          scrollPositions[startIndex] = scrollPosition;
+        }
+      }
+
+      emit(const ReaderLoading(step: 'chapter'));
       final chapterPath = manifest.readingOrder[startIndex].href;
       final content = await _repository.getResource(libroId, chapterPath);
 
@@ -124,12 +196,56 @@ class ReaderCubit extends Cubit<ReaderState> {
         currentChapterIndex: startIndex,
         currentContent: content,
         cachedChapterIndices: {startIndex},
-        mode: _currentMode,
+        mode: modeToRestore,
+        scrollPositions: scrollPositions,
       ));
 
       _precargarSiguienteCapitulo(startIndex);
     } catch (e) {
       emit(ReaderError(e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<Map<String, dynamic>?> _restoreProgress() async {
+    if (_historialDataSource == null || _usuarioId == 0) return null;
+
+    try {
+      final historial = await _historialDataSource.getProgress(libroId, _usuarioId);
+      if (historial != null) {
+        return {
+          'chapterIndex': historial.currentChapterIndex,
+          'scrollPosition': historial.scrollPosition,
+        };
+      }
+    } catch (e) {
+      debugPrint('[ReaderCubit] Error restoring progress: $e');
+    }
+    return null;
+  }
+
+  Future<void> saveProgress(double scrollPosition, {int? chapterIndex}) async {
+    if (_historialDataSource == null || _usuarioId == 0) return;
+
+    final currentState = state;
+    if (currentState is! ReaderLoaded) return;
+
+    final indexToSave = chapterIndex ?? currentState.currentChapterIndex;
+
+    final newScrollPositions = Map<int, double>.from(currentState.scrollPositions);
+    newScrollPositions[indexToSave] = scrollPosition;
+
+    emit(currentState.copyWith(scrollPositions: newScrollPositions));
+
+    try {
+      await _historialDataSource.saveProgress(
+        libroId,
+        _usuarioId,
+        indexToSave,
+        scrollPosition,
+        currentState.manifest.titulo,
+      );
+    } catch (e) {
+      debugPrint('[ReaderCubit] Error saving progress: $e');
     }
   }
 

@@ -264,7 +264,11 @@ Future<void> setupDependencies() async {
     ),
   );
   getIt.registerFactoryParam<ReaderCubit, int, void>(
-    (libroId, _) => ReaderCubit(getIt<EpubRepository>(), libroId),
+    (libroId, _) => ReaderCubit(
+      getIt<EpubRepository>(),
+      libroId,
+      historialDataSource: getIt<LocalDatabase>().historialLocalDataSource,
+    ),
   );
   getIt.registerFactory<ReaderSettingsCubit>(
     () => ReaderSettingsCubit(),

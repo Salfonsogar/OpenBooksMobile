@@ -20,6 +20,7 @@ class ReadingView extends StatelessWidget {
   final Function(String, int, int, String) onTextSelected;
   final Function(Highlight) onHighlightTap;
   final PageController pageController;
+  final Function(double)? onScrollPositionChanged;
 
   const ReadingView({
     super.key,
@@ -34,6 +35,7 @@ class ReadingView extends StatelessWidget {
     required this.onTextSelected,
     required this.onHighlightTap,
     required this.pageController,
+    this.onScrollPositionChanged,
   });
 
   @override
@@ -59,35 +61,50 @@ class ReadingView extends StatelessWidget {
 
             return LayoutBuilder(
               builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: EdgeInsets.only(
-                    left: settings.marginHorizontal,
-                    right: settings.marginHorizontal,
-                    top: MediaQuery.of(context).padding.top + 56 + 16,
-                    bottom: MediaQuery.of(context).padding.bottom + 100 + 16,
-                  ),
-                  child: SizedBox(
-                    width: constraints.maxWidth,
-                    child: BlocBuilder<HighlightCubit, HighlightState>(
-                      builder: (context, highlightState) {
-                        final highlights = highlightState is HighlightLoaded
-                            ? highlightState.highlights
-                            : <Highlight>[];
-                        return ChapterContent(
-                          blocks: blocks,
-                          libroId: libroId,
-                          chapterPath: chapterPath,
-                          fontSize: settings.fontSize,
-                          lineHeight: settings.lineHeight,
-                          horizontalMargin: 0,
-                          textColor: textColor,
-                          backgroundColor: backgroundColor,
-                          fontFamily: settings.fontFamily,
-                          highlights: highlights,
-                          onTextSelected: onTextSelected,
-                          onHighlightTap: onHighlightTap,
-                        );
-                      },
+                return NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollEndNotification) {
+                      final metrics = notification.metrics;
+                      if (metrics.maxScrollExtent > 0) {
+                        final scrollFraction =
+                            metrics.pixels / metrics.maxScrollExtent;
+                        onScrollPositionChanged?.call(scrollFraction);
+                      }
+                    }
+                    return false;
+                  },
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      left: settings.marginHorizontal,
+                      right: settings.marginHorizontal,
+                      top: MediaQuery.of(context).padding.top + 56 + 16,
+                      bottom:
+                          MediaQuery.of(context).padding.bottom + 100 + 16,
+                    ),
+                    child: SizedBox(
+                      width: constraints.maxWidth,
+                      child: BlocBuilder<HighlightCubit, HighlightState>(
+                        builder: (context, highlightState) {
+                          final highlights =
+                              highlightState is HighlightLoaded
+                                  ? highlightState.highlights
+                                  : <Highlight>[];
+                          return ChapterContent(
+                            blocks: blocks,
+                            libroId: libroId,
+                            chapterPath: chapterPath,
+                            fontSize: settings.fontSize,
+                            lineHeight: settings.lineHeight,
+                            horizontalMargin: 0,
+                            textColor: textColor,
+                            backgroundColor: backgroundColor,
+                            fontFamily: settings.fontFamily,
+                            highlights: highlights,
+                            onTextSelected: onTextSelected,
+                            onHighlightTap: onHighlightTap,
+                          );
+                        },
+                      ),
                     ),
                   ),
                 );

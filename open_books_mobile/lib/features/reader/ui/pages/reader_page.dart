@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../shared/core/session/session_cubit.dart';
+import '../../../../shared/core/session/session_state.dart';
 import '../../data/models/audio_player_state.dart';
 import '../../data/models/bookmark.dart';
 import '../../data/models/highlight.dart';
@@ -34,14 +36,18 @@ class ReaderPage extends StatefulWidget {
 }
 
 class _ReaderPageState extends State<ReaderPage> {
-  final PageController _pageController = PageController();
+  PageController? _pageController;
   final EpubParser _parser = EpubParser();
   bool _showUi = true;
   List<String> _paragraphs = [];
+  final Map<int, ScrollController> _scrollControllers = {};
+  bool _shouldRestoreScroll = false;
+  ReaderMode? _previousMode;
 
   @override
   void initState() {
     super.initState();
+    _shouldRestoreScroll = true;
     _initReader();
   }
 
@@ -52,26 +58,58 @@ class _ReaderPageState extends State<ReaderPage> {
       final bookmarkCubit = context.read<BookmarkCubit>();
       final highlightCubit = context.read<HighlightCubit>();
 
-      settingsCubit.cargarSettings();
-      readerCubit.cargarLibro();
-      bookmarkCubit.cargarBookmarks(widget.libroId);
-      highlightCubit.cargarHighlights(widget.libroId);
+      int? usuarioId;
+      final sessionState = context.read<SessionCubit>().state;
+      if (sessionState is SessionAuthenticated) {
+        usuarioId = sessionState.user.id;
+      }
+
+      await readerCubit.cargarLibro(usuarioId: usuarioId);
+
+      await Future.wait([
+        settingsCubit.cargarSettings(),
+        bookmarkCubit.cargarBookmarks(widget.libroId),
+        highlightCubit.cargarHighlights(widget.libroId),
+      ]);
     } catch (e, stack) {
       debugPrint('[ReaderPage] ERROR: $e');
       debugPrint('[ReaderPage] STACK: $stack');
     }
   }
 
+  ScrollController _getScrollController(int index) {
+    if (!_scrollControllers.containsKey(index)) {
+      _scrollControllers[index] = ScrollController();
+    }
+    return _scrollControllers[index]!;
+  }
+
   @override
   void dispose() {
-    _pageController.dispose();
+    _pageController?.dispose();
+    for (final controller in _scrollControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: true,
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
+        await _saveCurrentProgress();
+        
+        if (context.mounted) {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/library');
+          }
+        }
+      },
       child: BlocBuilder<ReaderSettingsCubit, ReaderSettings>(
         builder: (context, settings) {
           final themeType = _parseThemeType(settings.theme);
@@ -82,9 +120,12 @@ class _ReaderPageState extends State<ReaderPage> {
             body: BlocConsumer<ReaderCubit, ReaderState>(
               listener: (context, state) {
                 if (state is ReaderLoaded) {
-                  if (_pageController.hasClients && _pageController.page?.round() != state.currentChapterIndex) {
-                    _pageController.jumpToPage(state.currentChapterIndex);
+                  if (_pageController == null) {
+                    _pageController = PageController(initialPage: state.currentChapterIndex);
+                  } else if (_pageController!.hasClients && _pageController!.page?.round() != state.currentChapterIndex) {
+                    _pageController!.jumpToPage(state.currentChapterIndex);
                   }
+                  _handleModeTransition(context, state);
                 }
               },
               builder: (context, state) {
@@ -94,19 +135,13 @@ class _ReaderPageState extends State<ReaderPage> {
                       _showUi = !_showUi;
                     });
                   },
-                  child: Stack(
-                    children: [
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: KeyedSubtree(
-                          key: ValueKey(context.read<ReaderCubit>().currentMode),
-                          child: _buildContent(context, state, settings, colors),
-                        ),
-                      ),
-                      if (_showUi) _buildHeader(context, state, colors),
-                      if (_showUi) _buildFooter(context, state, colors),
-                    ],
-                  ),
+              child: Stack(
+                children: [
+                  _buildContent(context, state, settings, colors),
+                  if (_showUi) _buildHeader(context, state, colors),
+                  if (_showUi) _buildFooter(context, state, colors),
+                ],
+              ),
                 );
               },
             ),
@@ -114,6 +149,48 @@ class _ReaderPageState extends State<ReaderPage> {
         },
       ),
     );
+  }
+
+  Future<void> _saveCurrentProgress() async {
+    final readerCubit = context.read<ReaderCubit>();
+    final state = readerCubit.state;
+    if (state is ReaderLoaded) {
+      final controller = _scrollControllers[state.currentChapterIndex];
+      if (controller != null && controller.hasClients && controller.position.maxScrollExtent > 0) {
+        final scrollFraction = controller.position.pixels / controller.position.maxScrollExtent;
+        await readerCubit.saveProgress(scrollFraction, chapterIndex: state.currentChapterIndex);
+      } else if (state.scrollPosition > 0) {
+        // If no controller or no extent, save the current state's scroll position just in case
+        await readerCubit.saveProgress(state.scrollPosition, chapterIndex: state.currentChapterIndex);
+      } else {
+        await readerCubit.saveProgress(0.0, chapterIndex: state.currentChapterIndex);
+      }
+    }
+  }
+
+  void _handleModeTransition(BuildContext context, ReaderState state) {
+    if (state is! ReaderLoaded) return;
+
+    final currentMode = state.mode;
+    if (_previousMode == currentMode) return;
+
+    if (_previousMode == ReaderMode.audio && currentMode == ReaderMode.reading) {
+      context.read<AudioPlayerCubit>().stop();
+    }
+
+    if (_previousMode == ReaderMode.reading && currentMode == ReaderMode.audio) {
+      _initializeAudio(context, state);
+    }
+
+    _previousMode = currentMode;
+  }
+
+  void _initializeAudio(BuildContext context, ReaderLoaded state) {
+    final content = state.currentContent;
+    _paragraphs = _parser.extractParagraphs(content);
+    if (context.mounted) {
+      context.read<AudioPlayerCubit>().loadParagraphs(_paragraphs);
+    }
   }
 
   ReaderThemeType _parseThemeType(String theme) {
@@ -132,7 +209,30 @@ class _ReaderPageState extends State<ReaderPage> {
     final currentMode = readerCubit.currentMode;
 
     if (state is ReaderLoading) {
-      return const Center(child: CircularProgressIndicator());
+      String message;
+      switch (state.step) {
+        case 'manifest':
+          message = 'Cargando libro...';
+          break;
+        case 'progress':
+          message = 'Restaurando progreso...';
+          break;
+        case 'chapter':
+          message = 'Cargando capítulo...';
+          break;
+        default:
+          message = 'Cargando...';
+      }
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(message),
+          ],
+        ),
+      );
     }
 
     if (state is ReaderError) {
@@ -142,10 +242,20 @@ class _ReaderPageState extends State<ReaderPage> {
           children: [
             const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text(state.message, textAlign: TextAlign.center),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(state.message, textAlign: TextAlign.center),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => readerCubit.cargarLibro(),
+              onPressed: () {
+                final sessionState = context.read<SessionCubit>().state;
+                int? usuarioId;
+                if (sessionState is SessionAuthenticated) {
+                  usuarioId = sessionState.user.id;
+                }
+                readerCubit.cargarLibro(usuarioId: usuarioId);
+              },
               child: const Text('Reintentar'),
             ),
             const SizedBox(height: 8),
@@ -174,14 +284,7 @@ class _ReaderPageState extends State<ReaderPage> {
   }
 
   Widget _buildReadingView(BuildContext context, ReaderLoaded state, ReaderSettings settings, ReaderColors colors) {
-    final isAudioMode = context.read<ReaderCubit>().currentMode == ReaderMode.audio;
-
-    if (isAudioMode && _paragraphs.isEmpty) {
-      _paragraphs = _parser.extractParagraphs(state.currentContent);
-      if (context.mounted) {
-        context.read<AudioPlayerCubit>().loadParagraphs(_paragraphs);
-      }
-    }
+    final isAudioMode = state.mode == ReaderMode.audio;
 
     if (isAudioMode) {
       return BlocBuilder<AudioPlayerCubit, AudioPlaybackState>(
@@ -197,30 +300,58 @@ class _ReaderPageState extends State<ReaderPage> {
 
   Widget _buildPageView(BuildContext context, ReaderLoaded state, ReaderSettings settings, ReaderColors colors, int? activeParagraphIndex) {
     final chapters = state.manifest.readingOrder;
+    final readerCubit = context.read<ReaderCubit>();
+
+    if (_pageController == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return PageView.builder(
       controller: _pageController,
       itemCount: chapters.length,
       onPageChanged: (index) async {
-        context.read<HighlightCubit>().cargarHighlightsPorCapitulo(index);
+        final oldState = readerCubit.state;
+        if (oldState is ReaderLoaded) {
+          final oldController = _scrollControllers[oldState.currentChapterIndex];
+          if (oldController != null && oldController.hasClients && oldController.position.maxScrollExtent > 0) {
+            final scrollFraction = oldController.position.pixels / oldController.position.maxScrollExtent;
+            readerCubit.saveProgress(scrollFraction, chapterIndex: oldState.currentChapterIndex);
+          }
+        }
 
-        if (context.read<ReaderCubit>().currentMode == ReaderMode.audio) {
-          final content = await context.read<ReaderCubit>().obtenerContenido(index);
-          if (content != null) {
-            final paragraphs = _parser.extractParagraphs(content);
-            setState(() {
-              _paragraphs = paragraphs;
-            });
-            if (context.mounted) {
-              context.read<AudioPlayerCubit>().loadParagraphs(_paragraphs);
-            }
+        context.read<HighlightCubit>().cargarHighlightsPorCapitulo(index);
+        readerCubit.cargarCapitulo(index);
+
+        if (readerCubit.currentMode == ReaderMode.audio) {
+          final content = await readerCubit.obtenerContenido(index);
+          if (content != null && context.mounted) {
+            _paragraphs = _parser.extractParagraphs(content);
+            context.read<AudioPlayerCubit>().loadParagraphs(_paragraphs);
           }
         }
       },
       itemBuilder: (context, index) {
         final chapterPath = chapters[index].href;
+        final scrollController = _getScrollController(index);
+
+        if (index == state.currentChapterIndex && state.scrollPosition > 0 && _shouldRestoreScroll) {
+          int attempts = 0;
+          void restoreScroll(Duration _) {
+            if (!scrollController.hasClients) return;
+            if (scrollController.position.maxScrollExtent > 0) {
+              final targetPixels = state.scrollPosition * scrollController.position.maxScrollExtent;
+              scrollController.jumpTo(targetPixels.clamp(0.0, scrollController.position.maxScrollExtent));
+              _shouldRestoreScroll = false;
+            } else if (attempts < 20) {
+              attempts++;
+              WidgetsBinding.instance.addPostFrameCallback(restoreScroll);
+            }
+          }
+          WidgetsBinding.instance.addPostFrameCallback(restoreScroll);
+        }
+
         return FutureBuilder<String?>(
-          future: context.read<ReaderCubit>().obtenerContenido(index),
+          future: readerCubit.obtenerContenido(index),
           builder: (context, snapshot) {
             if (!snapshot.hasData || snapshot.data == null) {
               return const Center(child: CircularProgressIndicator());
@@ -239,40 +370,53 @@ class _ReaderPageState extends State<ReaderPage> {
                 return GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onHorizontalDragEnd: (details) {
-                    if (details.primaryVelocity != null) {
+                    if (details.primaryVelocity != null && _pageController != null) {
                       if (details.primaryVelocity! < -100 && state.currentChapterIndex < chapters.length - 1) {
-                        _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                        _pageController!.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
                       } else if (details.primaryVelocity! > 100 && state.currentChapterIndex > 0) {
-                        _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                        _pageController!.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
                       }
                     }
                   },
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      left: settings.marginHorizontal,
-                      right: settings.marginHorizontal,
-                      top: MediaQuery.of(context).padding.top + 56 + 16,
-                      bottom: MediaQuery.of(context).padding.bottom + 100 + 16,
-                    ),
-                    child: SizedBox(
-                      width: constraints.maxWidth,
-                      child: BlocBuilder<HighlightCubit, HighlightState>(
-                        builder: (context, highlightState) {
-                          final highlights = highlightState is HighlightLoaded
-                              ? highlightState.highlights
-                              : <Highlight>[];
-                          return _buildChapterContent(
-                            context,
-                            blocks,
-                            chapterPath,
-                            settings,
-                            colors,
-                            highlights,
-                            activeParagraphIndex: activeParagraphIndex != null
-                                ? _getActiveTextBlockIndex(blocks, activeParagraphIndex)
-                                : null,
-                          );
-                        },
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                      if (notification is ScrollEndNotification && index == state.currentChapterIndex) {
+                        final metrics = notification.metrics;
+                        if (metrics.maxScrollExtent > 0) {
+                          final scrollFraction = metrics.pixels / metrics.maxScrollExtent;
+                          readerCubit.saveProgress(scrollFraction, chapterIndex: state.currentChapterIndex);
+                        }
+                      }
+                      return false;
+                    },
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      padding: EdgeInsets.only(
+                        left: settings.marginHorizontal,
+                        right: settings.marginHorizontal,
+                        top: MediaQuery.of(context).padding.top + 56 + 16,
+                        bottom: MediaQuery.of(context).padding.bottom + 100 + 16,
+                      ),
+                      child: SizedBox(
+                        width: constraints.maxWidth,
+                        child: BlocBuilder<HighlightCubit, HighlightState>(
+                          builder: (context, highlightState) {
+                            final highlights = highlightState is HighlightLoaded
+                                ? highlightState.highlights
+                                : <Highlight>[];
+                            return _buildChapterContent(
+                              context,
+                              blocks,
+                              chapterPath,
+                              settings,
+                              colors,
+                              highlights,
+                              activeParagraphIndex: activeParagraphIndex != null
+                                  ? _getActiveTextBlockIndex(blocks, activeParagraphIndex)
+                                  : null,
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
@@ -349,11 +493,14 @@ class _ReaderPageState extends State<ReaderPage> {
       title: titulo,
       colors: colors,
       topPadding: MediaQuery.of(context).padding.top,
-      onBack: () {
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go('/home');
+      onBack: () async {
+        await _saveCurrentProgress();
+        if (context.mounted) {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/library');
+          }
         }
       },
       onSearch: () => _showSearch(context, state, colors),
@@ -367,6 +514,7 @@ class _ReaderPageState extends State<ReaderPage> {
     final currentMode = context.read<ReaderCubit>().currentMode;
     final currentChapterIndex = state is ReaderLoaded ? state.currentChapterIndex : 0;
     final totalChapters = state is ReaderLoaded ? state.manifest.readingOrder.length : 0;
+    final scrollPosition = state is ReaderLoaded ? state.scrollPosition : 0.0;
 
     if (currentMode == ReaderMode.audio) {
       return AudioFooter(
@@ -390,17 +538,18 @@ class _ReaderPageState extends State<ReaderPage> {
       totalChapters: totalChapters,
       colors: colors,
       bottomPadding: MediaQuery.of(context).padding.bottom,
+      progressFraction: scrollPosition,
       onPageSelected: (index) {
-        _pageController.jumpToPage(index);
+        _pageController?.jumpToPage(index);
       },
       onPrevious: () {
         if (currentChapterIndex > 0) {
-          _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+          _pageController?.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
         }
       },
       onNext: () {
         if (currentChapterIndex < totalChapters - 1) {
-          _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+          _pageController?.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
         }
       },
       onToc: () => _showToc(context, state, colors),
@@ -451,7 +600,7 @@ class _ReaderPageState extends State<ReaderPage> {
       chapters: state.manifest.readingOrder,
       callbacks: TocDialogCallbacks(
         onChapterTap: (chapterIndex) {
-          _pageController.jumpToPage(chapterIndex);
+          _pageController?.jumpToPage(chapterIndex);
           context.read<ReaderCubit>().irACapitulo(chapterIndex);
         },
         onCreateBookmark: (title) {
@@ -513,7 +662,7 @@ class _ReaderPageState extends State<ReaderPage> {
           return results;
         },
         onResultTap: (chapterIndex, text) {
-          _pageController.jumpToPage(chapterIndex);
+          _pageController?.jumpToPage(chapterIndex);
         },
       ),
     );
