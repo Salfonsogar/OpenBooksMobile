@@ -29,20 +29,22 @@ class BookmarkCubit extends Cubit<BookmarkState> {
         chapterIndex: chapterIndex,
         title: title,
       );
-      
-      // Recargar para obtener el ID generado
-      final bookmarks = await _repository.obtenerPorLibro(bookId);
-      emit(BookmarkLoaded(bookmarks: bookmarks, bookId: bookId));
+
+      final currentState = state;
+      if (currentState is BookmarkLoaded && currentState.bookId == bookId) {
+        final bookmarks = await _repository.obtenerPorLibro(bookId);
+        emit(BookmarkLoaded(bookmarks: bookmarks, bookId: bookId));
+      }
     } catch (e) {
       emit(BookmarkError(e.toString()));
     }
   }
 
   Future<void> eliminarBookmark(int id, int bookId) async {
-    final currentState = state;
     try {
       await _repository.eliminarBookmark(id);
-      
+
+      final currentState = state;
       if (currentState is BookmarkLoaded && currentState.bookId == bookId) {
         final updatedBookmarks = currentState.bookmarks
             .where((b) => b.id != id)
@@ -51,8 +53,6 @@ class BookmarkCubit extends Cubit<BookmarkState> {
           bookmarks: updatedBookmarks,
           bookId: bookId,
         ));
-      } else {
-        await cargarBookmarks(bookId);
       }
     } catch (e) {
       emit(BookmarkError(e.toString()));
@@ -65,10 +65,10 @@ class BookmarkCubit extends Cubit<BookmarkState> {
     required int chapterIndex,
     required String title,
   }) async {
-    final currentState = state;
     try {
       await _repository.actualizarBookmark(id: id, title: title);
-      
+
+      final currentState = state;
       if (currentState is BookmarkLoaded && currentState.bookId == bookId) {
         final updatedBookmarks = currentState.bookmarks.map((b) {
           if (b.id == id) {
@@ -80,8 +80,6 @@ class BookmarkCubit extends Cubit<BookmarkState> {
           bookmarks: updatedBookmarks,
           bookId: bookId,
         ));
-      } else {
-        await cargarBookmarks(bookId);
       }
     } catch (e) {
       emit(BookmarkError(e.toString()));

@@ -2,13 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../shared/core/session/session_cubit.dart';
-import '../../../../shared/core/session/session_state.dart';
-import '../../../../shared/services/sync_service.dart';
-import '../../../../shared/services/local_database.dart';
 import '../../data/models/audio_player_state.dart';
 import '../../data/models/bookmark.dart';
-import '../../data/models/epub_manifest.dart';
 import '../../data/models/highlight.dart';
 import '../../data/models/reader_mode.dart';
 import '../../data/models/reader_settings.dart';
@@ -42,10 +37,7 @@ class _ReaderPageState extends State<ReaderPage> {
   final PageController _pageController = PageController();
   final EpubParser _parser = EpubParser();
   bool _showUi = true;
-  List<ReadingOrderItem> _chapters = [];
-  int _currentIndex = 0;
   List<String> _paragraphs = [];
-  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -59,69 +51,25 @@ class _ReaderPageState extends State<ReaderPage> {
       final settingsCubit = context.read<ReaderSettingsCubit>();
       final bookmarkCubit = context.read<BookmarkCubit>();
       final highlightCubit = context.read<HighlightCubit>();
-      final sessionCubit = context.read<SessionCubit>();
-      final syncService = context.read<SyncService>();
-      final localDatabase = context.read<LocalDatabase>();
-      
-      final sessionState = sessionCubit.state;
-      final usuarioId = sessionState is SessionAuthenticated ? sessionState.userId : 1;
-      
-      int savedPage = 0;
-      try {
-        final libro = await localDatabase.bibliotecaLocalDataSource.getByLibroId(widget.libroId, usuarioId);
-        if (libro != null && libro.page != null) {
-          savedPage = libro.page!;
-        }
-      } catch (e) {
-        debugPrint('[ReaderPage] Error getting saved page: $e');
-      }
-      
-      readerCubit.setOnProgressChanged(({
-        required int libroId,
-        required double progreso,
-        required int page,
-        required int totalPages,
-      }) async {
-        final currentSessionState = sessionCubit.state;
-        final currentUsuarioId = currentSessionState is SessionAuthenticated ? currentSessionState.userId : usuarioId;
-        await syncService.addProgressUpdateToQueue(
-          libroId: libroId,
-          usuarioId: currentUsuarioId,
-          progreso: progreso,
-          page: page,
-        );
-      });
-      
+
       settingsCubit.cargarSettings();
-      readerCubit.cargarLibro(initialPage: savedPage);
+      readerCubit.cargarLibro();
       bookmarkCubit.cargarBookmarks(widget.libroId);
       highlightCubit.cargarHighlights(widget.libroId);
-      
-      setState(() {
-        _isInitialized = true;
-      });
     } catch (e, stack) {
       debugPrint('[ReaderPage] ERROR: $e');
       debugPrint('[ReaderPage] STACK: $stack');
-      rethrow;
     }
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    context.read<ReaderCubit>().onReaderClosed();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return PopScope(
       canPop: true,
       child: BlocBuilder<ReaderSettingsCubit, ReaderSettings>(
@@ -134,11 +82,7 @@ class _ReaderPageState extends State<ReaderPage> {
             body: BlocConsumer<ReaderCubit, ReaderState>(
               listener: (context, state) {
                 if (state is ReaderLoaded) {
-                  setState(() {
-                    _chapters = state.manifest.readingOrder;
-                    _currentIndex = state.currentChapterIndex;
-                  });
-                  if (_pageController.hasClients) {
+                  if (_pageController.hasClients && _pageController.page?.round() != state.currentChapterIndex) {
                     _pageController.jumpToPage(state.currentChapterIndex);
                   }
                 }
@@ -183,35 +127,6 @@ class _ReaderPageState extends State<ReaderPage> {
     }
   }
 
-  Future<void> _goToChapter(BuildContext context, int index) async {
-    if (index < 0 || index >= _chapters.length) return;
-
-    final readerCubit = context.read<ReaderCubit>();
-    final audioPlayerCubit = context.read<AudioPlayerCubit>();
-
-    setState(() {
-      _currentIndex = index;
-      _paragraphs = [];
-    });
-
-    await readerCubit.cargarCapitulo(index);
-    
-    if (readerCubit.currentMode == ReaderMode.audio) {
-      final content = await readerCubit.obtenerContenido(index);
-      if (content != null) {
-        final paragraphs = _parser.extractParagraphs(content);
-        _paragraphs = paragraphs;
-        if (context.mounted) {
-          audioPlayerCubit.loadParagraphs(paragraphs);
-        }
-      }
-    }
-
-    if (_pageController.hasClients) {
-      _pageController.jumpToPage(index);
-    }
-  }
-
   Widget _buildContent(BuildContext context, ReaderState state, ReaderSettings settings, ReaderColors colors) {
     final readerCubit = context.read<ReaderCubit>();
     final currentMode = readerCubit.currentMode;
@@ -244,17 +159,11 @@ class _ReaderPageState extends State<ReaderPage> {
     }
 
     if (state is ReaderLoaded) {
-      if (_chapters.isEmpty) {
+      if (state.manifest.readingOrder.isEmpty) {
         return const Center(child: Text('No hay capítulos'));
       }
 
       if (currentMode == ReaderMode.audio) {
-        if (_paragraphs.isEmpty) {
-          _paragraphs = _parser.extractParagraphs(state.currentContent);
-          if (context.mounted) {
-            context.read<AudioPlayerCubit>().loadParagraphs(_paragraphs);
-          }
-        }
         return _buildReadingView(context, state, settings, colors);
       }
 
@@ -266,30 +175,35 @@ class _ReaderPageState extends State<ReaderPage> {
 
   Widget _buildReadingView(BuildContext context, ReaderLoaded state, ReaderSettings settings, ReaderColors colors) {
     final isAudioMode = context.read<ReaderCubit>().currentMode == ReaderMode.audio;
-    
+
+    if (isAudioMode && _paragraphs.isEmpty) {
+      _paragraphs = _parser.extractParagraphs(state.currentContent);
+      if (context.mounted) {
+        context.read<AudioPlayerCubit>().loadParagraphs(_paragraphs);
+      }
+    }
+
     if (isAudioMode) {
       return BlocBuilder<AudioPlayerCubit, AudioPlaybackState>(
         buildWhen: (prev, curr) => prev.currentParagraphIndex != curr.currentParagraphIndex,
         builder: (context, audioState) {
-          return _buildPageView(context, state, settings, colors, audioState.currentParagraphIndex, true);
+          return _buildPageView(context, state, settings, colors, audioState.currentParagraphIndex);
         },
       );
     }
-    
-    return _buildPageView(context, state, settings, colors, null, false);
+
+    return _buildPageView(context, state, settings, colors, null);
   }
 
-  Widget _buildPageView(BuildContext context, ReaderLoaded state, ReaderSettings settings, ReaderColors colors, int? activeParagraphIndex, bool isAudioMode) {
+  Widget _buildPageView(BuildContext context, ReaderLoaded state, ReaderSettings settings, ReaderColors colors, int? activeParagraphIndex) {
+    final chapters = state.manifest.readingOrder;
+
     return PageView.builder(
       controller: _pageController,
-      itemCount: _chapters.length,
+      itemCount: chapters.length,
       onPageChanged: (index) async {
-        setState(() {
-          _currentIndex = index;
-          _paragraphs = [];
-        });
         context.read<HighlightCubit>().cargarHighlightsPorCapitulo(index);
-        
+
         if (context.read<ReaderCubit>().currentMode == ReaderMode.audio) {
           final content = await context.read<ReaderCubit>().obtenerContenido(index);
           if (content != null) {
@@ -298,13 +212,13 @@ class _ReaderPageState extends State<ReaderPage> {
               _paragraphs = paragraphs;
             });
             if (context.mounted) {
-              context.read<AudioPlayerCubit>().loadParagraphs(paragraphs);
+              context.read<AudioPlayerCubit>().loadParagraphs(_paragraphs);
             }
           }
         }
       },
       itemBuilder: (context, index) {
-        final chapterPath = _chapters[index].href;
+        final chapterPath = chapters[index].href;
         return FutureBuilder<String?>(
           future: context.read<ReaderCubit>().obtenerContenido(index),
           builder: (context, snapshot) {
@@ -316,7 +230,7 @@ class _ReaderPageState extends State<ReaderPage> {
             final fixedContent = _parser.fixImagePaths(rawContent, chapterPath);
             final blocks = _parser.parse(fixedContent);
 
-            if (index == _currentIndex && _paragraphs.isEmpty) {
+            if (index == state.currentChapterIndex && _paragraphs.isEmpty) {
               _paragraphs = _parser.extractParagraphs(fixedContent);
             }
 
@@ -326,9 +240,9 @@ class _ReaderPageState extends State<ReaderPage> {
                   behavior: HitTestBehavior.translucent,
                   onHorizontalDragEnd: (details) {
                     if (details.primaryVelocity != null) {
-                      if (details.primaryVelocity! < -100 && _currentIndex < _chapters.length - 1) {
+                      if (details.primaryVelocity! < -100 && state.currentChapterIndex < chapters.length - 1) {
                         _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                      } else if (details.primaryVelocity! > 100 && _currentIndex > 0) {
+                      } else if (details.primaryVelocity! > 100 && state.currentChapterIndex > 0) {
                         _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
                       }
                     }
@@ -354,8 +268,8 @@ class _ReaderPageState extends State<ReaderPage> {
                             settings,
                             colors,
                             highlights,
-                            activeParagraphIndex: activeParagraphIndex != null 
-                                ? _getActiveTextBlockIndex(blocks, activeParagraphIndex) 
+                            activeParagraphIndex: activeParagraphIndex != null
+                                ? _getActiveTextBlockIndex(blocks, activeParagraphIndex)
                                 : null,
                           );
                         },
@@ -380,6 +294,10 @@ class _ReaderPageState extends State<ReaderPage> {
     List<Highlight> highlights, {
     int? activeParagraphIndex,
   }) {
+    final currentChapterIndex = context.read<ReaderCubit>().state is ReaderLoaded
+        ? (context.read<ReaderCubit>().state as ReaderLoaded).currentChapterIndex
+        : 0;
+
     return ChapterContent(
       blocks: blocks,
       libroId: widget.libroId,
@@ -395,7 +313,7 @@ class _ReaderPageState extends State<ReaderPage> {
       onTextSelected: (text, start, end, color) {
         context.read<HighlightCubit>().crearHighlight(
           bookId: widget.libroId,
-          chapterIndex: _currentIndex,
+          chapterIndex: currentChapterIndex,
           text: text,
           startIndex: start,
           endIndex: end,
@@ -432,7 +350,6 @@ class _ReaderPageState extends State<ReaderPage> {
       colors: colors,
       topPadding: MediaQuery.of(context).padding.top,
       onBack: () {
-        context.read<ReaderCubit>().saveProgressNow();
         if (context.canPop()) {
           context.pop();
         } else {
@@ -448,42 +365,41 @@ class _ReaderPageState extends State<ReaderPage> {
 
   Widget _buildFooter(BuildContext context, ReaderState state, ReaderColors colors) {
     final currentMode = context.read<ReaderCubit>().currentMode;
+    final currentChapterIndex = state is ReaderLoaded ? state.currentChapterIndex : 0;
+    final totalChapters = state is ReaderLoaded ? state.manifest.readingOrder.length : 0;
 
     if (currentMode == ReaderMode.audio) {
       return AudioFooter(
         colors: colors,
         bottomPadding: MediaQuery.of(context).padding.bottom,
         onPreviousChapter: () {
-          if (_currentIndex > 0) {
-            _goToChapter(context, _currentIndex - 1);
+          if (currentChapterIndex > 0) {
+            context.read<ReaderCubit>().cargarCapitulo(currentChapterIndex - 1);
           }
         },
         onNextChapter: () {
-          if (_currentIndex < _chapters.length - 1) {
-            _goToChapter(context, _currentIndex + 1);
+          if (currentChapterIndex < totalChapters - 1) {
+            context.read<ReaderCubit>().cargarCapitulo(currentChapterIndex + 1);
           }
         },
       );
     }
 
     return ReaderFooter(
-      currentIndex: _currentIndex,
-      totalChapters: _chapters.length,
+      currentIndex: currentChapterIndex,
+      totalChapters: totalChapters,
       colors: colors,
       bottomPadding: MediaQuery.of(context).padding.bottom,
       onPageSelected: (index) {
         _pageController.jumpToPage(index);
-        setState(() {
-          _currentIndex = index;
-        });
       },
       onPrevious: () {
-        if (_currentIndex > 0) {
+        if (currentChapterIndex > 0) {
           _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
         }
       },
       onNext: () {
-        if (_currentIndex < _chapters.length - 1) {
+        if (currentChapterIndex < totalChapters - 1) {
           _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
         }
       },
@@ -531,20 +447,17 @@ class _ReaderPageState extends State<ReaderPage> {
       bookTitle: state.manifest.titulo,
       toc: toc,
       bookmarks: bookmarks,
-      currentChapterIndex: _currentIndex,
-      chapters: _chapters,
+      currentChapterIndex: state.currentChapterIndex,
+      chapters: state.manifest.readingOrder,
       callbacks: TocDialogCallbacks(
         onChapterTap: (chapterIndex) {
           _pageController.jumpToPage(chapterIndex);
-          setState(() {
-            _currentIndex = chapterIndex;
-          });
           context.read<ReaderCubit>().irACapitulo(chapterIndex);
         },
         onCreateBookmark: (title) {
           context.read<BookmarkCubit>().crearBookmark(
             bookId: widget.libroId,
-            chapterIndex: _currentIndex,
+            chapterIndex: state.currentChapterIndex,
             title: title,
           );
           ScaffoldMessenger.of(context).showSnackBar(
@@ -555,7 +468,7 @@ class _ReaderPageState extends State<ReaderPage> {
           context.read<BookmarkCubit>().actualizarBookmark(
             id: id,
             bookId: widget.libroId,
-            chapterIndex: _currentIndex,
+            chapterIndex: state.currentChapterIndex,
             title: title,
           );
         },
@@ -576,8 +489,9 @@ class _ReaderPageState extends State<ReaderPage> {
         onSearch: (query) async {
           final results = <SearchResult>[];
           final queryLower = query.toLowerCase();
+          final chapters = state.manifest.readingOrder;
 
-          for (var i = 0; i < _chapters.length; i++) {
+          for (var i = 0; i < chapters.length; i++) {
             final content = await context.read<ReaderCubit>().obtenerContenido(i);
             if (content != null && content.toLowerCase().contains(queryLower)) {
               final toc = state.manifest.toc;
@@ -600,9 +514,6 @@ class _ReaderPageState extends State<ReaderPage> {
         },
         onResultTap: (chapterIndex, text) {
           _pageController.jumpToPage(chapterIndex);
-          setState(() {
-            _currentIndex = chapterIndex;
-          });
         },
       ),
     );

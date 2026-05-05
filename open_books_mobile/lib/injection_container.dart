@@ -33,6 +33,7 @@ import 'features/reader/data/repositories/epub_repository_impl.dart';
 import 'features/reader/logic/cubit/bookmark_cubit.dart';
 import 'features/reader/logic/cubit/highlight_cubit.dart';
 import 'features/reader/logic/cubit/audio_player_cubit.dart';
+import 'features/reader/logic/cubit/reader_cubit.dart';
 import 'features/reader/logic/cubit/reader_settings_cubit.dart';
 import 'features/notifications/data/repositories/notification_repository_impl.dart';
 import 'features/notifications/logic/cubit/notification_cubit.dart';
@@ -261,6 +262,9 @@ Future<void> setupDependencies() async {
       epubDataSource: getIt<EpubDataSource>(),
       networkInfo: getIt<NetworkInfo>(),
     ),
+  );
+  getIt.registerFactoryParam<ReaderCubit, int, void>(
+    (libroId, _) => ReaderCubit(getIt<EpubRepository>(), libroId),
   );
   getIt.registerFactory<ReaderSettingsCubit>(
     () => ReaderSettingsCubit(),

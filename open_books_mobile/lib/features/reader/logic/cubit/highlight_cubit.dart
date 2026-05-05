@@ -66,21 +66,19 @@ class HighlightCubit extends Cubit<HighlightState> {
       final newHighlight = highlight.copyWith(id: id);
 
       final currentState = state;
-      if (currentState is HighlightLoaded && 
+      if (currentState is HighlightLoaded &&
           currentState.currentChapter == chapterIndex) {
-        final updatedHighlights = [...currentState.highlights, newHighlight];
-        updatedHighlights.sort((a, b) {
-          if (a.startIndex != b.startIndex) {
-            return a.startIndex.compareTo(b.startIndex);
-          }
-          return a.endIndex.compareTo(b.endIndex);
-        });
+        final updatedHighlights = [...currentState.highlights, newHighlight]
+          ..sort((a, b) {
+            if (a.startIndex != b.startIndex) {
+              return a.startIndex.compareTo(b.startIndex);
+            }
+            return a.endIndex.compareTo(b.endIndex);
+          });
         emit(HighlightLoaded(
           highlights: updatedHighlights,
           currentChapter: currentState.currentChapter,
         ));
-      } else {
-        await cargarHighlightsPorCapitulo(chapterIndex);
       }
 
       return newHighlight;
@@ -113,7 +111,7 @@ class HighlightCubit extends Cubit<HighlightState> {
       await _dataSource.deleteHighlightsByChapter(bookId, chapterIndex);
 
       final currentState = state;
-      if (currentState is HighlightLoaded && 
+      if (currentState is HighlightLoaded &&
           currentState.currentChapter == chapterIndex) {
         emit(HighlightLoaded(
           highlights: const [],

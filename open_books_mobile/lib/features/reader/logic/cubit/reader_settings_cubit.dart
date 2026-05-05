@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +8,8 @@ import '../../data/models/reader_settings.dart';
 
 class ReaderSettingsCubit extends Cubit<ReaderSettings> {
   static const String _settingsKey = 'reader_settings';
+  Timer? _saveTimer;
+  static const _debounceDelay = Duration(milliseconds: 500);
 
   ReaderSettingsCubit() : super(ReaderSettings.defaultSettings);
 
@@ -24,44 +27,55 @@ class ReaderSettingsCubit extends Cubit<ReaderSettings> {
     }
   }
 
-  Future<void> actualizarFontSize(double size) async {
+  void actualizarFontSize(double size) {
     final newSettings = state.copyWith(fontSize: size);
     emit(newSettings);
-    await _guardarSettings(newSettings);
+    _debounceSave(newSettings);
   }
 
-  Future<void> actualizarLineHeight(double height) async {
+  void actualizarLineHeight(double height) {
     final newSettings = state.copyWith(lineHeight: height);
     emit(newSettings);
-    await _guardarSettings(newSettings);
+    _debounceSave(newSettings);
   }
 
-  Future<void> actualizarMarginMode(String mode) async {
+  void actualizarMarginMode(String mode) {
     final newSettings = state.copyWith(marginMode: mode);
     emit(newSettings);
-    await _guardarSettings(newSettings);
+    _debounceSave(newSettings);
   }
 
-  Future<void> actualizarTheme(String theme) async {
+  void actualizarTheme(String theme) {
     final newSettings = state.copyWith(theme: theme);
     emit(newSettings);
-    await _guardarSettings(newSettings);
+    _debounceSave(newSettings);
   }
 
-  Future<void> actualizarFontFamily(String family) async {
+  void actualizarFontFamily(String family) {
     final newSettings = state.copyWith(fontFamily: family);
     emit(newSettings);
-    await _guardarSettings(newSettings);
+    _debounceSave(newSettings);
   }
 
-  Future<void> actualizarAppTheme(String theme) async {
+  void actualizarAppTheme(String theme) {
     final newSettings = state.copyWith(appTheme: theme);
     emit(newSettings);
-    await _guardarSettings(newSettings);
+    _debounceSave(newSettings);
+  }
+
+  void _debounceSave(ReaderSettings settings) {
+    _saveTimer?.cancel();
+    _saveTimer = Timer(_debounceDelay, () => _guardarSettings(settings));
   }
 
   Future<void> _guardarSettings(ReaderSettings settings) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_settingsKey, jsonEncode(settings.toJson()));
+  }
+
+  @override
+  Future<void> close() {
+    _saveTimer?.cancel();
+    return super.close();
   }
 }
