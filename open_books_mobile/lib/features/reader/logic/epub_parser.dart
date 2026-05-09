@@ -2,7 +2,7 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as html_dom;
 import 'package:path/path.dart' as p;
 
-import '../widgets/reader_blocks.dart';
+import '../data/models/reader_block.dart';
 
 class EpubParser {
   String fixImagePaths(String htmlString, String chapterPath) {
@@ -122,20 +122,20 @@ class EpubParser {
 
   List<String> extractParagraphs(String content) {
     final paragraphs = <String>[];
-    
+
     if (content.isEmpty) return paragraphs;
-    
+
     var cleanContent = content;
-    
+
     cleanContent = cleanContent.replaceAll(RegExp(r'<script[^>]*>.*?</script>', dotAll: true), '');
     cleanContent = cleanContent.replaceAll(RegExp(r'<style[^>]*>.*?</style>', dotAll: true), '');
-    
+
     final blockTags = RegExp(r'<(p|div|span|h[1-6]|li|tr|blockquote)[^>]*>(.*?)</\1>', dotAll: true);
     final matches = blockTags.allMatches(cleanContent);
-    
+
     for (final match in matches) {
       var text = match.group(2) ?? '';
-      
+
       text = text.replaceAll(RegExp(r'<br\s*/?>'), ' ');
       text = text.replaceAll(RegExp(r'<[^>]+>'), ' ');
       text = text.replaceAll(RegExp(r'&nbsp;'), ' ');
@@ -144,12 +144,12 @@ class EpubParser {
       text = text.replaceAll(RegExp(r'&gt;'), '>');
       text = text.replaceAll(RegExp(r'&quot;'), '"');
       text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
-      
+
       if (text.isNotEmpty) {
         paragraphs.add(text);
       }
     }
-    
+
     if (paragraphs.isEmpty && content.isNotEmpty) {
       final lines = content.split(RegExp(r'\n'));
       for (var line in lines) {
@@ -160,7 +160,7 @@ class EpubParser {
         }
       }
     }
-    
+
     return paragraphs;
   }
 }

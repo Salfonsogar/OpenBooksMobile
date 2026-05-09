@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'local_database.dart';
+import 'sync_event.dart';
 import 'network_info.dart';
 import 'models/sync_queue_model.dart';
 import 'models/reading_session_model.dart';
@@ -214,9 +216,7 @@ class SyncService {
 
   Map<String, dynamic> _parsePayload(String payload) {
     try {
-      return Map<String, dynamic>.from(
-        (const JsonDecoder()).convert(payload) as Map,
-      );
+      return Map<String, dynamic>.from(jsonDecode(payload) as Map);
     } catch (_) {
       return {};
     }
@@ -294,7 +294,7 @@ class SyncService {
       operation: SyncQueueModel.operationUpdateProgress,
       entityType: SyncQueueModel.entityTypeProgress,
       entityId: libroId,
-      payload: payload.toString(),
+      payload: jsonEncode(payload),
       priority: SyncQueueModel.priorityHigh,
       createdAt: now,
     );
@@ -329,7 +329,7 @@ class SyncService {
       operation: SyncQueueModel.operationAddReadingSession,
       entityType: SyncQueueModel.entityTypeReadingSession,
       entityId: libroId,
-      payload: payload.toString(),
+      payload: jsonEncode(payload),
       priority: SyncQueueModel.priorityNormal,
       createdAt: DateTime.now().millisecondsSinceEpoch,
     );
@@ -581,186 +581,4 @@ class SyncService {
   }
 }
 
-enum SyncEventType {
-  syncStarted,
-  syncCompleted,
-  internetBackStarted,
-  internetBackCompleted,
-  appInitStarted,
-  appInitCompleted,
-  appResumedStarted,
-  appResumedCompleted,
-  operationSucceeded,
-  operationFailed,
-}
 
-class SyncEvent {
-  final SyncEventType type;
-  final String? operation;
-  final int? entityId;
-  final String? errorMessage;
-
-  SyncEvent({
-    required this.type,
-    this.operation,
-    this.entityId,
-    this.errorMessage,
-  });
-
-  factory SyncEvent.syncStarted() => SyncEvent(type: SyncEventType.syncStarted);
-  factory SyncEvent.syncCompleted() =>
-      SyncEvent(type: SyncEventType.syncCompleted);
-  factory SyncEvent.internetBackStarted() =>
-      SyncEvent(type: SyncEventType.internetBackStarted);
-  factory SyncEvent.internetBackCompleted() =>
-      SyncEvent(type: SyncEventType.internetBackCompleted);
-  factory SyncEvent.appInitStarted() =>
-      SyncEvent(type: SyncEventType.appInitStarted);
-  factory SyncEvent.appInitCompleted() =>
-      SyncEvent(type: SyncEventType.appInitCompleted);
-  factory SyncEvent.appResumedStarted() =>
-      SyncEvent(type: SyncEventType.appResumedStarted);
-  factory SyncEvent.appResumedCompleted() =>
-      SyncEvent(type: SyncEventType.appResumedCompleted);
-  factory SyncEvent.operationSucceeded(String operation, int entityId) =>
-      SyncEvent(
-        type: SyncEventType.operationSucceeded,
-        operation: operation,
-        entityId: entityId,
-      );
-  factory SyncEvent.operationFailed(
-    String operation,
-    int entityId,
-    String errorMessage,
-  ) => SyncEvent(
-    type: SyncEventType.operationFailed,
-    operation: operation,
-    entityId: entityId,
-    errorMessage: errorMessage,
-  );
-
-  String get name {
-    switch (type) {
-      case SyncEventType.syncStarted:
-        return 'Sincronización iniciada';
-      case SyncEventType.syncCompleted:
-        return 'Sincronización completada';
-      case SyncEventType.internetBackStarted:
-        return 'Internet恢复 - Iniciando sync';
-      case SyncEventType.internetBackCompleted:
-        return 'Internet恢复 - Sync completado';
-      case SyncEventType.appInitStarted:
-        return 'App iniciada - Sync iniciado';
-      case SyncEventType.appInitCompleted:
-        return 'App iniciada - Sync completado';
-      case SyncEventType.appResumedStarted:
-        return 'App resumed - Sync iniciado';
-      case SyncEventType.appResumedCompleted:
-        return 'App resumed - Sync completado';
-      case SyncEventType.operationSucceeded:
-        return 'Operación sincronizada: $operation';
-      case SyncEventType.operationFailed:
-        return 'Operación fallida: $operation - $errorMessage';
-    }
-  }
-}
-
-class JsonDecoder {
-  const JsonDecoder();
-  dynamic convert(String input) {
-    return _parseJson(input);
-  }
-
-  dynamic _parseJson(String input) {
-    input = input.trim();
-    if (input.isEmpty) return null;
-
-    if (input == 'null') return null;
-    if (input == 'true') return true;
-    if (input == 'false') return false;
-
-    if (input.startsWith('{') && input.endsWith('}')) {
-      final map = <String, dynamic>{};
-      final content = input.substring(1, input.length - 1).trim();
-      if (content.isNotEmpty) {
-        final pairs = _splitPairs(content);
-        for (final pair in pairs) {
-          final colonIndex = pair.indexOf(':');
-          if (colonIndex == -1) continue;
-          final key = pair.substring(0, colonIndex).trim().replaceAll('"', '');
-          final value = pair.substring(colonIndex + 1).trim();
-          map[key] = _parseValue(value);
-        }
-      }
-      return map;
-    }
-
-    if (input.startsWith('[') && input.endsWith(']')) {
-      final list = <dynamic>[];
-      final content = input.substring(1, input.length - 1).trim();
-      if (content.isNotEmpty) {
-        final items = _splitElements(content);
-        for (final item in items) {
-          list.add(_parseValue(item));
-        }
-      }
-      return list;
-    }
-
-    return _parseValue(input);
-  }
-
-  List<String> _splitPairs(String content) {
-    final pairs = <String>[];
-    var depth = 0;
-    var start = 0;
-
-    for (var i = 0; i < content.length; i++) {
-      final char = content[i];
-      if (char == '{' || char == '[') depth++;
-      if (char == '}' || char == ']') depth--;
-      if (char == ',' && depth == 0) {
-        pairs.add(content.substring(start, i).trim());
-        start = i + 1;
-      }
-    }
-    pairs.add(content.substring(start).trim());
-    return pairs;
-  }
-
-  List<String> _splitElements(String content) {
-    final elements = <String>[];
-    var depth = 0;
-    var start = 0;
-
-    for (var i = 0; i < content.length; i++) {
-      final char = content[i];
-      if (char == '{' || char == '[') depth++;
-      if (char == '}' || char == ']') depth--;
-      if (char == ',' && depth == 0) {
-        elements.add(content.substring(start, i).trim());
-        start = i + 1;
-      }
-    }
-    elements.add(content.substring(start).trim());
-    return elements;
-  }
-
-  dynamic _parseValue(String value) {
-    value = value.trim();
-    if (value.startsWith('"') && value.endsWith('"')) {
-      return value.substring(1, value.length - 1);
-    }
-    if (value == 'null') return null;
-    if (value == 'true') return true;
-    if (value == 'false') return false;
-
-    final intValue = int.tryParse(value);
-    if (intValue != null) return intValue;
-
-    final doubleValue = double.tryParse(value);
-    if (doubleValue != null) return doubleValue;
-
-    return value;
-  }
-}

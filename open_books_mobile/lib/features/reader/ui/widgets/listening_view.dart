@@ -4,8 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
 import '../../logic/cubit/audio_player_cubit.dart';
 import '../../data/models/audio_player_state.dart';
-import '../widgets/epub_parser.dart';
-import '../widgets/reader_blocks.dart';
+import '../../logic/epub_parser.dart';
+import '../../data/models/reader_block.dart';
+import '../../../../shared/core/constants/api_constants.dart';
 
 class ListeningView extends StatefulWidget {
   final List<String> paragraphs;
@@ -152,7 +153,7 @@ class _ListeningViewState extends State<ListeningView> {
       if (relativePath == null) return null;
       
       final imagePath = _resolveImagePath(relativePath);
-      return 'http://10.0.2.2:5201/api/Libros/${widget.libroId}/epub/resource?path=${Uri.encodeComponent(imagePath)}';
+      return ApiConstants.libroResourceUrl(widget.libroId, imagePath);
     }
     return null;
   }

@@ -24,33 +24,14 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     try {
       final response = await _authRepository.login(correo, contrasena);
-
-      String nombreRol = 'Usuario';
-      try {
-        final rol = await _rolesRepository.getRol(response.usuario.rolId);
-        if (rol != null) {
-          nombreRol = rol.nombre;
-        }
-      } catch (_) {}
-
-      final user = Usuario(
-        id: response.usuario.id,
-        userName: response.usuario.userName,
-        nombreCompleto: response.usuario.nombreCompleto,
-        email: response.usuario.email,
-        estado: true,
-        sancionado: response.usuario.sancionado,
-        fechaRegistro: DateTime.now(),
-        nombreRol: nombreRol,
-        rolId: response.usuario.rolId,
-        fotoPerfilBase64: response.usuario.fotoPerfilBase64,
+      await _buildUserAndLogin(
+        response.usuario,
+        response.token,
+        response.usuario.rolId,
       );
-
-      await _sessionCubit.login(user: user, token: response.token);
-
       emit(AuthLoginSuccess(usuario: response.usuario, token: response.token));
     } catch (e) {
-      emit(AuthError(e.toString().replaceAll('Exception: ', '')));
+      emit(AuthError(_formatError(e)));
     }
   }
 
@@ -70,35 +51,12 @@ class AuthCubit extends Cubit<AuthState> {
         rolId: rolId,
         nombreCompleto: nombreCompleto,
       );
-
-      String nombreRol = 'Usuario';
-      try {
-        final rol = await _rolesRepository.getRol(rolId);
-        if (rol != null) {
-          nombreRol = rol.nombre;
-        }
-      } catch (_) {}
-
-      final user = Usuario(
-        id: response.usuario.id,
-        userName: response.usuario.userName,
-        nombreCompleto: response.usuario.nombreCompleto,
-        email: response.usuario.email,
-        estado: true,
-        sancionado: response.usuario.sancionado,
-        fechaRegistro: DateTime.now(),
-        nombreRol: nombreRol,
-        rolId: rolId,
-        fotoPerfilBase64: response.usuario.fotoPerfilBase64,
-      );
-
-      await _sessionCubit.login(user: user, token: response.token);
-
+      await _buildUserAndLogin(response.usuario, response.token, rolId);
       emit(
         AuthRegisterSuccess(usuario: response.usuario, token: response.token),
       );
     } catch (e) {
-      emit(AuthError(e.toString().replaceAll('Exception: ', '')));
+      emit(AuthError(_formatError(e)));
     }
   }
 
@@ -112,7 +70,7 @@ class AuthCubit extends Cubit<AuthState> {
         ),
       );
     } catch (e) {
-      emit(AuthError(e.toString().replaceAll('Exception: ', '')));
+      emit(AuthError(_formatError(e)));
     }
   }
 
@@ -122,11 +80,42 @@ class AuthCubit extends Cubit<AuthState> {
       await _authRepository.resetearContrasena(token, nuevaContrasena);
       emit(AuthPasswordResetSuccess());
     } catch (e) {
-      emit(AuthError(e.toString().replaceAll('Exception: ', '')));
+      emit(AuthError(_formatError(e)));
     }
   }
 
-  void resetState() {
-    emit(AuthInitial());
+  Future<void> _buildUserAndLogin(
+    Usuario source,
+    String token,
+    int rolId,
+  ) async {
+    final nombreRol = await _getRoleName(rolId);
+
+    final user = Usuario(
+      id: source.id,
+      userName: source.userName,
+      nombreCompleto: source.nombreCompleto,
+      email: source.email,
+      estado: true,
+      sancionado: source.sancionado,
+      fechaRegistro: DateTime.now(),
+      nombreRol: nombreRol,
+      rolId: rolId,
+      fotoPerfilBase64: source.fotoPerfilBase64,
+    );
+
+    await _sessionCubit.login(user: user, token: token);
+  }
+
+  Future<String> _getRoleName(int rolId) async {
+    try {
+      final rol = await _rolesRepository.getRol(rolId);
+      if (rol != null) return rol.nombre;
+    } catch (_) {}
+    return 'Usuario';
+  }
+
+  String _formatError(Object e) {
+    return e.toString().replaceAll('Exception: ', '');
   }
 }

@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../shared/core/constants/app_constants.dart';
 import '../../logic/cubit/auth_cubit.dart';
 import '../../logic/cubit/auth_state.dart';
+import '../../logic/validators.dart';
+import '../widgets/auth_error_banner.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,38 +24,12 @@ class _LoginPageState extends State<LoginPage> {
   String? _emailError;
   String? _passwordError;
 
-  static final _emailRegex = RegExp(
-    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-  );
-
-  static final _passwordRegex = RegExp(
-    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$',
-  );
-
   void _validateEmail() {
-    final value = _emailController.text;
-    setState(() {
-      if (value.isEmpty) {
-        _emailError = 'Ingresa tu correo electrónico';
-      } else if (!_emailRegex.hasMatch(value)) {
-        _emailError = 'Ingresa un correo electrónico válido';
-      } else {
-        _emailError = null;
-      }
-    });
+    setState(() => _emailError = AuthValidators.validateEmail(_emailController.text));
   }
 
   void _validatePassword() {
-    final value = _passwordController.text;
-    setState(() {
-      if (value.isEmpty) {
-        _passwordError = 'Ingresa tu contraseña';
-      } else if (!_passwordRegex.hasMatch(value)) {
-        _passwordError = 'Mínimo 8 caracteres, mayúscula, minúscula y carácter especial';
-      } else {
-        _passwordError = null;
-      }
-    });
+    setState(() => _passwordError = AuthValidators.validatePassword(_passwordController.text));
   }
 
   void _clearErrors() {
@@ -87,39 +63,6 @@ class _LoginPageState extends State<LoginPage> {
             _passwordController.text,
           );
     }
-  }
-
-  Widget _buildErrorWidget(String message) {
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.error.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.error_outline,
-            color: AppColors.error,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: AppColors.error,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -186,7 +129,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       validator: (value) => null,
                     ),
-                    if (_emailError != null) _buildErrorWidget(_emailError!),
+                    if (_emailError != null) AuthErrorBanner(message: _emailError!),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
@@ -221,10 +164,10 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       validator: (value) => null,
                     ),
-                    if (_passwordError != null) _buildErrorWidget(_passwordError!),
+                    if (_passwordError != null) AuthErrorBanner(message: _passwordError!),
                     if (_loginError != null) ...[
                       const SizedBox(height: 8),
-                      _buildErrorWidget(_loginError!),
+                      AuthErrorBanner(message: _loginError!),
                     ],
                     const SizedBox(height: 8),
                     Align(

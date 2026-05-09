@@ -2,10 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
 
 import 'package:open_books_mobile/features/auth/data/models/rol.dart';
-import 'package:open_books_mobile/features/auth/data/repositories/roles_repository.dart';
 import 'package:open_books_mobile/shared/core/session/session_cubit.dart';
 import 'package:open_books_mobile/shared/core/session/session_state.dart';
 import 'package:open_books_mobile/features/admin/usuarios/logic/cubit/admin_usuarios_cubit.dart';
@@ -17,6 +15,10 @@ import 'package:open_books_mobile/features/admin/moderacion/data/models/admin_ro
 import 'package:open_books_mobile/features/admin/moderacion/logic/cubit/admin_roles_cubit.dart';
 import 'package:open_books_mobile/features/admin/moderacion/ui/widgets/rol_form_dialog.dart';
 import 'package:open_books_mobile/features/admin/moderacion/ui/widgets/rol_delete_dialog.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_search_bar.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_error_view.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_empty_view.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_loading_more.dart';
 
 class AdminUsuariosPage extends StatefulWidget {
   const AdminUsuariosPage({super.key});
@@ -28,10 +30,7 @@ class AdminUsuariosPage extends StatefulWidget {
 class _AdminUsuariosPageState extends State<AdminUsuariosPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _searchController = TextEditingController();
   final _scrollController = ScrollController();
-  List<Rol> _roles = [];
-  bool _isLoadingRoles = true;
   bool _scrollListenersAttached = false;
 
   @override
@@ -39,7 +38,6 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _initCubits();
-    _loadRoles();
     _attachScrollListeners();
   }
 
@@ -62,7 +60,6 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
   @override
   void dispose() {
     _tabController.dispose();
-    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -74,26 +71,20 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
     }
   }
 
-  Future<void> _loadRoles() async {
-    final rolesRepository = GetIt.instance<RolesRepository>();
-    final roles = await rolesRepository.getRoles();
-    if (mounted) {
-      setState(() {
-        _roles = roles;
-        _isLoadingRoles = false;
-      });
-    }
-  }
-
   void _onSearch(String query) {
     context.read<AdminUsuariosCubit>().searchUsuarios(query);
   }
 
   void _showCreateDialog() {
+    final rolesState = context.read<AdminRolesCubit>().state;
+    if (rolesState is! AdminRolesLoaded) return;
+    final roles = rolesState.roles
+        .map((r) => Rol(id: r.id, nombre: r.nombre))
+        .toList();
     showDialog(
       context: context,
       builder: (dialogContext) => UsuarioFormDialog(
-        roles: _roles,
+        roles: roles,
         onSave: (request) async {
           final cubit = context.read<AdminUsuariosCubit>();
           return await cubit.createUsuario(request as CreateUsuarioRequest);
@@ -103,11 +94,16 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
   }
 
   void _showEditDialog(AdminUsuario usuario) {
+    final rolesState = context.read<AdminRolesCubit>().state;
+    if (rolesState is! AdminRolesLoaded) return;
+    final roles = rolesState.roles
+        .map((r) => Rol(id: r.id, nombre: r.nombre))
+        .toList();
     showDialog(
       context: context,
       builder: (dialogContext) => UsuarioFormDialog(
         usuario: usuario,
-        roles: _roles,
+        roles: roles,
         onSave: (request) async {
           final cubit = context.read<AdminUsuariosCubit>();
           return await cubit.updateUsuario(usuario.id, request as UpdateUsuarioRequest);
@@ -196,32 +192,12 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SizedBox(
-                width: 300,
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Buscar por nombre, usuario o email...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              _onSearch('');
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  onChanged: _onSearch,
-                ),
+              AdminSearchBar(
+                hintText: 'Buscar por nombre, usuario o email...',
+                onSearch: _onSearch,
               ),
               IconButton.filled(
-                onPressed: _isLoadingRoles ? null : _showCreateDialog,
+                onPressed: _showCreateDialog,
                 icon: const Icon(Icons.add),
                 tooltip: 'Nuevo Usuario',
               ),
@@ -235,20 +211,9 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
                 return const Center(child: CircularProgressIndicator());
               }
               if (state is AdminUsuariosError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Error: ${state.message}'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          context.read<AdminUsuariosCubit>().loadUsuarios();
-                        },
-                        child: const Text('Reintentar'),
-                      ),
-                    ],
-                  ),
+                return AdminErrorView(
+                  message: state.message,
+                  onRetry: () => context.read<AdminUsuariosCubit>().loadUsuarios(),
                 );
               }
               if (state is AdminUsuariosLoaded) {
@@ -264,22 +229,9 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
 
   Widget _buildUsuariosList(AdminUsuariosLoaded state) {
     if (state.usuarios.items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.people_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No se encontraron usuarios',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
+      return const AdminEmptyView(
+        icon: Icons.people_outline,
+        message: 'No se encontraron usuarios',
       );
     }
 
@@ -293,12 +245,7 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
         itemCount: state.usuarios.items.length + (state.isLoadingMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index >= state.usuarios.items.length) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: CircularProgressIndicator(),
-              ),
-            );
+            return const AdminLoadingMore();
           }
           final usuario = state.usuarios.items[index];
           return _UsuarioCard(
@@ -318,20 +265,9 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
           return const Center(child: CircularProgressIndicator());
         }
         if (state is AdminRolesError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Error: ${state.message}'),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<AdminRolesCubit>().loadRoles();
-                  },
-                  child: const Text('Reintentar'),
-                ),
-              ],
-            ),
+          return AdminErrorView(
+            message: state.message,
+            onRetry: () => context.read<AdminRolesCubit>().loadRoles(),
           );
         }
         if (state is AdminRolesLoaded) {
@@ -344,22 +280,9 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
 
   Widget _buildRolesList(AdminRolesLoaded state) {
     if (state.roles.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.badge_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No hay roles',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
+      return const AdminEmptyView(
+        icon: Icons.badge_outlined,
+        message: 'No hay roles',
       );
     }
 

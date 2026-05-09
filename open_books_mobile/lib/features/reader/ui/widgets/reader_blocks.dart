@@ -1,21 +1,11 @@
-// ignore_for_file: avoid_classes_with_only_static_members
 import 'package:flutter/material.dart';
 
 import '../../data/models/highlight.dart';
+import '../../data/models/reader_block.dart';
 import '../../../../shared/core/constants/app_constants.dart';
+import '../../../../shared/core/constants/api_constants.dart';
 
-class ReaderBlock {
-  final String type;
-  final dynamic content;
-  final Map<String, String>? attributes;
-
-  const ReaderBlock({
-    required this.type,
-    required this.content,
-    this.attributes,
-  });
-}
-
+// ignore: avoid_classes_with_only_static_members
 class HighlightColor {
   static const Map<String, Color> colors = {
     'yellow': AppColors.highlightYellow,
@@ -395,7 +385,7 @@ class _ChapterContentState extends State<ChapterContent> {
     switch (block.type) {
       case 'img':
         final imagePath = _resolveImagePath(block.content as String);
-        final url = 'http://10.0.2.2:5201/api/Libros/${widget.libroId}/epub/resource?path=${Uri.encodeComponent(imagePath)}';
+        final url = ApiConstants.libroResourceUrl(widget.libroId, imagePath);
         return GestureDetector(
           onTap: widget.onImageTap != null ? () => widget.onImageTap!(url) : null,
           child: Padding(

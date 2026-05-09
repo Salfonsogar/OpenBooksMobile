@@ -7,6 +7,9 @@ import 'package:open_books_mobile/features/admin/sugerencias/data/models/admin_s
 import 'package:open_books_mobile/features/admin/sugerencias/logic/cubit/admin_sugerencias_cubit.dart';
 import 'package:open_books_mobile/features/admin/sugerencias/ui/widgets/sugerencia_detail_dialog.dart';
 import 'package:open_books_mobile/features/admin/sugerencias/ui/widgets/sugerencia_delete_dialog.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_error_view.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_empty_view.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_loading_more.dart';
 
 class AdminSugerenciasPage extends StatefulWidget {
   const AdminSugerenciasPage({super.key});
@@ -78,20 +81,9 @@ class _AdminSugerenciasPageState extends State<AdminSugerenciasPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (state is AdminSugerenciasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('Error: ${state.message}'),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            context.read<AdminSugerenciasCubit>().loadSugerencias();
-                          },
-                          child: const Text('Reintentar'),
-                        ),
-                      ],
-                    ),
+                  return AdminErrorView(
+                    message: state.message,
+                    onRetry: () => context.read<AdminSugerenciasCubit>().loadSugerencias(),
                   );
                 }
                 if (state is AdminSugerenciasLoaded) {
@@ -137,22 +129,9 @@ class _AdminSugerenciasPageState extends State<AdminSugerenciasPage> {
 
   Widget _buildSugerenciasList(AdminSugerenciasLoaded state) {
     if (state.sugerencias.items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.lightbulb_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No hay sugerencias',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
+      return const AdminEmptyView(
+        icon: Icons.lightbulb_outline,
+        message: 'No hay sugerencias',
       );
     }
 
@@ -166,12 +145,7 @@ class _AdminSugerenciasPageState extends State<AdminSugerenciasPage> {
         itemCount: state.sugerencias.items.length + (state.isLoadingMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index >= state.sugerencias.items.length) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: CircularProgressIndicator(),
-              ),
-            );
+            return const AdminLoadingMore();
           }
           final sugerencia = state.sugerencias.items[index];
           return _SugerenciaCard(

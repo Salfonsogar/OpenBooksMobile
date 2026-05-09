@@ -11,6 +11,8 @@ import 'package:open_books_mobile/features/admin/moderacion/ui/widgets/denuncia_
 import 'package:open_books_mobile/features/admin/moderacion/ui/widgets/denuncia_delete_dialog.dart';
 import 'package:open_books_mobile/features/admin/moderacion/ui/widgets/sancion_form_dialog.dart';
 import 'package:open_books_mobile/features/admin/moderacion/ui/widgets/sancion_delete_dialog.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_error_view.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_empty_view.dart';
 
 class AdminModeracionPage extends StatefulWidget {
   const AdminModeracionPage({super.key});
@@ -147,20 +149,9 @@ class _AdminModeracionPageState extends State<AdminModeracionPage>
           return const Center(child: CircularProgressIndicator());
         }
         if (state is AdminDenunciasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Error: ${state.message}'),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<AdminDenunciasCubit>().loadDenuncias();
-                  },
-                  child: const Text('Reintentar'),
-                ),
-              ],
-            ),
+          return AdminErrorView(
+            message: state.message,
+            onRetry: () => context.read<AdminDenunciasCubit>().loadDenuncias(),
           );
         }
         if (state is AdminDenunciasLoaded) {
@@ -173,22 +164,9 @@ class _AdminModeracionPageState extends State<AdminModeracionPage>
 
   Widget _buildDenunciasList(AdminDenunciasLoaded state) {
     if (state.denuncias.items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No hay denuncias',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
+      return const AdminEmptyView(
+        icon: Icons.check_circle_outline,
+        message: 'No hay denuncias',
       );
     }
 
@@ -219,20 +197,9 @@ class _AdminModeracionPageState extends State<AdminModeracionPage>
           return const Center(child: CircularProgressIndicator());
         }
         if (state is AdminSancionesError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Error: ${state.message}'),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<AdminSancionesCubit>().loadSanciones();
-                  },
-                  child: const Text('Reintentar'),
-                ),
-              ],
-            ),
+          return AdminErrorView(
+            message: state.message,
+            onRetry: () => context.read<AdminSancionesCubit>().loadSanciones(),
           );
         }
         if (state is AdminSancionesLoaded) {
@@ -245,22 +212,9 @@ class _AdminModeracionPageState extends State<AdminModeracionPage>
 
   Widget _buildSancionesList(AdminSancionesLoaded state) {
     if (state.sanciones.items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.verified_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No hay sanciones',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
+      return const AdminEmptyView(
+        icon: Icons.verified_outlined,
+        message: 'No hay sanciones',
       );
     }
 

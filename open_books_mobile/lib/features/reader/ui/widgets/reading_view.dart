@@ -5,7 +5,7 @@ import '../../data/models/reader_settings.dart';
 import '../../logic/cubit/highlight_cubit.dart';
 import '../../logic/cubit/highlight_state.dart';
 import '../../data/models/highlight.dart';
-import 'epub_parser.dart';
+import '../../logic/epub_parser.dart';
 import 'reader_blocks.dart';
 
 class ReadingView extends StatelessWidget {

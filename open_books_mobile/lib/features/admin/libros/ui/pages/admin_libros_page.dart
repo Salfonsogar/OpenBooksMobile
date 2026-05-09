@@ -13,6 +13,10 @@ import 'package:open_books_mobile/features/admin/categorias/data/models/admin_ca
 import 'package:open_books_mobile/features/admin/categorias/logic/cubit/admin_categorias_cubit.dart';
 import 'package:open_books_mobile/features/admin/categorias/ui/widgets/categoria_form_dialog.dart';
 import 'package:open_books_mobile/features/admin/categorias/ui/widgets/categoria_delete_dialog.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_search_bar.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_error_view.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_empty_view.dart';
+import 'package:open_books_mobile/features/admin/ui/widgets/admin_loading_more.dart';
 
 class AdminLibrosPage extends StatefulWidget {
   const AdminLibrosPage({super.key});
@@ -24,7 +28,6 @@ class AdminLibrosPage extends StatefulWidget {
 class _AdminLibrosPageState extends State<AdminLibrosPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _searchController = TextEditingController();
   final _scrollControllerLibros = ScrollController();
   final _scrollControllerCategorias = ScrollController();
   bool _scrollListenersAttached = false;
@@ -63,7 +66,6 @@ class _AdminLibrosPageState extends State<AdminLibrosPage>
   @override
   void dispose() {
     _tabController.dispose();
-    _searchController.dispose();
     _scrollControllerLibros.dispose();
     _scrollControllerCategorias.dispose();
     super.dispose();
@@ -222,29 +224,9 @@ class _AdminLibrosPageState extends State<AdminLibrosPage>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SizedBox(
-                width: 300,
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Buscar por título o autor...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              _onSearch('');
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  onChanged: _onSearch,
-                ),
+              AdminSearchBar(
+                hintText: 'Buscar por título o autor...',
+                onSearch: _onSearch,
               ),
               IconButton.filled(
                 onPressed: _showLibroCreateDialog,
@@ -261,20 +243,9 @@ class _AdminLibrosPageState extends State<AdminLibrosPage>
                 return const Center(child: CircularProgressIndicator());
               }
               if (state is AdminLibrosError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Error: ${state.message}'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          context.read<AdminLibrosCubit>().loadLibros();
-                        },
-                        child: const Text('Reintentar'),
-                      ),
-                    ],
-                  ),
+                return AdminErrorView(
+                  message: state.message,
+                  onRetry: () => context.read<AdminLibrosCubit>().loadLibros(),
                 );
               }
               if (state is AdminLibrosLoaded) {
@@ -290,22 +261,9 @@ class _AdminLibrosPageState extends State<AdminLibrosPage>
 
   Widget _buildLibrosList(AdminLibrosLoaded state) {
     if (state.libros.items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.book_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No se encontraron libros',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
+      return const AdminEmptyView(
+        icon: Icons.book_outlined,
+        message: 'No se encontraron libros',
       );
     }
 
@@ -319,12 +277,7 @@ class _AdminLibrosPageState extends State<AdminLibrosPage>
         itemCount: state.libros.items.length + (state.isLoadingMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index >= state.libros.items.length) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: CircularProgressIndicator(),
-              ),
-            );
+            return const AdminLoadingMore();
           }
           final libro = state.libros.items[index];
           return Padding(
@@ -363,20 +316,9 @@ class _AdminLibrosPageState extends State<AdminLibrosPage>
                 return const Center(child: CircularProgressIndicator());
               }
               if (state is AdminCategoriasError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Error: ${state.message}'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          context.read<AdminCategoriasCubit>().loadCategorias();
-                        },
-                        child: const Text('Reintentar'),
-                      ),
-                    ],
-                  ),
+                return AdminErrorView(
+                  message: state.message,
+                  onRetry: () => context.read<AdminCategoriasCubit>().loadCategorias(),
                 );
               }
               if (state is AdminCategoriasLoaded) {
@@ -392,22 +334,9 @@ class _AdminLibrosPageState extends State<AdminLibrosPage>
 
   Widget _buildCategoriasList(AdminCategoriasLoaded state) {
     if (state.categorias.items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.category_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No hay categorías',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
+      return const AdminEmptyView(
+        icon: Icons.category_outlined,
+        message: 'No hay categorías',
       );
     }
 

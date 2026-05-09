@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../shared/core/constants/app_constants.dart';
-import '../../../../shared/core/session/session_cubit.dart';
 import '../../logic/cubit/auth_cubit.dart';
 import '../../logic/cubit/auth_state.dart';
+import '../../logic/validators.dart';
+import '../widgets/auth_error_banner.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -32,74 +32,37 @@ class _RegisterPageState extends State<RegisterPage> {
   String? _confirmPasswordError;
   String? _registerError;
 
-  static final _emailRegex = RegExp(
-    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-  );
-
-  static final _passwordRegex = RegExp(
-    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$',
-  );
-
   void _validateNombreUsuario() {
-    final value = _nombreUsuarioController.text;
     setState(() {
-      if (value.isEmpty) {
-        _nombreUsuarioError = 'Ingresa tu nombre de usuario';
-      } else if (value.length < 3) {
-        _nombreUsuarioError = 'El nombre de usuario debe tener al menos 3 caracteres';
-      } else {
-        _nombreUsuarioError = null;
-      }
+      _nombreUsuarioError = AuthValidators.validateRequired(
+        _nombreUsuarioController.text, 'nombre de usuario',
+      ) ?? AuthValidators.validateMinLength(
+        _nombreUsuarioController.text, 3, 'nombre de usuario',
+      );
     });
   }
 
   void _validateNombreCompleto() {
-    final value = _nombreCompletoController.text;
     setState(() {
-      if (value.isEmpty) {
-        _nombreCompletoError = 'Ingresa tu nombre completo';
-      } else {
-        _nombreCompletoError = null;
-      }
+      _nombreCompletoError = AuthValidators.validateRequired(
+        _nombreCompletoController.text, 'nombre completo',
+      );
     });
   }
 
   void _validateEmail() {
-    final value = _emailController.text;
-    setState(() {
-      if (value.isEmpty) {
-        _emailError = 'Ingresa tu correo electrónico';
-      } else if (!_emailRegex.hasMatch(value)) {
-        _emailError = 'Ingresa un correo electrónico válido';
-      } else {
-        _emailError = null;
-      }
-    });
+    setState(() => _emailError = AuthValidators.validateEmail(_emailController.text));
   }
 
   void _validatePassword() {
-    final value = _passwordController.text;
-    setState(() {
-      if (value.isEmpty) {
-        _passwordError = 'Ingresa una contraseña';
-      } else if (!_passwordRegex.hasMatch(value)) {
-        _passwordError = 'Mínimo 8 caracteres, mayúscula, minúscula y carácter especial';
-      } else {
-        _passwordError = null;
-      }
-    });
+    setState(() => _passwordError = AuthValidators.validatePassword(_passwordController.text));
   }
 
   void _validateConfirmPassword() {
-    final value = _confirmPasswordController.text;
     setState(() {
-      if (value.isEmpty) {
-        _confirmPasswordError = 'Confirma tu contraseña';
-      } else if (value != _passwordController.text) {
-        _confirmPasswordError = 'Las contraseñas no coinciden';
-      } else {
-        _confirmPasswordError = null;
-      }
+      _confirmPasswordError = AuthValidators.validateConfirmPassword(
+        _confirmPasswordController.text, _passwordController.text,
+      );
     });
   }
 
@@ -147,39 +110,6 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  Widget _buildErrorWidget(String message) {
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.error.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.error_outline,
-            color: AppColors.error,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: AppColors.error,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -197,7 +127,6 @@ class _RegisterPageState extends State<RegisterPage> {
       body: BlocListener<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthRegisterSuccess) {
-            context.read<SessionCubit>();
             context.go('/home');
           } else if (state is AuthError) {
             setState(() {
@@ -231,7 +160,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     validator: (value) => null,
                   ),
-                  if (_nombreUsuarioError != null) _buildErrorWidget(_nombreUsuarioError!),
+                  if (_nombreUsuarioError != null) AuthErrorBanner(message: _nombreUsuarioError!),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _nombreCompletoController,
@@ -252,7 +181,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     validator: (value) => null,
                   ),
-                  if (_nombreCompletoError != null) _buildErrorWidget(_nombreCompletoError!),
+                  if (_nombreCompletoError != null) AuthErrorBanner(message: _nombreCompletoError!),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailController,
@@ -273,7 +202,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     validator: (value) => null,
                   ),
-                  if (_emailError != null) _buildErrorWidget(_emailError!),
+                  if (_emailError != null) AuthErrorBanner(message: _emailError!),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _passwordController,
@@ -307,7 +236,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     validator: (value) => null,
                   ),
-                  if (_passwordError != null) _buildErrorWidget(_passwordError!),
+                  if (_passwordError != null) AuthErrorBanner(message: _passwordError!),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _confirmPasswordController,
@@ -342,10 +271,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     validator: (value) => null,
                   ),
-                  if (_confirmPasswordError != null) _buildErrorWidget(_confirmPasswordError!),
+                  if (_confirmPasswordError != null) AuthErrorBanner(message: _confirmPasswordError!),
                   if (_registerError != null) ...[
                     const SizedBox(height: 16),
-                    _buildErrorWidget(_registerError!),
+                    AuthErrorBanner(message: _registerError!),
                   ],
                   const SizedBox(height: 24),
                   BlocBuilder<AuthCubit, AuthState>(

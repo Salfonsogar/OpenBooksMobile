@@ -1,5 +1,9 @@
+import 'package:open_books_mobile/shared/core/environment/env.dart';
+
 class ApiConstants {
   ApiConstants._();
+
+  static String get _baseUrl => Env().apiBaseUrl;
 
   // Auth
   static const String login = '/api/Usuarios/Login';
@@ -53,4 +57,8 @@ class ApiConstants {
 
   // Roles
   static const String roles = '/api/Rols';
+
+  // Reader
+  static String libroResourceUrl(int libroId, String path) =>
+      '$_baseUrl/api/Libros/$libroId/epub/resource?path=${Uri.encodeComponent(path)}';
 }
