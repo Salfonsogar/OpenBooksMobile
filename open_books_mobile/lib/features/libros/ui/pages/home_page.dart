@@ -1,12 +1,10 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/index.dart';
 import '../../logic/cubit/libros_cubit.dart';
-import '../widgets/libro_card.dart';
+import '../widgets/index.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,6 +15,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final _scrollController = ScrollController();
+  final _sectionsLoader = HomeSectionsLoader();
   List<Libro> _recomendados = [];
   List<Libro> _librosCategoria = [];
   Categoria? _categoriaRandom;
@@ -42,42 +41,16 @@ class _HomePageState extends State<HomePage> {
     setState(() => _isLoading = true);
 
     try {
-      final random = Random();
-      final cubit = context.read<LibrosCubit>();
+      final data = await _sectionsLoader.load(context.read<LibrosCubit>());
       
-      final results = await Future.wait([
-        cubit.getCategorias(),
-        cubit.getLibrosAleatorios(),
-        cubit.getTop5Libros(),
-      ]);
-      
-      final categoriasResult = results[0] as PagedResult<Categoria>;
-      final categorias = categoriasResult.data;
-      final recomendados = results[1] as List<Libro>;
-      final top5 = results[2] as List<Libro>;
-
-      String? autorRandom;
-      List<Libro> librosAutor = [];
-      if (recomendados.isNotEmpty) {
-        autorRandom = recomendados[random.nextInt(recomendados.length)].autor;
-        librosAutor = await cubit.getLibrosPorAutor(autorRandom);
-      }
-
-      Categoria? categoriaRandom;
-      List<Libro> librosCategoria = [];
-      if (categorias.isNotEmpty) {
-        categoriaRandom = categorias[random.nextInt(categorias.length)];
-        librosCategoria = await cubit.getLibrosPorCategoria(categoriaRandom.id);
-      }
-
       if (mounted) {
         setState(() {
-          _recomendados = recomendados;
-          _librosCategoria = librosCategoria;
-          _categoriaRandom = categoriaRandom;
-          _librosAutor = librosAutor;
-          _autorRandom = autorRandom;
-          _top5 = top5;
+          _recomendados = data.recomendados;
+          _librosCategoria = data.librosCategoria;
+          _categoriaRandom = data.categoriaRandom;
+          _librosAutor = data.librosAutor;
+          _autorRandom = data.autorRandom;
+          _top5 = data.top5;
           _isLoading = false;
         });
       }
@@ -102,131 +75,36 @@ class _HomePageState extends State<HomePage> {
     return BlocBuilder<LibrosCubit, LibrosState>(
       builder: (context, state) {
         if (state is LibrosLoading && _isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const HomeLoadingView();
         }
 
         if (state is LibrosError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(state.message),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => context.read<LibrosCubit>().refresh(),
-                  child: const Text('Reintentar'),
-                ),
-              ],
-            ),
+          return HomeErrorView(
+            message: state.message,
+            onRetry: () => context.read<LibrosCubit>().refresh(),
           );
         }
 
         if (state is LibrosLoaded && (state.query != null || state.categoriasSeleccionadas != null || state.autor != null)) {
-          return _buildGridView(state);
+          return HomeGridView(
+            state: state,
+            scrollController: _scrollController,
+            onRefresh: () => context.read<LibrosCubit>().refresh(),
+            onLibroTap: (id) => context.pushReplacement('/book/$id'),
+          );
         }
 
-        return _buildSecciones();
+        return HomeSeccionesView(
+          recomendados: _recomendados,
+          librosCategoria: _librosCategoria,
+          categoriaRandom: _categoriaRandom,
+          librosAutor: _librosAutor,
+          autorRandom: _autorRandom,
+          top5: _top5,
+          onRefresh: _cargarSecciones,
+          onLibroTap: (libro) => context.pushReplacement('/book/${libro.id}'),
+        );
       },
-    );
-  }
-
-  Widget _buildGridView(LibrosLoaded state) {
-    if (state.libros.isEmpty) {
-      return const Center(
-        child: Text('No se encontraron libros'),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => context.read<LibrosCubit>().refresh(),
-      child: GridView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.65,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-        ),
-        itemCount: state.libros.length + (state.hasMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index >= state.libros.length) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final libro = state.libros[index];
-          return LibroCard(
-            libro: libro,
-            onTap: () => context.pushReplacement('/book/${libro.id}'),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildSecciones() {
-    return RefreshIndicator(
-      onRefresh: _cargarSecciones,
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (_recomendados.isNotEmpty) ...[
-              _buildSeccion('eBooks recomendados', _recomendados),
-            ],
-            if (_categoriaRandom != null && _librosCategoria.isNotEmpty) ...[
-              _buildSeccion(_categoriaRandom!.nombre, _librosCategoria),
-            ],
-            if (_autorRandom != null && _librosAutor.isNotEmpty) ...[
-              _buildSeccion('Escritos por $_autorRandom', _librosAutor),
-            ],
-            if (_top5.isNotEmpty) ...[
-              _buildSeccion('Más valorados', _top5),
-            ],
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSeccion(String titulo, List<Libro> libros) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-          child: Text(
-            titulo,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 280,
-          child: Scrollbar(
-            thumbVisibility: false,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: libros.length,
-              itemBuilder: (context, index) {
-                final libro = libros[index];
-                return Container(
-                  width: 160,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  child: LibroCard(
-                    libro: libro,
-                    onTap: () => context.pushReplacement('/book/${libro.id}'),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
