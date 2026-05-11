@@ -15,16 +15,16 @@ void main() {
   group('ResetPasswordRequest', () {
     test('toJson returns correct map', () {
       final request = ResetPasswordRequest(
+        email: 'user@example.com',
         token: 'reset_token_abc',
         nuevaContrasena: 'NewPass1!',
       );
 
       final json = request.toJson();
 
-      expect(json, {
-        'token': 'reset_token_abc',
-        'nuevaContrasena': 'NewPass1!',
-      });
+      expect(json['Email'], 'user@example.com');
+      expect(json['Token'], 'reset_token_abc');
+      expect(json['NuevaContraseña'], 'NewPass1!');
     });
   });
 }

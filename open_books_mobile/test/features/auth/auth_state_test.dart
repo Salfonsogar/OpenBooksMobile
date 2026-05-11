@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:open_books_mobile/features/auth/data/models/usuario.dart';
 import 'package:open_books_mobile/features/auth/logic/cubit/auth_state.dart';
 
+const testUserId = '550e8400-e29b-41d4-a716-446655440000';
+
 void main() {
   group('AuthState equality', () {
     test('AuthInitial supports value equality', () {
@@ -20,15 +22,13 @@ void main() {
   group('AuthLoginSuccess', () {
     test('supports value equality with same user and token', () {
       final user = Usuario(
-        id: 1,
+        id: testUserId,
         userName: 'test',
         nombreCompleto: 'Test User',
         email: 'test@test.com',
         estado: true,
-        sancionado: false,
         fechaRegistro: DateTime.now(),
         nombreRol: 'Usuario',
-        rolId: 2,
       );
       expect(
         AuthLoginSuccess(usuario: user, token: 'abc'),
@@ -38,54 +38,16 @@ void main() {
 
     test('props are correct', () {
       final user = Usuario(
-        id: 1,
+        id: testUserId,
         userName: 'test',
         nombreCompleto: 'Test User',
         email: 'test@test.com',
         estado: true,
-        sancionado: false,
         fechaRegistro: DateTime.now(),
         nombreRol: 'Usuario',
-        rolId: 2,
       );
       final state = AuthLoginSuccess(usuario: user, token: 'token123');
       expect(state.props, [user, 'token123']);
-    });
-  });
-
-  group('AuthRegisterSuccess', () {
-    test('supports value equality with same user and token', () {
-      final user = Usuario(
-        id: 2,
-        userName: 'newuser',
-        nombreCompleto: 'New User',
-        email: 'new@test.com',
-        estado: true,
-        sancionado: false,
-        fechaRegistro: DateTime.now(),
-        nombreRol: 'Usuario',
-        rolId: 2,
-      );
-      expect(
-        AuthRegisterSuccess(usuario: user, token: 'def'),
-        equals(AuthRegisterSuccess(usuario: user, token: 'def')),
-      );
-    });
-
-    test('props are correct', () {
-      final user = Usuario(
-        id: 2,
-        userName: 'newuser',
-        nombreCompleto: 'New User',
-        email: 'new@test.com',
-        estado: true,
-        sancionado: false,
-        fechaRegistro: DateTime.now(),
-        nombreRol: 'Usuario',
-        rolId: 2,
-      );
-      final state = AuthRegisterSuccess(usuario: user, token: 'token456');
-      expect(state.props, [user, 'token456']);
     });
   });
 

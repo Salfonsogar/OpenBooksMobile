@@ -3,11 +3,12 @@ import 'package:equatable/equatable.dart';
 class LibroBibliotecaEntity extends Equatable {
   final int id;
   final int libroId;
-  final int usuarioId;
+  final String usuarioId;
   final String titulo;
   final String autor;
   final String descripcion;
   final String? portadaBase64;
+  final String? portadaUrl;
   final List<String> categorias;
   final double progreso;
   final bool isDownloaded;
@@ -26,6 +27,7 @@ class LibroBibliotecaEntity extends Equatable {
     required this.autor,
     required this.descripcion,
     this.portadaBase64,
+    this.portadaUrl,
     required this.categorias,
     this.progreso = 0.0,
     this.isDownloaded = false,
@@ -46,6 +48,7 @@ class LibroBibliotecaEntity extends Equatable {
         autor,
         descripcion,
         portadaBase64,
+        portadaUrl,
         categorias,
         progreso,
         isDownloaded,
@@ -60,11 +63,12 @@ class LibroBibliotecaEntity extends Equatable {
   LibroBibliotecaEntity copyWith({
     int? id,
     int? libroId,
-    int? usuarioId,
+    String? usuarioId,
     String? titulo,
     String? autor,
     String? descripcion,
     String? portadaBase64,
+    String? portadaUrl,
     List<String>? categorias,
     double? progreso,
     bool? isDownloaded,
@@ -83,6 +87,7 @@ class LibroBibliotecaEntity extends Equatable {
       autor: autor ?? this.autor,
       descripcion: descripcion ?? this.descripcion,
       portadaBase64: portadaBase64 ?? this.portadaBase64,
+      portadaUrl: portadaUrl ?? this.portadaUrl,
       categorias: categorias ?? this.categorias,
       progreso: progreso ?? this.progreso,
       isDownloaded: isDownloaded ?? this.isDownloaded,

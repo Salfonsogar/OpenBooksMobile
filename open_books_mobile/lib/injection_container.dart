@@ -108,7 +108,6 @@ Future<void> setupDependencies() async {
   getIt.registerFactory<AuthCubit>(
     () => AuthCubit(
       authRepository: getIt<AuthRepository>(),
-      rolesRepository: getIt<RolesRepository>(),
       sessionCubit: getIt<SessionCubit>(),
     ),
   );

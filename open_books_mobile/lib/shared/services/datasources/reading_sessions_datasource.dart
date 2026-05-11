@@ -17,7 +17,7 @@ class ReadingSessionsDataSource {
     return maps.map((map) => ReadingSessionModel.fromMap(map)).toList();
   }
 
-  Future<List<ReadingSessionModel>> getByLibroId(int libroId, int usuarioId) async {
+  Future<List<ReadingSessionModel>> getByLibroId(int libroId, String usuarioId) async {
     final maps = await _db.query(
       _tableName,
       where: 'libro_id = ? AND usuario_id = ?',
@@ -73,7 +73,7 @@ class ReadingSessionsDataSource {
     );
   }
 
-  Future<void> deleteByLibroId(int libroId, int usuarioId) async {
+  Future<void> deleteByLibroId(int libroId, String usuarioId) async {
     await _db.delete(
       _tableName,
       where: 'libro_id = ? AND usuario_id = ?',
@@ -81,7 +81,7 @@ class ReadingSessionsDataSource {
     );
   }
 
-  Future<int> getTotalPagesRead(int libroId, int usuarioId) async {
+  Future<int> getTotalPagesRead(int libroId, String usuarioId) async {
     final result = await _db.rawQuery(
       'SELECT SUM(pages_read_in_session) as total FROM $_tableName WHERE libro_id = ? AND usuario_id = ?',
       [libroId, usuarioId],
@@ -89,7 +89,7 @@ class ReadingSessionsDataSource {
     return (result.first['total'] as int?) ?? 0;
   }
 
-  Future<List<ReadingSessionModel>> getRecentSessions(int usuarioId, {int limit = 10}) async {
+  Future<List<ReadingSessionModel>> getRecentSessions(String usuarioId, {int limit = 10}) async {
     final maps = await _db.query(
       _tableName,
       where: 'usuario_id = ?',

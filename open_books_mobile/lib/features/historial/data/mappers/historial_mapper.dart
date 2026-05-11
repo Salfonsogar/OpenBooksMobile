@@ -43,7 +43,7 @@ class HistorialMapper {
 
   static HistorialLocalModel fromLibroToLocalModel(
     Libro libro,
-    int usuarioId,
+    String usuarioId,
   ) {
     final now = DateTime.now().millisecondsSinceEpoch;
     return HistorialLocalModel(
@@ -51,7 +51,7 @@ class HistorialMapper {
       usuarioId: usuarioId,
       titulo: libro.titulo,
       autor: libro.autor,
-      portadaBase64: libro.portadaBase64,
+      portadaBase64: null,
       ultimaLectura: now,
       status: 'pending_add',
       createdAt: now,
@@ -67,10 +67,10 @@ class HistorialMapper {
     return HistorialEntryEntity(
       id: 0,
       libroId: libro.id,
-      usuarioId: 0,
+      usuarioId: '',
       titulo: libro.titulo,
       autor: libro.autor,
-      portadaBase64: libro.portadaBase64,
+      portadaBase64: null,
       ultimaLectura: now,
       status: 'synced',
       createdAt: now,

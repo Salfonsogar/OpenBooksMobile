@@ -11,18 +11,21 @@ class RecoveryRequest {
 }
 
 class ResetPasswordRequest {
+  final String email;
   final String token;
   final String nuevaContrasena;
 
   ResetPasswordRequest({
+    required this.email,
     required this.token,
     required this.nuevaContrasena,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'token': token,
-      'nuevaContrasena': nuevaContrasena,
+      'Email': email,
+      'Token': token,
+      'NuevaContrase\u00f1a': nuevaContrasena,
     };
   }
 }

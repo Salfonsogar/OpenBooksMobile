@@ -103,7 +103,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
 
   Widget _buildLoadedContent(BuildContext context, LibroDetalleLoaded state) {
     final libro = state.libro;
-    final portadaBase64 = state.portadaBase64;
     final estaEnBiblioteca = state.estaEnBiblioteca;
     final maxWidth = MediaQuery.of(context).size.width - 32;
 
@@ -112,7 +111,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          BookHeaderWidget(libro: libro, portadaBase64: portadaBase64),
+          BookHeaderWidget(libro: libro),
           const SizedBox(height: 32),
           _buildBotonComprar(libro, estaEnBiblioteca),
           const SizedBox(height: 32),

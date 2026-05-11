@@ -10,14 +10,13 @@ class BibliotecaDataSource {
 
   BibliotecaDataSource(this._apiClient);
 
-  Future<List<LibroBiblioteca>> getLibrosBiblioteca(int usuarioId) async {
+  Future<List<LibroBiblioteca>> getLibrosBiblioteca(String usuarioId) async {
     try {
       final response = await _apiClient.get(
-        '/api/Biblioteca/$usuarioId/libros',
+        '/api/UsuarioLibro/biblioteca',
       );
-      final data = response.data as Map<String, dynamic>;
-      final libros = data['data'] as List<dynamic>? ?? [];
-      return libros
+      final data = response.data as List<dynamic>;
+      return data
           .map((e) => LibroBiblioteca.fromJson(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
@@ -25,21 +24,17 @@ class BibliotecaDataSource {
     }
   }
 
-  Future<void> agregarLibro(int usuarioId, int libroId) async {
+  Future<void> agregarLibro(String usuarioId, int libroId) async {
     try {
-      await _apiClient.post(
-        '/api/Biblioteca/$usuarioId/libros/$libroId',
-      );
+      await _apiClient.post('/api/UsuarioLibro/$libroId');
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  Future<void> quitarLibro(int usuarioId, int libroId) async {
+  Future<void> quitarLibro(String usuarioId, int libroId) async {
     try {
-      await _apiClient.delete(
-        '/api/Biblioteca/$usuarioId/libros/$libroId',
-      );
+      await _apiClient.delete('/api/UsuarioLibro/$libroId');
     } on DioException catch (e) {
       throw _handleError(e);
     }

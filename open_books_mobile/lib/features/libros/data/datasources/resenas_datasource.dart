@@ -56,8 +56,8 @@ class ResenasDataSource {
   }
 
   Future<DenunciaResena> crearDenunciaResena({
-    required int idDenunciante,
-    required int idDenunciado,
+    required String idDenunciante,
+    required String idDenunciado,
     required int idResena,
     required String motivo,
     String? comentario,

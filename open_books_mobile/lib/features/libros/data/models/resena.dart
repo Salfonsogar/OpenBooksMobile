@@ -1,8 +1,7 @@
 class Resena {
   final int id;
-  final int usuarioId;
+  final String usuarioId;
   final String nombreUsuario;
-  final String? fotoPerfilBase64;
   final String texto;
   final DateTime fecha;
 
@@ -10,7 +9,6 @@ class Resena {
     required this.id,
     required this.usuarioId,
     required this.nombreUsuario,
-    this.fotoPerfilBase64,
     required this.texto,
     required this.fecha,
   });
@@ -18,12 +16,11 @@ class Resena {
   factory Resena.fromJson(Map<String, dynamic> json) {
     return Resena(
       id: (json['id'] as num?)?.toInt() ?? 0,
-      usuarioId: (json['usuarioId'] as num?)?.toInt() ?? 0,
-      nombreUsuario: json['nombreUsuario'] as String? ?? 'Usuario',
-      fotoPerfilBase64: json['fotoPerfil'] as String?,
-      texto: json['texto'] as String? ?? '',
-      fecha: json['fecha'] != null
-          ? DateTime.parse(json['fecha'] as String)
+      usuarioId: (json['usuarioId'] as String?) ?? (json['usuarioId'] as num?)?.toString() ?? '',
+      nombreUsuario: (json['nombreUsuario'] ?? json['NombreUsuario'] ?? 'Usuario') as String,
+      texto: (json['texto'] ?? json['Texto'] ?? '') as String,
+      fecha: (json['fecha'] ?? json['Fecha']) != null
+          ? DateTime.parse((json['fecha'] ?? json['Fecha']) as String)
           : DateTime.now(),
     );
   }
@@ -33,7 +30,6 @@ class Resena {
       'id': id,
       'usuarioId': usuarioId,
       'nombreUsuario': nombreUsuario,
-      'fotoPerfil': fotoPerfilBase64,
       'texto': texto,
       'fecha': fecha.toIso8601String(),
     };

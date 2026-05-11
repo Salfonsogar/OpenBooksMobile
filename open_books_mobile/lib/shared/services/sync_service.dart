@@ -142,7 +142,7 @@ class SyncService {
     final payload = op.payload != null
         ? _parsePayload(op.payload!)
         : <String, dynamic>{};
-    final usuarioId = payload['usuarioId'] as int? ?? 0;
+    final usuarioId = payload['usuarioId'] as String? ?? '';
     final libroId = payload['libroId'] as int? ?? op.entityId;
 
     switch (op.operation) {
@@ -168,7 +168,7 @@ class SyncService {
 
   Future<void> _handleProgressUpdate(Map<String, dynamic> payload) async {
     final libroId = payload['libroId'] as int? ?? 0;
-    final usuarioId = payload['usuarioId'] as int? ?? 0;
+    final usuarioId = payload['usuarioId'] as String? ?? '';
     final progreso = (payload['progreso'] as num?)?.toDouble() ?? 0.0;
     final page = payload['page'] as int? ?? 0;
     final timestamp =
@@ -194,7 +194,7 @@ class SyncService {
 
   Future<void> _handleReadingSession(Map<String, dynamic> payload) async {
     final libroId = payload['libroId'] as int? ?? 0;
-    final usuarioId = payload['usuarioId'] as int? ?? 0;
+    final usuarioId = payload['usuarioId'] as String? ?? '';
     final progressId = payload['progressId'] as int? ?? 0;
     final pagesRead = payload['pagesRead'] as int? ?? 0;
     final notes = payload['notes'] as String?;
@@ -249,7 +249,7 @@ class SyncService {
 
   Future<void> addProgressUpdateToQueue({
     required int libroId,
-    required int usuarioId,
+    required String usuarioId,
     required double progreso,
     required int page,
     int? timestamp,
@@ -310,7 +310,7 @@ class SyncService {
 
   Future<void> addReadingSessionToQueue({
     required int libroId,
-    required int usuarioId,
+    required String usuarioId,
     required int progressId,
     required int pagesRead,
     String? notes,
@@ -339,7 +339,7 @@ class SyncService {
 
   Future<void> fallbackToLocal({
     required int libroId,
-    required int usuarioId,
+    required String usuarioId,
     required double progreso,
     required int page,
     String? errorMessage,
@@ -397,7 +397,7 @@ class SyncService {
         id:
             (await localDatabase.bibliotecaLocalDataSource.getByLibroId(
               libroId,
-              payload['usuarioId'] as int? ?? 0,
+              payload['usuarioId'] as String? ?? '',
             ))?.id ??
             0,
         progreso: progreso,
@@ -409,7 +409,7 @@ class SyncService {
       await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(
         (await localDatabase.bibliotecaLocalDataSource.getByLibroId(
               libroId,
-              payload['usuarioId'] as int? ?? 0,
+              payload['usuarioId'] as String? ?? '',
             ))?.id ??
             0,
         'synced',
@@ -418,7 +418,7 @@ class SyncService {
       await localDatabase.bibliotecaLocalDataSource.updateSyncStatus(
         (await localDatabase.bibliotecaLocalDataSource.getByLibroId(
               libroId,
-              payload['usuarioId'] as int? ?? 0,
+              payload['usuarioId'] as String? ?? '',
             ))?.id ??
             0,
         'conflict',
@@ -428,7 +428,7 @@ class SyncService {
 
   Future<void> resolveConflictWithLatestWrite({
     required int libroId,
-    required int usuarioId,
+    required String usuarioId,
     required int serverTimestamp,
     required double serverProgreso,
     required int serverPage,

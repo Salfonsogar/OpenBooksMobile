@@ -6,15 +6,15 @@ class BibliotecaRepository {
 
   BibliotecaRepository(this._dataSource);
 
-  Future<List<LibroBiblioteca>> getLibrosBiblioteca(int usuarioId) {
+  Future<List<LibroBiblioteca>> getLibrosBiblioteca(String usuarioId) {
     return _dataSource.getLibrosBiblioteca(usuarioId);
   }
 
-  Future<void> agregarLibro(int usuarioId, int libroId) {
+  Future<void> agregarLibro(String usuarioId, int libroId) {
     return _dataSource.agregarLibro(usuarioId, libroId);
   }
 
-  Future<void> quitarLibro(int usuarioId, int libroId) {
+  Future<void> quitarLibro(String usuarioId, int libroId) {
     return _dataSource.quitarLibro(usuarioId, libroId);
   }
 

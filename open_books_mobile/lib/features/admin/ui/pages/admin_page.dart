@@ -43,15 +43,14 @@ class _AdminHeader extends StatelessWidget {
 
   Widget _buildAvatar(BuildContext context, SessionState state) {
     if (state is SessionAuthenticated) {
-      if (state.fotoPerfilBase64 != null && state.fotoPerfilBase64!.isNotEmpty) {
-        try {
-          return CircleAvatar(
-            radius: 18,
-            backgroundImage: MemoryImage(
-              base64Decode(state.fotoPerfilBase64!),
-            ),
-          );
-        } catch (_) {}
+      final fotoUrl = state.user.fotoPerfilUrl;
+      if (fotoUrl != null && fotoUrl.isNotEmpty) {
+        return CircleAvatar(
+          radius: 18,
+          backgroundImage: fotoUrl.startsWith('data:')
+              ? MemoryImage(base64Decode(fotoUrl.split(',').last))
+              : NetworkImage(fotoUrl),
+        );
       }
       return CircleAvatar(
         radius: 18,

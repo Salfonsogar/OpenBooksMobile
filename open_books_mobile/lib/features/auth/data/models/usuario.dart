@@ -1,14 +1,12 @@
 class Usuario {
-  final int id;
+  final String id;
   final String userName;
   final String nombreCompleto;
   final String email;
   final bool estado;
-  final bool sancionado;
   final DateTime fechaRegistro;
   final String nombreRol;
-  final int rolId;
-  final String? fotoPerfilBase64;
+  final String? fotoPerfilUrl;
 
   Usuario({
     required this.id,
@@ -16,27 +14,23 @@ class Usuario {
     required this.nombreCompleto,
     required this.email,
     required this.estado,
-    required this.sancionado,
     required this.fechaRegistro,
     required this.nombreRol,
-    required this.rolId,
-    this.fotoPerfilBase64,
+    this.fotoPerfilUrl,
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
     return Usuario(
-      id: json['id'] as int,
-      userName: json['userName'] as String? ?? '',
-      nombreCompleto: json['nombreCompleto'] as String? ?? '',
-      email: json['email'] as String? ?? '',
-      estado: json['estado'] as bool? ?? true,
-      sancionado: json['sancionado'] as bool? ?? false,
-      fechaRegistro: json['fechaRegistro'] != null
-          ? DateTime.parse(json['fechaRegistro'] as String)
+      id: json['id'] as String? ?? json['Id'] as String? ?? '',
+      userName: json['userName'] as String? ?? json['UserName'] as String? ?? '',
+      nombreCompleto: json['nombreCompleto'] as String? ?? json['NombreCompleto'] as String? ?? '',
+      email: json['email'] as String? ?? json['Email'] as String? ?? '',
+      estado: json['estado'] as bool? ?? json['Estado'] as bool? ?? true,
+      fechaRegistro: (json['fechaRegistro'] ?? json['FechaRegistro']) != null
+          ? DateTime.parse((json['fechaRegistro'] ?? json['FechaRegistro']) as String)
           : DateTime.now(),
-      nombreRol: json['nombreRol'] as String? ?? 'Usuario',
-      rolId: json['rolId'] as int? ?? 2,
-      fotoPerfilBase64: json['fotoPerfil'] as String?,
+      nombreRol: json['nombreRol'] as String? ?? json['NombreRol'] as String? ?? 'Usuario',
+      fotoPerfilUrl: json['fotoPerfilUrl'] as String? ?? json['FotoPerfilUrl'] as String?,
     );
   }
 
@@ -47,13 +41,11 @@ class Usuario {
       'nombreCompleto': nombreCompleto,
       'email': email,
       'estado': estado,
-      'sancionado': sancionado,
       'fechaRegistro': fechaRegistro.toIso8601String(),
       'nombreRol': nombreRol,
-      'rolId': rolId,
-      'fotoPerfil': fotoPerfilBase64,
+      'fotoPerfilUrl': fotoPerfilUrl,
     };
   }
 
-  bool get isAdmin => rolId == 1 || nombreRol.toLowerCase() == 'administrador';
+  bool get isAdmin => nombreRol.toLowerCase() == 'administrador';
 }

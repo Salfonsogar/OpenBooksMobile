@@ -14,14 +14,18 @@ class LibrosRepository {
     this._resenasDataSource,
   );
 
-  Future<PagedResult<Libro>> getLibros({
+  Future<List<Libro>> getCatalogo() {
+    return _librosDataSource.getCatalogo();
+  }
+
+  Future<PagedResult<Libro>> getLibrosPaged({
     String? query,
     int page = 1,
     int pageSize = 10,
     List<int>? categorias,
     String? autor,
   }) {
-    return _librosDataSource.getLibros(
+    return _librosDataSource.getLibrosPaged(
       query: query,
       page: page,
       pageSize: pageSize,
@@ -30,12 +34,14 @@ class LibrosRepository {
     );
   }
 
-  Future<LibroDetalle> getLibroDetalle(int id, {int page = 1, int pageSize = 5}) {
-    return _librosDataSource.getLibroDetalle(id, page: page, pageSize: pageSize);
+  Future<Libro?> getLibroById(int id) {
+    return _librosDataSource.getLibroById(id);
   }
 
-  Future<String> getPortada(int id) {
-    return _librosDataSource.getPortada(id);
+  Future<LibroDetalle?> getLibroDetalle(int id) async {
+    final libro = await _librosDataSource.getLibroById(id);
+    if (libro == null) return null;
+    return LibroDetalle.fromLibro(libro);
   }
 
   Future<PagedResult<Categoria>> getCategorias({int pageNumber = 1, int pageSize = 50}) {
@@ -75,15 +81,15 @@ class LibrosRepository {
   }
 
   Future<List<Libro>> getLibrosAleatorios({int limit = 10}) async {
-    final result = await _librosDataSource.getLibros(page: 1, pageSize: 50);
-    final libros = result.data;
+    final result = await _librosDataSource.getCatalogo();
+    final libros = result.toList();
     libros.shuffle();
     return libros.take(limit).toList();
   }
 
   Future<DenunciaResena> crearDenunciaResena({
-    required int idDenunciante,
-    required int idDenunciado,
+    required String idDenunciante,
+    required String idDenunciado,
     required int idResena,
     required String motivo,
     String? comentario,

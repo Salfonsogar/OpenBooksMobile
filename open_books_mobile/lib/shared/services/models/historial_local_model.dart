@@ -1,7 +1,7 @@
 class HistorialLocalModel {
   final int? id;
   final int libroId;
-  final int usuarioId;
+  final String usuarioId;
   final String titulo;
   final String? autor;
   final String? portadaBase64;
@@ -29,7 +29,7 @@ class HistorialLocalModel {
     return HistorialLocalModel(
       id: map['id'] as int?,
       libroId: map['libro_id'] as int,
-      usuarioId: map['usuario_id'] as int,
+      usuarioId: map['usuario_id'] as String,
       titulo: map['titulo'] as String,
       autor: map['autor'] as String?,
       portadaBase64: map['portada_base64'] as String?,
@@ -60,7 +60,7 @@ class HistorialLocalModel {
   HistorialLocalModel copyWith({
     int? id,
     int? libroId,
-    int? usuarioId,
+    String? usuarioId,
     String? titulo,
     String? autor,
     String? portadaBase64,

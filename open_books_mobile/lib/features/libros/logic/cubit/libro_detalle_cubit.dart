@@ -22,19 +22,17 @@ class LibroDetalleLoading extends LibroDetalleState {}
 
 class LibroDetalleLoaded extends LibroDetalleState {
   final LibroDetalle libro;
-  final String? portadaBase64;
   final bool estaEnBiblioteca;
   final OperationType? operationType;
 
   const LibroDetalleLoaded({
     required this.libro,
-    this.portadaBase64,
     this.estaEnBiblioteca = false,
     this.operationType,
   });
 
   @override
-  List<Object?> get props => [libro, portadaBase64, estaEnBiblioteca, operationType];
+  List<Object?> get props => [libro, estaEnBiblioteca, operationType];
 
   bool get isValoracionSuccess => operationType == OperationType.valoracion;
   bool get isResenaSuccess => operationType == OperationType.resena;
@@ -42,14 +40,12 @@ class LibroDetalleLoaded extends LibroDetalleState {
 
   LibroDetalleLoaded copyWith({
     LibroDetalle? libro,
-    String? portadaBase64,
     bool? estaEnBiblioteca,
     OperationType? operationType,
     bool clearOperationType = false,
   }) {
     return LibroDetalleLoaded(
       libro: libro ?? this.libro,
-      portadaBase64: portadaBase64 ?? this.portadaBase64,
       estaEnBiblioteca: estaEnBiblioteca ?? this.estaEnBiblioteca,
       operationType: clearOperationType ? null : (operationType ?? this.operationType),
     );
@@ -70,7 +66,6 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
   final BibliotecaDataSource _bibliotecaDataSource;
   final SessionCubit _sessionCubit;
   int? _libroId;
-  String? _portadaBase64;
   bool _estaEnBiblioteca = false;
 
   LibroDetalleCubit(
@@ -83,10 +78,11 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
     _libroId = libroId;
     emit(LibroDetalleLoading());
     try {
-      final libro = await _repository.getLibroDetalle(libroId);
-      
-      String? portada = libro.portadaBase64;
-      _portadaBase64 = portada;
+      final libroDetalle = await _repository.getLibroDetalle(libroId);
+      if (libroDetalle == null) {
+        emit(const LibroDetalleError('Libro no encontrado'));
+        return;
+      }
       
       bool enBiblioteca = false;
       final sessionState = _sessionCubit.state;
@@ -101,8 +97,7 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
       }
       
       emit(LibroDetalleLoaded(
-        libro: libro,
-        portadaBase64: portada,
+        libro: libroDetalle,
         estaEnBiblioteca: enBiblioteca,
       ));
     } catch (e) {
@@ -123,7 +118,6 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
       );
       emit(LibroDetalleLoaded(
         libro: libroActualizado,
-        portadaBase64: _portadaBase64,
         estaEnBiblioteca: _estaEnBiblioteca,
       ));
     } catch (e) {
@@ -143,24 +137,26 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
     try {
       await _repository.crearValoracion(_libroId!, puntuacion);
       final libro = await _repository.getLibroDetalle(_libroId!);
-      emit(LibroDetalleLoaded(
-        libro: libro,
-        portadaBase64: _portadaBase64,
-        estaEnBiblioteca: _estaEnBiblioteca,
-        operationType: OperationType.valoracion,
-      ));
+      if (libro != null) {
+        emit(LibroDetalleLoaded(
+          libro: libro,
+          estaEnBiblioteca: _estaEnBiblioteca,
+          operationType: OperationType.valoracion,
+        ));
+      }
     } catch (e) {
       final errorStr = e.toString();
       if (errorStr.contains('Ya has valorado')) {
         try {
           await _repository.actualizarValoracion(_libroId!, puntuacion);
           final libro = await _repository.getLibroDetalle(_libroId!);
-          emit(LibroDetalleLoaded(
-            libro: libro,
-            portadaBase64: _portadaBase64,
-            estaEnBiblioteca: _estaEnBiblioteca,
-            operationType: OperationType.valoracion,
-          ));
+          if (libro != null) {
+            emit(LibroDetalleLoaded(
+              libro: libro,
+              estaEnBiblioteca: _estaEnBiblioteca,
+              operationType: OperationType.valoracion,
+            ));
+          }
         } catch (e2) {
           _handleAuthError(e2);
         }
@@ -182,12 +178,13 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
     try {
       await _repository.actualizarValoracion(_libroId!, puntuacion);
       final libro = await _repository.getLibroDetalle(_libroId!);
-      emit(LibroDetalleLoaded(
-        libro: libro,
-        portadaBase64: _portadaBase64,
-        estaEnBiblioteca: _estaEnBiblioteca,
-        operationType: OperationType.valoracion,
-      ));
+      if (libro != null) {
+        emit(LibroDetalleLoaded(
+          libro: libro,
+          estaEnBiblioteca: _estaEnBiblioteca,
+          operationType: OperationType.valoracion,
+        ));
+      }
     } catch (e) {
       _handleAuthError(e);
     }
@@ -205,12 +202,13 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
     try {
       await _repository.eliminarValoracion(_libroId!);
       final libro = await _repository.getLibroDetalle(_libroId!);
-      emit(LibroDetalleLoaded(
-        libro: libro,
-        portadaBase64: _portadaBase64,
-        estaEnBiblioteca: _estaEnBiblioteca,
-        operationType: OperationType.valoracion,
-      ));
+      if (libro != null) {
+        emit(LibroDetalleLoaded(
+          libro: libro,
+          estaEnBiblioteca: _estaEnBiblioteca,
+          operationType: OperationType.valoracion,
+        ));
+      }
     } catch (e) {
       _handleAuthError(e);
     }
@@ -228,12 +226,13 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
     try {
       await _repository.crearResena(_libroId!, texto);
       final libro = await _repository.getLibroDetalle(_libroId!);
-      emit(LibroDetalleLoaded(
-        libro: libro,
-        portadaBase64: _portadaBase64,
-        estaEnBiblioteca: _estaEnBiblioteca,
-        operationType: OperationType.resena,
-      ));
+      if (libro != null) {
+        emit(LibroDetalleLoaded(
+          libro: libro,
+          estaEnBiblioteca: _estaEnBiblioteca,
+          operationType: OperationType.resena,
+        ));
+      }
     } catch (e) {
       _handleAuthError(e);
     }
@@ -265,8 +264,8 @@ class LibroDetalleCubit extends Cubit<LibroDetalleState> {
   }
 
   Future<void> denunciarResena({
-    required int idDenunciante,
-    required int idDenunciado,
+    required String idDenunciante,
+    required String idDenunciado,
     required int idResena,
     required String motivo,
     String? comentario,

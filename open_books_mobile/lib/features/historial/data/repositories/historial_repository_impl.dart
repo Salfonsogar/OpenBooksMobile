@@ -27,14 +27,14 @@ class HistorialRepositoryImpl implements IHistorialRepository {
   }
 
   @override
-  Future<List<HistorialEntryEntity>> getHistorial(int usuarioId) async {
+  Future<List<HistorialEntryEntity>> getHistorial(String usuarioId) async {
     final localData = await localDatabase.historialLocalDataSource
         .getByUsuarioId(usuarioId);
     return HistorialMapper.fromLocalModelList(localData);
   }
 
   @override
-  Future<void> addToHistorial(int usuarioId, Libro libro) async {
+  Future<void> addToHistorial(String usuarioId, Libro libro) async {
     final localModel = HistorialMapper.fromLibroToLocalModel(libro, usuarioId);
     await localDatabase.historialLocalDataSource.insertOrUpdate(localModel);
 
@@ -86,7 +86,7 @@ class HistorialRepositoryImpl implements IHistorialRepository {
     // Marcamos como synced sin hacer llamada a API
   }
 
-  Future<void> syncFromRemote(int usuarioId) async {
+  Future<void> syncFromRemote(String usuarioId) async {
     final isConnected = await networkInfo.isConnected;
     if (!isConnected) return;
 
@@ -100,7 +100,7 @@ class HistorialRepositoryImpl implements IHistorialRepository {
           usuarioId: usuarioId,
           titulo: libro.titulo,
           autor: libro.autor,
-          portadaBase64: libro.portadaBase64,
+          portadaBase64: null,
           ultimaLectura: now,
           status: 'synced',
           createdAt: now,

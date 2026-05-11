@@ -6,7 +6,7 @@ class GetHistorialUseCase {
 
   GetHistorialUseCase(this.repository);
 
-  Future<List<HistorialEntryEntity>> call(int usuarioId) async {
+  Future<List<HistorialEntryEntity>> call(String usuarioId) async {
     final isConnected = await repository.isConnected;
 
     if (isConnected) {

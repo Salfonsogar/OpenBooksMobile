@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 
 import '../../../../shared/core/network/api_client.dart';
@@ -11,7 +9,17 @@ class LibrosDataSource {
 
   LibrosDataSource(this._apiClient);
 
-  Future<PagedResult<Libro>> getLibros({
+  Future<List<Libro>> getCatalogo() async {
+    try {
+      final response = await _apiClient.get('/api/Libro');
+      final list = response.data as List<dynamic>;
+      return list.map((e) => Libro.fromJson(e as Map<String, dynamic>)).toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<PagedResult<Libro>> getLibrosPaged({
     String? query,
     int page = 1,
     int pageSize = 10,
@@ -25,12 +33,12 @@ class LibrosDataSource {
       };
       if (query != null && query.isNotEmpty) queryParams['query'] = query;
       if (categorias != null && categorias.isNotEmpty) {
-        queryParams['categorias'] = categorias.join(',');
+        queryParams['categoriaId'] = categorias.join(',');
       }
       if (autor != null && autor.isNotEmpty) queryParams['autor'] = autor;
 
       final response = await _apiClient.get(
-        '/api/Libros',
+        '/api/Libro/paged',
         queryParameters: queryParams,
       );
       return PagedResult.fromJson(
@@ -42,36 +50,11 @@ class LibrosDataSource {
     }
   }
 
-  Future<LibroDetalle> getLibroDetalle(int id, {int page = 1, int pageSize = 5}) async {
+  Future<Libro?> getLibroById(int id) async {
     try {
-      final response = await _apiClient.get(
-        '/api/Libros/$id/detalle',
-        queryParameters: {'page': page, 'pageSize': pageSize},
-      );
-      return LibroDetalle.fromJson(response.data as Map<String, dynamic>);
+      final catalogo = await getCatalogo();
+      return catalogo.cast<Libro?>().firstWhere((l) => l!.id == id, orElse: () => null);
     } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<String> getPortada(int id) async {
-    try {
-      final response = await _apiClient.get(
-        '/api/Libros/$id/portada',
-        options: Options(responseType: ResponseType.bytes),
-      );
-      
-      final bytes = response.data as List<int>;
-      
-      if (bytes.isEmpty) {
-        return '';
-      }
-      
-      return base64Encode(bytes);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404 || e.response?.statusCode == 204) {
-        return '';
-      }
       throw _handleError(e);
     }
   }

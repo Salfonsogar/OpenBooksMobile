@@ -1,6 +1,6 @@
 class Sugerencia {
   final int id;
-  final int idUsuario;
+  final String idUsuario;
   final String nombreUsuario;
   final String comentario;
 
@@ -14,7 +14,7 @@ class Sugerencia {
   factory Sugerencia.fromJson(Map<String, dynamic> json) {
     return Sugerencia(
       id: json['id'] as int,
-      idUsuario: json['idUsuario'] as int? ?? 0,
+      idUsuario: (json['idUsuario'] as String?) ?? (json['idUsuario'] as num?)?.toString() ?? '',
       nombreUsuario: json['nombreUsuario'] as String? ?? '',
       comentario: json['comentario'] as String? ?? '',
     );

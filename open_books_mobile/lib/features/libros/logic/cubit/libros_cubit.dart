@@ -89,7 +89,7 @@ class LibrosCubit extends Cubit<LibrosState> {
 
     emit(LibrosLoading());
     try {
-      final result = await _repository.getLibros(
+      final result = await _repository.getLibrosPaged(
         query: query,
         page: page,
         pageSize: pageSize,
@@ -174,12 +174,12 @@ class LibrosCubit extends Cubit<LibrosState> {
   }
 
   Future<List<Libro>> getLibrosPorCategoria(int categoriaId) async {
-    final result = await _repository.getLibros(categorias: [categoriaId], pageSize: 10);
+    final result = await _repository.getLibrosPaged(categorias: [categoriaId], pageSize: 10);
     return result.data;
   }
 
   Future<List<Libro>> getLibrosPorAutor(String autor) async {
-    final result = await _repository.getLibros(autor: autor, pageSize: 10);
+    final result = await _repository.getLibrosPaged(autor: autor, pageSize: 10);
     return result.data;
   }
 }

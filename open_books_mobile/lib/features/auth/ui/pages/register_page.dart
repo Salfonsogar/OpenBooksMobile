@@ -17,16 +17,13 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final _nombreUsuarioController = TextEditingController();
-  final _nombreCompletoController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  final int _rolId = 2;
 
   String? _nombreUsuarioError;
-  String? _nombreCompletoError;
   String? _emailError;
   String? _passwordError;
   String? _confirmPasswordError;
@@ -38,14 +35,6 @@ class _RegisterPageState extends State<RegisterPage> {
         _nombreUsuarioController.text, 'nombre de usuario',
       ) ?? AuthValidators.validateMinLength(
         _nombreUsuarioController.text, 3, 'nombre de usuario',
-      );
-    });
-  }
-
-  void _validateNombreCompleto() {
-    setState(() {
-      _nombreCompletoError = AuthValidators.validateRequired(
-        _nombreCompletoController.text, 'nombre completo',
       );
     });
   }
@@ -75,7 +64,6 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void dispose() {
     _nombreUsuarioController.dispose();
-    _nombreCompletoController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -84,13 +72,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
   void _onRegister() {
     _validateNombreUsuario();
-    _validateNombreCompleto();
     _validateEmail();
     _validatePassword();
     _validateConfirmPassword();
 
     if (_nombreUsuarioError != null ||
-        _nombreCompletoError != null ||
         _emailError != null ||
         _passwordError != null ||
         _confirmPasswordError != null) {
@@ -101,11 +87,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (_formKey.currentState!.validate()) {
       context.read<AuthCubit>().register(
-            nombreUsuario: _nombreUsuarioController.text.trim(),
+            userName: _nombreUsuarioController.text.trim(),
             correo: _emailController.text.trim(),
             contrasena: _passwordController.text,
-            rolId: _rolId,
-            nombreCompleto: _nombreCompletoController.text.trim(),
           );
     }
   }
@@ -126,7 +110,7 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
       body: BlocListener<AuthCubit, AuthState>(
         listener: (context, state) {
-          if (state is AuthRegisterSuccess) {
+          if (state is AuthLoginSuccess) {
             context.go('/home');
           } else if (state is AuthError) {
             setState(() {
@@ -161,27 +145,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     validator: (value) => null,
                   ),
                   if (_nombreUsuarioError != null) AuthErrorBanner(message: _nombreUsuarioError!),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _nombreCompletoController,
-                    textInputAction: TextInputAction.next,
-                    textCapitalization: TextCapitalization.words,
-                    onChanged: (_) => _validateNombreCompleto(),
-                    onEditingComplete: () => _validateNombreCompleto(),
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-                    decoration: InputDecoration(
-                      labelText: 'Nombre completo',
-                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                      prefixIcon: Icon(
-                        Icons.badge_outlined,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    ),
-                    validator: (value) => null,
-                  ),
-                  if (_nombreCompletoError != null) AuthErrorBanner(message: _nombreCompletoError!),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailController,

@@ -1,47 +1,40 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:open_books_mobile/features/auth/data/models/rol.dart';
 import 'package:open_books_mobile/features/auth/data/models/usuario.dart';
 import 'package:open_books_mobile/features/auth/data/models/login_response.dart';
 import 'package:open_books_mobile/features/auth/data/repositories/auth_repository.dart';
-import 'package:open_books_mobile/features/auth/data/repositories/roles_repository.dart';
 import 'package:open_books_mobile/features/auth/logic/cubit/auth_cubit.dart';
 import 'package:open_books_mobile/features/auth/logic/cubit/auth_state.dart';
 import 'package:open_books_mobile/shared/core/session/session_cubit.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
 
-class MockRolesRepository extends Mock implements RolesRepository {}
-
 class MockSessionCubit extends Mock implements SessionCubit {}
 
 void main() {
   const testEmail = 'test@example.com';
   const testPassword = 'Password1!';
-  const testToken = 'jwt_token_123';
+  const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwczovL3NjaGVtYXMud29yZHByb3RvLm9yZy9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJodHRwczovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjpbIkFkbWluaXN0cmFkb3IiXSwiaWF0IjoxNzA0MDgwMDAwfQ.signature';
+  const testUserId = '550e8400-e29b-41d4-a716-446655440000';
 
   late MockAuthRepository mockAuthRepository;
-  late MockRolesRepository mockRolesRepository;
   late MockSessionCubit mockSessionCubit;
 
   setUpAll(() {
     registerFallbackValue(Usuario(
-      id: 0,
+      id: testUserId,
       userName: '',
       nombreCompleto: '',
       email: '',
       estado: true,
-      sancionado: false,
       fechaRegistro: DateTime.now(),
-      nombreRol: '',
-      rolId: 0,
+      nombreRol: 'Usuario',
     ));
   });
 
   setUp(() {
     mockAuthRepository = MockAuthRepository();
-    mockRolesRepository = MockRolesRepository();
     mockSessionCubit = MockSessionCubit();
   });
 
@@ -50,7 +43,6 @@ void main() {
       'initial state is AuthInitial',
       build: () => AuthCubit(
         authRepository: mockAuthRepository,
-        rolesRepository: mockRolesRepository,
         sessionCubit: mockSessionCubit,
       ),
       verify: (cubit) {
@@ -60,25 +52,25 @@ void main() {
 
     group('login', () {
       final usuario = Usuario(
-        id: 1,
+        id: testUserId,
         userName: 'testuser',
         nombreCompleto: 'Test User',
         email: testEmail,
         estado: true,
-        sancionado: false,
         fechaRegistro: DateTime.now(),
         nombreRol: 'Usuario',
-        rolId: 2,
       );
-      final loginResponse = LoginResponse(usuario: usuario, token: testToken);
+      final loginResponse = LoginResponse(
+        token: testToken,
+        username: 'testuser',
+        correo: testEmail,
+      );
 
       blocTest<AuthCubit, AuthState>(
         'emits [AuthLoading, AuthLoginSuccess] when login succeeds',
         setUp: () {
           when(() => mockAuthRepository.login(any(), any()))
               .thenAnswer((_) async => loginResponse);
-          when(() => mockRolesRepository.getRol(any()))
-              .thenAnswer((_) async => const Rol(id: 2, nombre: 'Usuario'));
           when(
             () => mockSessionCubit.login(
               user: any(named: 'user'),
@@ -88,13 +80,12 @@ void main() {
         },
         build: () => AuthCubit(
           authRepository: mockAuthRepository,
-          rolesRepository: mockRolesRepository,
           sessionCubit: mockSessionCubit,
         ),
         act: (cubit) => cubit.login(testEmail, testPassword),
         expect: () => [
           AuthLoading(),
-          AuthLoginSuccess(usuario: usuario, token: testToken),
+          isA<AuthLoginSuccess>(),
         ],
       );
 
@@ -106,7 +97,6 @@ void main() {
         },
         build: () => AuthCubit(
           authRepository: mockAuthRepository,
-          rolesRepository: mockRolesRepository,
           sessionCubit: mockSessionCubit,
         ),
         act: (cubit) => cubit.login(testEmail, 'wrong'),
@@ -118,33 +108,23 @@ void main() {
     });
 
     group('register', () {
-      final usuario = Usuario(
-        id: 1,
-        userName: 'newuser',
-        nombreCompleto: 'New User',
-        email: testEmail,
-        estado: true,
-        sancionado: false,
-        fechaRegistro: DateTime.now(),
-        nombreRol: 'Usuario',
-        rolId: 2,
-      );
-      final registerResponse = LoginResponse(usuario: usuario, token: testToken);
-
       blocTest<AuthCubit, AuthState>(
-        'emits [AuthLoading, AuthRegisterSuccess] when register succeeds',
+        'emits [AuthLoading, AuthLoginSuccess] when register succeeds',
         setUp: () {
           when(
             () => mockAuthRepository.register(
-              nombreUsuario: any(named: 'nombreUsuario'),
+              userName: any(named: 'userName'),
               correo: any(named: 'correo'),
               contrasena: any(named: 'contrasena'),
-              rolId: any(named: 'rolId'),
-              nombreCompleto: any(named: 'nombreCompleto'),
             ),
-          ).thenAnswer((_) async => registerResponse);
-          when(() => mockRolesRepository.getRol(any()))
-              .thenAnswer((_) async => const Rol(id: 2, nombre: 'Usuario'));
+          ).thenAnswer((_) async {});
+          final loginResponse = LoginResponse(
+            token: testToken,
+            username: 'newuser',
+            correo: testEmail,
+          );
+          when(() => mockAuthRepository.login(any(), any()))
+              .thenAnswer((_) async => loginResponse);
           when(
             () => mockSessionCubit.login(
               user: any(named: 'user'),
@@ -154,19 +134,16 @@ void main() {
         },
         build: () => AuthCubit(
           authRepository: mockAuthRepository,
-          rolesRepository: mockRolesRepository,
           sessionCubit: mockSessionCubit,
         ),
         act: (cubit) => cubit.register(
-          nombreUsuario: 'newuser',
+          userName: 'newuser',
           correo: testEmail,
           contrasena: testPassword,
-          rolId: 2,
-          nombreCompleto: 'New User',
         ),
         expect: () => [
           AuthLoading(),
-          AuthRegisterSuccess(usuario: usuario, token: testToken),
+          isA<AuthLoginSuccess>(),
         ],
       );
 
@@ -175,25 +152,20 @@ void main() {
         setUp: () {
           when(
             () => mockAuthRepository.register(
-              nombreUsuario: any(named: 'nombreUsuario'),
+              userName: any(named: 'userName'),
               correo: any(named: 'correo'),
               contrasena: any(named: 'contrasena'),
-              rolId: any(named: 'rolId'),
-              nombreCompleto: any(named: 'nombreCompleto'),
             ),
           ).thenThrow(Exception('El usuario ya existe'));
         },
         build: () => AuthCubit(
           authRepository: mockAuthRepository,
-          rolesRepository: mockRolesRepository,
           sessionCubit: mockSessionCubit,
         ),
         act: (cubit) => cubit.register(
-          nombreUsuario: 'newuser',
+          userName: 'newuser',
           correo: testEmail,
           contrasena: testPassword,
-          rolId: 2,
-          nombreCompleto: 'New User',
         ),
         expect: () => [
           AuthLoading(),
@@ -207,11 +179,10 @@ void main() {
         'emits [AuthLoading, AuthRecoverySent] on success',
         setUp: () {
           when(() => mockAuthRepository.solicitarRecuperacion(any()))
-              .thenAnswer((_) async {});
+              .thenAnswer((_) async => {'message': 'success'});
         },
         build: () => AuthCubit(
           authRepository: mockAuthRepository,
-          rolesRepository: mockRolesRepository,
           sessionCubit: mockSessionCubit,
         ),
         act: (cubit) => cubit.solicitarRecuperacion(testEmail),
@@ -231,7 +202,6 @@ void main() {
         },
         build: () => AuthCubit(
           authRepository: mockAuthRepository,
-          rolesRepository: mockRolesRepository,
           sessionCubit: mockSessionCubit,
         ),
         act: (cubit) => cubit.solicitarRecuperacion(testEmail),
@@ -246,15 +216,14 @@ void main() {
       blocTest<AuthCubit, AuthState>(
         'emits [AuthLoading, AuthPasswordResetSuccess] on success',
         setUp: () {
-          when(() => mockAuthRepository.resetearContrasena(any(), any()))
+          when(() => mockAuthRepository.resetearContrasena(any(), any(), any()))
               .thenAnswer((_) async {});
         },
         build: () => AuthCubit(
           authRepository: mockAuthRepository,
-          rolesRepository: mockRolesRepository,
           sessionCubit: mockSessionCubit,
         ),
-        act: (cubit) => cubit.resetearContrasena('token123', testPassword),
+        act: (cubit) => cubit.resetearContrasena(testEmail, 'token123', testPassword),
         expect: () => [
           AuthLoading(),
           AuthPasswordResetSuccess(),
@@ -264,15 +233,14 @@ void main() {
       blocTest<AuthCubit, AuthState>(
         'emits [AuthLoading, AuthError] on failure',
         setUp: () {
-          when(() => mockAuthRepository.resetearContrasena(any(), any()))
+          when(() => mockAuthRepository.resetearContrasena(any(), any(), any()))
               .thenThrow(Exception('Token inválido'));
         },
         build: () => AuthCubit(
           authRepository: mockAuthRepository,
-          rolesRepository: mockRolesRepository,
           sessionCubit: mockSessionCubit,
         ),
-        act: (cubit) => cubit.resetearContrasena('token123', testPassword),
+        act: (cubit) => cubit.resetearContrasena(testEmail, 'token123', testPassword),
         expect: () => [
           AuthLoading(),
           const AuthError('Token inválido'),

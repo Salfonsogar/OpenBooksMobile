@@ -11,41 +11,42 @@ class AuthRepository {
     return _dataSource.login(request);
   }
 
-  Future<LoginResponse> register({
-    required String nombreUsuario,
+  Future<void> register({
+    required String userName,
     required String correo,
     required String contrasena,
-    required int rolId,
-    required String nombreCompleto,
   }) async {
     final request = RegisterRequest(
-      nombreUsuario: nombreUsuario,
+      userName: userName,
       correo: correo,
       contrasena: contrasena,
-      rolId: rolId,
-      nombreCompleto: nombreCompleto,
     );
-    return _dataSource.register(request);
+    await _dataSource.register(request);
   }
 
-  Future<void> solicitarRecuperacion(String correo) async {
+  Future<Map<String, dynamic>> solicitarRecuperacion(String correo) async {
     final request = RecoveryRequest(correo: correo);
-    await _dataSource.solicitarRecuperacion(request);
+    return _dataSource.solicitarRecuperacion(request);
   }
 
-  Future<void> resetearContrasena(String token, String nuevaContrasena) async {
+  Future<void> resetearContrasena(
+    String email,
+    String token,
+    String nuevaContrasena,
+  ) async {
     final request = ResetPasswordRequest(
+      email: email,
       token: token,
       nuevaContrasena: nuevaContrasena,
     );
     await _dataSource.resetearContrasena(request);
   }
 
-  Future<Usuario> getUsuario(int id) async {
+  Future<Usuario> getUsuario(String id) async {
     return _dataSource.getUsuario(id);
   }
 
-  Future<Usuario> updateUsuario(int id, {
+  Future<Usuario> updateUsuario(String id, {
     String? userName,
     String? email,
     String? nombreCompleto,

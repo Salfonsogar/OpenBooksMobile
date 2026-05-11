@@ -5,22 +5,16 @@ void main() {
   group('RegisterRequest', () {
     test('toJson returns correct map', () {
       final request = RegisterRequest(
-        nombreUsuario: 'newuser',
+        userName: 'newuser',
         correo: 'new@example.com',
         contrasena: 'Password1!',
-        rolId: 2,
-        nombreCompleto: 'New User',
       );
 
       final json = request.toJson();
 
-      expect(json, {
-        'nombreUsuario': 'newuser',
-        'correo': 'new@example.com',
-        'contrasena': 'Password1!',
-        'rolId': 2,
-        'nombreCompleto': 'New User',
-      });
+      expect(json['UserName'], 'newuser');
+      expect(json['Correo'], 'new@example.com');
+      expect(json['Contrasena'], 'Password1!');
     });
   });
 }

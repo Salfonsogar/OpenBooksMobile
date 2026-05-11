@@ -7,11 +7,11 @@ import 'package:open_books_mobile/features/libros/data/models/libro.dart';
 enum SyncStatus { synced, pending, failed }
 
 abstract class IBibliotecaRepository {
-  Future<Either<Failure, List<LibroBibliotecaEntity>>> getBiblioteca(int usuarioId);
-  Future<Either<Failure, void>> addLibro(int usuarioId, int libroId);
-  Future<Either<Failure, void>> addLibroFromRemote(int usuarioId, Libro libro);
-  Future<Either<Failure, void>> removeLibro(int usuarioId, int libroId);
+  Future<Either<Failure, List<LibroBibliotecaEntity>>> getBiblioteca(String usuarioId);
+  Future<Either<Failure, void>> addLibro(String usuarioId, int libroId);
+  Future<Either<Failure, void>> addLibroFromRemote(String usuarioId, Libro libro);
+  Future<Either<Failure, void>> removeLibro(String usuarioId, int libroId);
   Future<Either<Failure, void>> syncNow();
-  Future<Either<Failure, void>> syncFromRemote(int usuarioId);
+  Future<Either<Failure, void>> syncFromRemote(String usuarioId);
   Future<bool> get isConnected;
 }

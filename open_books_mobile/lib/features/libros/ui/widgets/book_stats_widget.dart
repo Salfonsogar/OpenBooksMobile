@@ -35,14 +35,6 @@ class BookStatsWidget extends StatelessWidget {
               label: 'Reseñas',
               value: libro.totalResenas.toString(),
             ),
-            _buildStatItem(
-              context,
-              icon: Icons.description,
-              label: 'Páginas',
-              value: libro.numeroPaginas != null
-                  ? libro.numeroPaginas.toString()
-                  : 'N/A',
-            ),
           ],
         ),
       ),

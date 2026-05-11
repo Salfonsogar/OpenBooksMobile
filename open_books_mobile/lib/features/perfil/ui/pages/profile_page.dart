@@ -75,12 +75,14 @@ class _ProfilePageState extends State<ProfilePage> {
                         radius: 60,
                         backgroundColor:
                             Theme.of(context).colorScheme.primaryContainer,
-                        backgroundImage: usuario.fotoPerfilBase64 != null &&
-                                usuario.fotoPerfilBase64!.isNotEmpty
-                            ? MemoryImage(base64Decode(usuario.fotoPerfilBase64!))
+                        backgroundImage: usuario.fotoPerfilUrl != null &&
+                                usuario.fotoPerfilUrl!.isNotEmpty
+                            ? (usuario.fotoPerfilUrl!.startsWith('data:'))
+                                ? MemoryImage(base64Decode(usuario.fotoPerfilUrl!.split(',').last))
+                                : NetworkImage(usuario.fotoPerfilUrl!)
                             : null,
-                        child: usuario.fotoPerfilBase64 == null ||
-                                usuario.fotoPerfilBase64!.isEmpty
+                        child: usuario.fotoPerfilUrl == null ||
+                                usuario.fotoPerfilUrl!.isEmpty
                             ? Text(
                                 usuario.userName.isNotEmpty
                                     ? usuario.userName[0].toUpperCase()
@@ -127,32 +129,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                   ),
-                  if (usuario.sancionado) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.warning,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Tu cuenta está sancionada',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,

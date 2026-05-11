@@ -1,25 +1,19 @@
 class RegisterRequest {
-  final String nombreUsuario;
+  final String userName;
   final String correo;
   final String contrasena;
-  final int rolId;
-  final String nombreCompleto;
 
   RegisterRequest({
-    required this.nombreUsuario,
+    required this.userName,
     required this.correo,
     required this.contrasena,
-    required this.rolId,
-    required this.nombreCompleto,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'nombreUsuario': nombreUsuario,
-      'correo': correo,
-      'contrasena': contrasena,
-      'rolId': rolId,
-      'nombreCompleto': nombreCompleto,
+      'UserName': userName,
+      'Correo': correo,
+      'Contrasena': contrasena,
     };
   }
 }

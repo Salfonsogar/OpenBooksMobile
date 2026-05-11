@@ -6,28 +6,29 @@ class ApiConstants {
   static String get _baseUrl => Env().apiBaseUrl;
 
   // Auth
-  static const String login = '/api/Usuarios/Login';
-  static const String register = '/api/Usuarios/Register';
-  static const String solicitarRecuperacion = '/api/Usuarios/SolicitarRecuperacion';
-  static const String resetearContrasena = '/api/Usuarios/ResetearContrasena';
+  static const String login = '/api/Auth/login';
+  static const String register = '/api/Auth/register';
 
   // Usuarios
-  static const String usuarios = '/api/Usuarios';
-  static String usuarioById(int id) => '/api/Usuarios/$id';
+  static const String usuarios = '/api/Usuario';
+  static String usuarioById(String id) => '/api/Usuario/$id';
+  static const String usuarioUploadFoto = '/api/Usuario/upload-foto';
+  static const String solicitarRecuperacion = '/api/Usuario/solicitar-recuperacion';
+  static const String resetearContrasena = '/api/Usuario/reset-password';
 
   // Libros
-  static const String libros = '/api/Libros';
-  static String libroById(int id) => '/api/Libros/$id';
-  static String libroDetalle(int id) => '/api/Libros/$id/detalle';
-  static String libroPortada(int id) => '/api/Libros/$id/portada';
-  static String libroDescargar(int id) => '/api/Libros/$id/descargar';
-  static String libroManifest(int id) => '/api/Libros/$id/epub/manifest';
-  static String libroResource(int id) => '/api/Libros/$id/epub/resource';
-  static const String libroUpload = '/api/Libros/upload';
+  static const String libros = '/api/Libro';
+  static String libroById(int id) => '/api/Libro/$id';
+  static const String librosPaged = '/api/Libro/paged';
+  static String libroDescargar(int id) => '/api/Libro/$id/descargar';
+  static const String libroUploadLibro = '/api/Libro/upload-libro';
+  static const String libroUploadPortada = '/api/Libro/upload-portada';
 
-  // Biblioteca
-  static String bibliotecaLibros(int usuarioId) => '/api/Biblioteca/$usuarioId/libros';
-  static String bibliotecaAgregar(int usuarioId, int libroId) => '/api/Biblioteca/$usuarioId/libros/$libroId';
+  // Biblioteca / UsuarioLibro
+  static const String usuarioLibroBiblioteca = '/api/UsuarioLibro/biblioteca';
+  static String usuarioLibroById(int libroId) => '/api/UsuarioLibro/$libroId';
+  static const String usuarioLibroProgreso = '/api/UsuarioLibro/progreso';
+  static String usuarioLibroFavorito(int libroId) => '/api/UsuarioLibro/favorito/$libroId';
 
   // Valoraciones
   static const String valoraciones = '/api/Valoraciones';
@@ -35,15 +36,12 @@ class ApiConstants {
   static const String valoracionesTop5 = '/api/Valoraciones/top5';
 
   // Reseñas
-  static const String resenas = '/api/Resenas';
-  static String resenasLibro(int id) => '/api/Resenas/libro/$id';
+  static const String resenas = '/api/Resena';
+  static String resenasLibro(int id) => '/api/Resena/libro/$id';
 
   // Categorías
   static const String categorias = '/api/Categorias';
   static String categoriaById(int id) => '/api/Categorias/$id';
-
-  // Historial
-  static const String historialMisLibros = '/api/Historial/mis-libros';
 
   // Denuncias
   static const String denuncia = '/api/Denuncia';
@@ -51,14 +49,21 @@ class ApiConstants {
   // Sugerencias
   static const String sugerencia = '/api/Sugerencia';
 
-  // Sanciones
-  static const String sancion = '/api/Sancion';
-  static String sancionUsuario(int id) => '/api/Sancion/usuario/$id';
+  // Epub
+  static String epubManifest(int libroId) => '/api/epub/$libroId/manifest';
+  static String epubResource(int libroId) => '/api/epub/$libroId/resource';
 
-  // Roles
-  static const String roles = '/api/Rols';
+  // Marcadores
+  static const String marcadores = '/api/Marcadores';
+  static const String marcadoresUsuario = '/api/Marcadores/usuario';
+  static String marcadoresLibro(int libroId) => '/api/Marcadores/libro/$libroId';
+
+  // Resaltadores
+  static const String resaltadores = '/api/Resaltadores';
+  static const String resaltadoresUsuario = '/api/Resaltadores/usuario';
+  static String resaltadoresLibro(int libroId) => '/api/Resaltadores/libro/$libroId';
 
   // Reader
   static String libroResourceUrl(int libroId, String path) =>
-      '$_baseUrl/api/Libros/$libroId/epub/resource?path=${Uri.encodeComponent(path)}';
+      '$_baseUrl/api/epub/$libroId/resource?path=${Uri.encodeComponent(path)}';
 }

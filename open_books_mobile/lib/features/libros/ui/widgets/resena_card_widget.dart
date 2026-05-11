@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 
 import '../../data/models/index.dart';
@@ -65,26 +63,11 @@ class ResenaCardWidget extends StatelessWidget {
   Widget _buildAvatar(BuildContext context) {
     return CircleAvatar(
       radius: 16,
-      backgroundColor: Theme.of(
-        context,
-      ).colorScheme.primaryContainer,
-      child: resena.fotoPerfilBase64 != null
-          ? ClipOval(
-              child: Image.memory(
-                base64Decode(resena.fotoPerfilBase64!),
-                width: 32,
-                height: 32,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Text(
-                  resena.nombreUsuario[0].toUpperCase(),
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ),
-            )
-          : Text(
-              resena.nombreUsuario[0].toUpperCase(),
-              style: const TextStyle(fontSize: 14),
-            ),
+      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      child: Text(
+        resena.nombreUsuario.isNotEmpty ? resena.nombreUsuario[0].toUpperCase() : '?',
+        style: const TextStyle(fontSize: 14),
+      ),
     );
   }
 

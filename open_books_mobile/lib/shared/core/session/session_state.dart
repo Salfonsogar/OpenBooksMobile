@@ -22,14 +22,12 @@ class SessionAuthenticated extends SessionState {
     required this.token,
   });
 
-  int get userId => user.id;
+  String get userId => user.id;
   String get userName => user.userName;
   String get email => user.email;
   String get nombreCompleto => user.nombreCompleto;
   String get nombreRol => user.nombreRol;
-  int get rolId => user.rolId;
-  bool get sancionado => user.sancionado;
-  String? get fotoPerfilBase64 => user.fotoPerfilBase64;
+  String? get fotoPerfilUrl => user.fotoPerfilUrl;
   bool get isAdmin => user.isAdmin;
 
   @override

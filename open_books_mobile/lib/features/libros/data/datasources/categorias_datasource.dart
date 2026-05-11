@@ -28,21 +28,14 @@ class CategoriasDataSource {
         throw Exception('Formato de respuesta inválido');
       }
 
-      List<dynamic> resultsList = [];
-      if (responseData.containsKey('results')) {
-        resultsList = responseData['results'] as List<dynamic>? ?? [];
-      } else if (responseData.containsKey('items')) {
-        resultsList = responseData['items'] as List<dynamic>? ?? [];
-      } else if (responseData.containsKey('data')) {
-        resultsList = responseData['data'] as List<dynamic>? ?? [];
-      }
+      final items = (responseData['Items'] ?? responseData['items'] ?? responseData['data'] ?? []) as List<dynamic>;
 
       return PagedResult(
-        page: responseData['currentPage'] ?? responseData['pageNumber'] ?? pageNumber,
-        pageSize: responseData['pageSize'] ?? pageSize,
-        total: responseData['totalRecords'] ?? responseData['totalCount'] ?? resultsList.length,
-        totalPages: responseData['totalPages'] ?? 1,
-        data: resultsList
+        page: responseData['PageNumber'] as int? ?? pageNumber,
+        pageSize: responseData['PageSize'] as int? ?? pageSize,
+        total: responseData['TotalCount'] as int? ?? items.length,
+        totalPages: responseData['TotalPages'] as int? ?? 1,
+        data: items
             .map((e) => Categoria.fromJson(e as Map<String, dynamic>))
             .toList(),
       );

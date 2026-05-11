@@ -90,7 +90,7 @@ class PerfilCubit extends Cubit<PerfilState> {
   Future<void> actualizarPerfil({
     String? userName,
     String? nombreCompleto,
-    String? fotoPerfilBase64,
+    String? fotoPerfilUrl,
   }) async {
     final sessionState = _sessionCubit.state;
     if (sessionState is! SessionAuthenticated) return;
@@ -99,12 +99,12 @@ class PerfilCubit extends Cubit<PerfilState> {
       final request = UpdatePerfilRequest(
         userName: userName,
         nombreCompleto: nombreCompleto,
-        fotoPerfilBase64: fotoPerfilBase64,
+        fotoPerfilUrl: fotoPerfilUrl,
       );
       final usuario = await _repository.updatePerfil(sessionState.userId, request);
       
-      if (fotoPerfilBase64 != null) {
-        await _sessionCubit.updateUser(fotoPerfilBase64: fotoPerfilBase64);
+      if (fotoPerfilUrl != null) {
+        await _sessionCubit.updateUser(fotoPerfilUrl: fotoPerfilUrl);
       }
       
       emit(PerfilLoaded(usuario: usuario));

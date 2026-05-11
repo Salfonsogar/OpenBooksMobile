@@ -2,13 +2,13 @@ class UpdatePerfilRequest {
   final String? userName;
   final String? email;
   final String? nombreCompleto;
-  final String? fotoPerfilBase64;
+  final String? fotoPerfilUrl;
 
   UpdatePerfilRequest({
     this.userName,
     this.email,
     this.nombreCompleto,
-    this.fotoPerfilBase64,
+    this.fotoPerfilUrl,
   });
 
   Map<String, dynamic> toJson() {
@@ -16,7 +16,7 @@ class UpdatePerfilRequest {
     if (userName != null) map['userName'] = userName;
     if (email != null) map['email'] = email;
     if (nombreCompleto != null) map['nombreCompleto'] = nombreCompleto;
-    if (fotoPerfilBase64 != null) map['fotoPerfil'] = fotoPerfilBase64;
+    if (fotoPerfilUrl != null) map['fotoPerfilUrl'] = fotoPerfilUrl;
     return map;
   }
 }

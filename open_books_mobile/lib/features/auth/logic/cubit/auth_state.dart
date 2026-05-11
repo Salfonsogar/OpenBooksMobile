@@ -26,19 +26,6 @@ class AuthLoginSuccess extends AuthState {
   List<Object?> get props => [usuario, token];
 }
 
-class AuthRegisterSuccess extends AuthState {
-  final Usuario usuario;
-  final String token;
-
-  const AuthRegisterSuccess({
-    required this.usuario,
-    required this.token,
-  });
-
-  @override
-  List<Object?> get props => [usuario, token];
-}
-
 class AuthRecoverySent extends AuthState {
   final String message;
 

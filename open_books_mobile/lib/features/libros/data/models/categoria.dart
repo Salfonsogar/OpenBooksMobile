@@ -1,19 +1,19 @@
 class Categoria {
   final int id;
   final String nombre;
-  final String? descripcion;
+  final int totalLibros;
 
   Categoria({
     required this.id,
     required this.nombre,
-    this.descripcion,
+    this.totalLibros = 0,
   });
 
   factory Categoria.fromJson(Map<String, dynamic> json) {
     return Categoria(
-      id: json['id'] as int,
-      nombre: json['nombre'] as String? ?? '',
-      descripcion: json['descripcion'] as String?,
+      id: json['id'] as int? ?? json['Id'] as int? ?? 0,
+      nombre: json['nombre'] as String? ?? json['Nombre'] as String? ?? '',
+      totalLibros: json['totalLibros'] as int? ?? json['TotalLibros'] as int? ?? 0,
     );
   }
 
@@ -21,7 +21,7 @@ class Categoria {
     return {
       'id': id,
       'nombre': nombre,
-      'descripcion': descripcion,
+      'totalLibros': totalLibros,
     };
   }
 }

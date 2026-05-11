@@ -8,7 +8,7 @@ class AddLibroBibliotecaUseCase {
 
   AddLibroBibliotecaUseCase(this.repository);
 
-  Future<Result<void>> call(int usuarioId, int libroId) async {
+  Future<Result<void>> call(String usuarioId, int libroId) async {
     final result = await repository.addLibro(usuarioId, libroId);
     if (result.isLeft()) {
       return result;

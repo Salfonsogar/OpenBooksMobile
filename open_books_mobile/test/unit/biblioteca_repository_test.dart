@@ -18,7 +18,7 @@ void main() {
       when(() => repository.getBiblioteca(any()))
           .thenAnswer((_) async => const Right([]));
 
-      final result = await repository.getBiblioteca(1);
+      final result = await repository.getBiblioteca('1');
 
       expect(result.isRight(), isTrue);
       result.fold(
@@ -31,7 +31,7 @@ void main() {
       when(() => repository.getBiblioteca(any()))
           .thenAnswer((_) async => Left(CacheFailure(message: 'Error')));
 
-      final result = await repository.getBiblioteca(1);
+      final result = await repository.getBiblioteca('1');
 
       expect(result.isLeft(), isTrue);
       result.fold(

@@ -34,7 +34,7 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
   }
 
   @override
-  Future<Result<List<LibroBibliotecaEntity>>> getBiblioteca(int usuarioId) async {
+  Future<Result<List<LibroBibliotecaEntity>>> getBiblioteca(String usuarioId) async {
     try {
       final localData = await localDatabase.bibliotecaLocalDataSource
           .getByUsuarioId(usuarioId);
@@ -46,19 +46,19 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
   }
 
   @override
-  Future<Result<void>> addLibro(int usuarioId, int libroId) async {
+  Future<Result<void>> addLibro(String usuarioId, int libroId) async {
     try {
       final isConnected = await networkInfo.isConnected;
 
-      final libroDetalle = await librosRepository.getLibroDetalle(libroId);
+      final libro = await librosRepository.getLibroById(libroId);
       final localModel = BibliotecaLocalModel(
-        libroId: libroDetalle.id,
+        libroId: libro?.id ?? libroId,
         usuarioId: usuarioId,
-        titulo: libroDetalle.titulo,
-        autor: libroDetalle.autor,
-        descripcion: libroDetalle.descripcion,
-        portadaBase64: libroDetalle.portadaBase64,
-        categorias: jsonEncode(libroDetalle.categorias),
+        titulo: libro?.titulo ?? '',
+        autor: libro?.autor ?? '',
+        descripcion: libro?.descripcion ?? '',
+        portadaUrl: libro?.portadaUrl,
+        categorias: jsonEncode(libro?.categorias ?? []),
         progreso: 0.0,
         isDownloaded: false,
         createdAt: DateTime.now().millisecondsSinceEpoch,
@@ -95,7 +95,7 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
   }
 
   @override
-  Future<Result<void>> removeLibro(int usuarioId, int libroId) async {
+  Future<Result<void>> removeLibro(String usuarioId, int libroId) async {
     try {
       await localDatabase.bibliotecaLocalDataSource
           .deleteByLibroId(libroId, usuarioId);
@@ -144,7 +144,7 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
         await localDatabase.syncQueueDataSource.markAsProcessing(op.id!);
 
         final payload = jsonDecode(op.payload ?? '{}');
-        final usuarioId = payload['usuarioId'] as int;
+        final usuarioId = payload['usuarioId'] as String;
         final libroId = payload['libroId'] as int;
 
         Result<void> result;
@@ -173,7 +173,7 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
     }
   }
 
-  Future<Result<void>> syncAddBiblioteca(int usuarioId, int libroId) async {
+  Future<Result<void>> syncAddBiblioteca(String usuarioId, int libroId) async {
     try {
       await remoteDataSource.agregarLibro(usuarioId, libroId);
       return const Right(null);
@@ -185,7 +185,7 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
     }
   }
 
-  Future<Result<void>> syncRemoveBiblioteca(int usuarioId, int libroId) async {
+  Future<Result<void>> syncRemoveBiblioteca(String usuarioId, int libroId) async {
     try {
       await remoteDataSource.quitarLibro(usuarioId, libroId);
       return const Right(null);
@@ -195,7 +195,7 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
   }
 
   @override
-  Future<Result<void>> syncFromRemote(int usuarioId) async {
+  Future<Result<void>> syncFromRemote(String usuarioId) async {
     try {
       final isConnected = await networkInfo.isConnected;
       if (!isConnected) {
@@ -218,7 +218,7 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
           titulo: libro.titulo,
           autor: libro.autor,
           descripcion: libro.descripcion,
-          portadaBase64: libro.portadaBase64,
+          portadaUrl: libro.portadaUrl,
           categorias: jsonEncode(libro.categorias),
           progreso: libro.progreso,
           isDownloaded: false,
@@ -234,7 +234,7 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
   }
 
   @override
-  Future<Result<void>> addLibroFromRemote(int usuarioId, Libro libro) async {
+  Future<Result<void>> addLibroFromRemote(String usuarioId, Libro libro) async {
     try {
       final existing = await localDatabase.bibliotecaLocalDataSource
           .getByLibroId(libro.id, usuarioId);
@@ -247,7 +247,7 @@ class BibliotecaRepositoryImpl implements IBibliotecaRepository {
         titulo: libro.titulo,
         autor: libro.autor,
         descripcion: libro.descripcion,
-        portadaBase64: libro.portadaBase64,
+        portadaUrl: libro.portadaUrl,
         categorias: jsonEncode(libro.categorias),
         progreso: 0.0,
         isDownloaded: false,

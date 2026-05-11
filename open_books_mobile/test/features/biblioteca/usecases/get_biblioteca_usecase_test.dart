@@ -10,6 +10,8 @@ import 'package:open_books_mobile/shared/core/errors/failures.dart';
 class MockIBibliotecaRepository extends Mock implements IBibliotecaRepository {}
 
 void main() {
+  const testUserId = '550e8400-e29b-41d4-a716-446655440000';
+
   late MockIBibliotecaRepository repository;
   late GetBibliotecaUseCase useCase;
 
@@ -22,7 +24,7 @@ void main() {
     const LibroBibliotecaEntity(
       id: 1,
       libroId: 100,
-      usuarioId: 1,
+      usuarioId: testUserId,
       titulo: 'Test Book',
       autor: 'Author',
       descripcion: 'Desc',
@@ -38,11 +40,11 @@ void main() {
       when(() => repository.getBiblioteca(any()))
           .thenAnswer((_) async => Right(testBiblioteca));
 
-      final result = await useCase(1);
+      final result = await useCase(testUserId);
 
       expect(result.isRight(), isTrue);
-      verify(() => repository.syncFromRemote(1)).called(1);
-      verify(() => repository.getBiblioteca(1)).called(1);
+      verify(() => repository.syncFromRemote(testUserId)).called(1);
+      verify(() => repository.getBiblioteca(testUserId)).called(1);
     });
 
     test('syncs from remote even when sync fails, then returns local biblioteca', () async {
@@ -52,11 +54,11 @@ void main() {
       when(() => repository.getBiblioteca(any()))
           .thenAnswer((_) async => Right(testBiblioteca));
 
-      final result = await useCase(1);
+      final result = await useCase(testUserId);
 
       expect(result.isRight(), isTrue);
-      verify(() => repository.syncFromRemote(1)).called(1);
-      verify(() => repository.getBiblioteca(1)).called(1);
+      verify(() => repository.syncFromRemote(testUserId)).called(1);
+      verify(() => repository.getBiblioteca(testUserId)).called(1);
     });
 
     test('returns local biblioteca when not connected', () async {
@@ -64,11 +66,11 @@ void main() {
       when(() => repository.getBiblioteca(any()))
           .thenAnswer((_) async => Right(testBiblioteca));
 
-      final result = await useCase(1);
+      final result = await useCase(testUserId);
 
       expect(result.isRight(), isTrue);
       verifyNever(() => repository.syncFromRemote(any()));
-      verify(() => repository.getBiblioteca(1)).called(1);
+      verify(() => repository.getBiblioteca(testUserId)).called(1);
     });
   });
 }

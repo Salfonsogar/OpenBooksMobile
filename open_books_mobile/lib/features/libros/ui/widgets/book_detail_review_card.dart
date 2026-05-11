@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../data/models/resena.dart';
@@ -27,23 +26,10 @@ class BookDetailReviewCard extends StatelessWidget {
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                  child: resena.fotoPerfilBase64 != null
-                      ? ClipOval(
-                          child: Image.memory(
-                            base64Decode(resena.fotoPerfilBase64!),
-                            width: 32,
-                            height: 32,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Text(
-                              resena.nombreUsuario.isNotEmpty ? resena.nombreUsuario[0].toUpperCase() : '?',
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                          ),
-                        )
-                      : Text(
-                          resena.nombreUsuario.isNotEmpty ? resena.nombreUsuario[0].toUpperCase() : '?',
-                          style: const TextStyle(fontSize: 14),
-                        ),
+                  child: Text(
+                    resena.nombreUsuario.isNotEmpty ? resena.nombreUsuario[0].toUpperCase() : '?',
+                    style: const TextStyle(fontSize: 14),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(

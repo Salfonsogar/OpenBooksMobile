@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,12 +5,10 @@ import '../../data/models/index.dart';
 
 class BookHeaderWidget extends StatelessWidget {
   final LibroDetalle libro;
-  final String? portadaBase64;
 
   const BookHeaderWidget({
     super.key,
     required this.libro,
-    this.portadaBase64,
   });
 
   @override
@@ -73,22 +69,17 @@ class BookHeaderWidget extends StatelessWidget {
   }
 
   Widget _buildPortadaImage(BuildContext context) {
-    if (portadaBase64 == null || portadaBase64!.isEmpty) {
+    if (libro.portadaUrl == null || libro.portadaUrl!.isEmpty) {
       return const Center(child: Icon(Icons.menu_book, size: 60));
     }
 
-    try {
-      final bytes = base64Decode(portadaBase64!);
-      return Image.memory(
-        bytes,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return const Center(child: Icon(Icons.menu_book, size: 60));
-        },
-      );
-    } catch (e) {
-      return const Center(child: Icon(Icons.menu_book, size: 60));
-    }
+    return Image.network(
+      libro.portadaUrl!,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return const Center(child: Icon(Icons.menu_book, size: 60));
+      },
+    );
   }
 
   Widget _buildRating(BuildContext context) {

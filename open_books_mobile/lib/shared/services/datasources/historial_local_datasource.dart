@@ -17,7 +17,7 @@ class HistorialLocalDataSource {
     return maps.map((map) => HistorialLocalModel.fromMap(map)).toList();
   }
 
-  Future<List<HistorialLocalModel>> getByUsuarioId(int usuarioId) async {
+  Future<List<HistorialLocalModel>> getByUsuarioId(String usuarioId) async {
     final maps = await _db.query(
       _tableName,
       where: 'usuario_id = ?',
@@ -38,7 +38,7 @@ class HistorialLocalDataSource {
     return HistorialLocalModel.fromMap(maps.first);
   }
 
-  Future<HistorialLocalModel?> getByLibroId(int libroId, int usuarioId) async {
+  Future<HistorialLocalModel?> getByLibroId(int libroId, String usuarioId) async {
     final maps = await _db.query(
       _tableName,
       where: 'libro_id = ? AND usuario_id = ?',
@@ -74,7 +74,7 @@ class HistorialLocalDataSource {
     );
   }
 
-  Future<void> deleteByLibroId(int libroId, int usuarioId) async {
+  Future<void> deleteByLibroId(int libroId, String usuarioId) async {
     await _db.delete(
       _tableName,
       where: 'libro_id = ? AND usuario_id = ?',
@@ -123,7 +123,7 @@ class HistorialLocalDataSource {
     return maps.map((map) => HistorialLocalModel.fromMap(map)).toList();
   }
 
-  Future<HistorialLocalModel?> getProgress(int libroId, int usuarioId) async {
+  Future<HistorialLocalModel?> getProgress(int libroId, String usuarioId) async {
     final maps = await _db.query(
       _tableName,
       where: 'libro_id = ? AND usuario_id = ?',
@@ -136,7 +136,7 @@ class HistorialLocalDataSource {
 
   Future<void> saveProgress(
     int libroId,
-    int usuarioId,
+    String usuarioId,
     int chapterIndex,
     double scrollPosition,
     String titulo,

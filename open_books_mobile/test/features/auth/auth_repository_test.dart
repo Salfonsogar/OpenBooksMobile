@@ -4,27 +4,20 @@ import 'package:open_books_mobile/features/auth/data/datasources/auth_datasource
 import 'package:open_books_mobile/features/auth/data/models/login_request.dart';
 import 'package:open_books_mobile/features/auth/data/models/login_response.dart';
 import 'package:open_books_mobile/features/auth/data/models/recovery_request.dart';
-import 'package:open_books_mobile/features/auth/data/models/register_request.dart';
 import 'package:open_books_mobile/features/auth/data/models/usuario.dart';
 import 'package:open_books_mobile/features/auth/data/repositories/auth_repository.dart';
 
 class MockAuthDataSource extends Mock implements AuthDataSource {}
 
 void main() {
+  const testUserId = '550e8400-e29b-41d4-a716-446655440000';
+
   late MockAuthDataSource mockDataSource;
   late AuthRepository repository;
 
   setUpAll(() {
     registerFallbackValue(LoginRequest(correo: '', contrasena: ''));
-    registerFallbackValue(RegisterRequest(
-      nombreUsuario: '',
-      correo: '',
-      contrasena: '',
-      rolId: 0,
-      nombreCompleto: '',
-    ));
     registerFallbackValue(RecoveryRequest(correo: ''));
-    registerFallbackValue(ResetPasswordRequest(token: '', nuevaContrasena: ''));
   });
 
   setUp(() {
@@ -34,69 +27,46 @@ void main() {
 
   group('AuthRepository.login', () {
     test('delegates to datasource with LoginRequest', () async {
-      final usuario = Usuario(
-        id: 1,
-        userName: 'testuser',
-        nombreCompleto: 'Test User',
-        email: 'test@test.com',
-        estado: true,
-        sancionado: false,
-        fechaRegistro: DateTime.now(),
-        nombreRol: 'Usuario',
-        rolId: 2,
+      final response = LoginResponse(
+        token: 'token123',
+        username: 'testuser',
+        correo: 'test@test.com',
       );
-      final response = LoginResponse(usuario: usuario, token: 'token123');
 
       when(() => mockDataSource.login(any()))
           .thenAnswer((_) async => response);
 
       final result = await repository.login('test@test.com', 'Password1!');
 
-      expect(result.usuario.id, 1);
       expect(result.token, 'token123');
+      expect(result.username, 'testuser');
       verify(() => mockDataSource.login(any<LoginRequest>())).called(1);
     });
   });
 
   group('AuthRepository.register', () {
     test('delegates to datasource with RegisterRequest', () async {
-      final usuario = Usuario(
-        id: 2,
-        userName: 'newuser',
-        nombreCompleto: 'New User',
-        email: 'new@test.com',
-        estado: true,
-        sancionado: false,
-        fechaRegistro: DateTime.now(),
-        nombreRol: 'Usuario',
-        rolId: 2,
-      );
-      final response = LoginResponse(usuario: usuario, token: 'token456');
-
       when(() => mockDataSource.register(any()))
-          .thenAnswer((_) async => response);
+          .thenAnswer((_) async {});
 
-      final result = await repository.register(
-        nombreUsuario: 'newuser',
+      await repository.register(
+        userName: 'newuser',
         correo: 'new@test.com',
         contrasena: 'Password1!',
-        rolId: 2,
-        nombreCompleto: 'New User',
       );
 
-      expect(result.usuario.id, 2);
-      expect(result.token, 'token456');
-      verify(() => mockDataSource.register(any<RegisterRequest>())).called(1);
+      verify(() => mockDataSource.register(any())).called(1);
     });
   });
 
   group('AuthRepository.solicitarRecuperacion', () {
     test('delegates to datasource with RecoveryRequest', () async {
       when(() => mockDataSource.solicitarRecuperacion(any()))
-          .thenAnswer((_) async {});
+          .thenAnswer((_) async => {'message': 'success'});
 
-      await repository.solicitarRecuperacion('user@test.com');
+      final result = await repository.solicitarRecuperacion('user@test.com');
 
+      expect(result['message'], 'success');
       verify(
         () => mockDataSource.solicitarRecuperacion(any<RecoveryRequest>()),
       ).called(1);
@@ -108,10 +78,10 @@ void main() {
       when(() => mockDataSource.resetearContrasena(any()))
           .thenAnswer((_) async {});
 
-      await repository.resetearContrasena('token123', 'NewPass1!');
+      await repository.resetearContrasena('user@test.com', 'token123', 'NewPass1!');
 
       verify(
-        () => mockDataSource.resetearContrasena(any<ResetPasswordRequest>()),
+        () => mockDataSource.resetearContrasena(any()),
       ).called(1);
     });
   });
@@ -119,53 +89,49 @@ void main() {
   group('AuthRepository.getUsuario', () {
     test('delegates to datasource', () async {
       final usuario = Usuario(
-        id: 1,
+        id: testUserId,
         userName: 'testuser',
         nombreCompleto: 'Test User',
         email: 'test@test.com',
         estado: true,
-        sancionado: false,
         fechaRegistro: DateTime.now(),
         nombreRol: 'Usuario',
-        rolId: 2,
       );
 
       when(() => mockDataSource.getUsuario(any()))
           .thenAnswer((_) async => usuario);
 
-      final result = await repository.getUsuario(1);
+      final result = await repository.getUsuario(testUserId);
 
-      expect(result.id, 1);
-      verify(() => mockDataSource.getUsuario(1)).called(1);
+      expect(result.id, testUserId);
+      verify(() => mockDataSource.getUsuario(testUserId)).called(1);
     });
   });
 
   group('AuthRepository.updateUsuario', () {
     test('delegates to datasource with update data', () async {
       final updated = Usuario(
-        id: 1,
+        id: testUserId,
         userName: 'newname',
         nombreCompleto: 'Updated Name',
         email: 'test@test.com',
         estado: true,
-        sancionado: false,
         fechaRegistro: DateTime.now(),
         nombreRol: 'Usuario',
-        rolId: 2,
       );
 
       when(() => mockDataSource.updateUsuario(any(), any()))
           .thenAnswer((_) async => updated);
 
       final result = await repository.updateUsuario(
-        1,
+        testUserId,
         userName: 'newname',
         nombreCompleto: 'Updated Name',
       );
 
       expect(result.userName, 'newname');
       verify(
-        () => mockDataSource.updateUsuario(1, {
+        () => mockDataSource.updateUsuario(testUserId, {
           'userName': 'newname',
           'nombreCompleto': 'Updated Name',
         }),

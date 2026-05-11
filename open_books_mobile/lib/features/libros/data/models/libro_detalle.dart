@@ -1,3 +1,4 @@
+import 'libro.dart';
 import 'resena.dart';
 
 class LibroDetalle {
@@ -9,60 +10,35 @@ class LibroDetalle {
   final int cantidadValoraciones;
   final List<Resena> resenas;
   final int totalResenas;
-  final String? portadaBase64;
+  final String? portadaUrl;
   final List<String> categorias;
-  final int? numeroPaginas;
 
   LibroDetalle({
     required this.id,
     required this.titulo,
     required this.autor,
     required this.descripcion,
-    required this.promedioValoraciones,
-    required this.cantidadValoraciones,
-    required this.resenas,
-    required this.totalResenas,
-    this.portadaBase64,
-    required this.categorias,
-    this.numeroPaginas,
+    this.promedioValoraciones = 0.0,
+    this.cantidadValoraciones = 0,
+    this.resenas = const [],
+    this.totalResenas = 0,
+    this.portadaUrl,
+    this.categorias = const [],
   });
 
-  factory LibroDetalle.fromJson(Map<String, dynamic> json) {
+  factory LibroDetalle.fromLibro(Libro libro, {List<Resena> resenas = const [], int totalResenas = 0}) {
     return LibroDetalle(
-      id: json['id'] as int,
-      titulo: json['titulo'] as String? ?? '',
-      autor: json['autor'] as String? ?? '',
-      descripcion: json['descripcion'] as String? ?? '',
-      promedioValoraciones: (json['promedioValoraciones'] as num?)?.toDouble() ?? 0.0,
-      cantidadValoraciones: json['cantidadValoraciones'] as int? ?? 0,
-      resenas: (json['resenas'] as List<dynamic>?)
-              ?.map((e) => Resena.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      totalResenas: json['totalResenas'] as int? ?? 0,
-      portadaBase64: json['imagen'] as String?,
-      categorias: (json['categorias'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
-      numeroPaginas: json['numeroPaginas'] as int?,
+      id: libro.id,
+      titulo: libro.titulo,
+      autor: libro.autor,
+      descripcion: libro.descripcion,
+      promedioValoraciones: libro.promedioValoracion,
+      cantidadValoraciones: libro.totalValoraciones,
+      portadaUrl: libro.portadaUrl,
+      categorias: libro.categorias,
+      resenas: resenas,
+      totalResenas: totalResenas,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'titulo': titulo,
-      'autor': autor,
-      'descripcion': descripcion,
-      'promedioValoraciones': promedioValoraciones,
-      'cantidadValoraciones': cantidadValoraciones,
-      'resenas': resenas.map((e) => e.toJson()).toList(),
-      'totalResenas': totalResenas,
-      'imagen': portadaBase64,
-      'categorias': categorias,
-      'numeroPaginas': numeroPaginas,
-    };
   }
 
   LibroDetalle copyWith({
@@ -74,9 +50,8 @@ class LibroDetalle {
     int? cantidadValoraciones,
     List<Resena>? resenas,
     int? totalResenas,
-    String? portadaBase64,
+    String? portadaUrl,
     List<String>? categorias,
-    int? numeroPaginas,
   }) {
     return LibroDetalle(
       id: id ?? this.id,
@@ -87,9 +62,8 @@ class LibroDetalle {
       cantidadValoraciones: cantidadValoraciones ?? this.cantidadValoraciones,
       resenas: resenas ?? this.resenas,
       totalResenas: totalResenas ?? this.totalResenas,
-      portadaBase64: portadaBase64 ?? this.portadaBase64,
+      portadaUrl: portadaUrl ?? this.portadaUrl,
       categorias: categorias ?? this.categorias,
-      numeroPaginas: numeroPaginas ?? this.numeroPaginas,
     );
   }
 }

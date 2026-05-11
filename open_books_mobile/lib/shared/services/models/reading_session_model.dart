@@ -2,7 +2,7 @@ class ReadingSessionModel {
   final int? id;
   final int progressId;
   final int libroId;
-  final int usuarioId;
+  final String usuarioId;
   final int pagesReadInSession;
   final int sessionTimestamp;
   final String? notes;
@@ -24,7 +24,7 @@ class ReadingSessionModel {
       id: map['id'] as int?,
       progressId: map['progress_id'] as int,
       libroId: map['libro_id'] as int,
-      usuarioId: map['usuario_id'] as int,
+      usuarioId: map['usuario_id'] as String,
       pagesReadInSession: map['pages_read_in_session'] as int? ?? 0,
       sessionTimestamp: map['session_timestamp'] as int,
       notes: map['notes'] as String?,
@@ -49,7 +49,7 @@ class ReadingSessionModel {
     int? id,
     int? progressId,
     int? libroId,
-    int? usuarioId,
+    String? usuarioId,
     int? pagesReadInSession,
     int? sessionTimestamp,
     String? notes,

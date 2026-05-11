@@ -25,10 +25,10 @@ void main() {
       when(() => repository.syncNow())
           .thenAnswer((_) async => const Right(null));
 
-      final result = await useCase(1, 100);
+      final result = await useCase('1', 100);
 
       expect(result.isRight(), isTrue);
-      verify(() => repository.addLibro(1, 100)).called(1);
+      verify(() => repository.addLibro('1', 100)).called(1);
       verify(() => repository.syncNow()).called(1);
     });
 
@@ -37,10 +37,10 @@ void main() {
           .thenAnswer((_) async => const Right(null));
       when(() => repository.isConnected).thenAnswer((_) async => false);
 
-      final result = await useCase(1, 100);
+      final result = await useCase('1', 100);
 
       expect(result.isRight(), isTrue);
-      verify(() => repository.addLibro(1, 100)).called(1);
+      verify(() => repository.addLibro('1', 100)).called(1);
       verifyNever(() => repository.syncNow());
     });
 
@@ -48,7 +48,7 @@ void main() {
       when(() => repository.addLibro(any(), any()))
           .thenAnswer((_) async => Left(CacheFailure(message: 'Error al agregar')));
 
-      final result = await useCase(1, 100);
+      final result = await useCase('1', 100);
 
       expect(result.isLeft(), isTrue);
       result.fold(

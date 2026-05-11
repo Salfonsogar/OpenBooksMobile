@@ -91,7 +91,7 @@ class SessionCubit extends Cubit<SessionState> {
     String? userName,
     String? email,
     String? nombreCompleto,
-    String? fotoPerfilBase64,
+    String? fotoPerfilUrl,
   }) async {
     final currentState = state;
     if (currentState is SessionAuthenticated) {
@@ -101,11 +101,9 @@ class SessionCubit extends Cubit<SessionState> {
         nombreCompleto: nombreCompleto ?? currentState.user.nombreCompleto,
         email: email ?? currentState.user.email,
         estado: currentState.user.estado,
-        sancionado: currentState.user.sancionado,
         fechaRegistro: currentState.user.fechaRegistro,
         nombreRol: currentState.user.nombreRol,
-        rolId: currentState.user.rolId,
-        fotoPerfilBase64: fotoPerfilBase64 ?? currentState.user.fotoPerfilBase64,
+        fotoPerfilUrl: fotoPerfilUrl ?? currentState.user.fotoPerfilUrl,
       );
       
       await _storage.write(key: _userKey, value: jsonEncode(updatedUser.toJson()));

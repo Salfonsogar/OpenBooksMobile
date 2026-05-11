@@ -10,7 +10,7 @@ class PerfilDataSource {
 
   PerfilDataSource(this._apiClient);
 
-  Future<Usuario> getPerfil(int usuarioId) async {
+  Future<Usuario> getPerfil(String usuarioId) async {
     try {
       final response = await _apiClient.get('/api/Usuarios/$usuarioId');
       return Usuario.fromJson(response.data as Map<String, dynamic>);
@@ -19,7 +19,7 @@ class PerfilDataSource {
     }
   }
 
-  Future<Usuario> updatePerfil(int usuarioId, Map<String, dynamic> data) async {
+  Future<Usuario> updatePerfil(String usuarioId, Map<String, dynamic> data) async {
     try {
       final response = await _apiClient.patch(
         '/api/Usuarios/$usuarioId',
@@ -31,7 +31,7 @@ class PerfilDataSource {
     }
   }
 
-  Future<void> cambiarCorreo(int usuarioId, String nuevoCorreo, String contrasena) async {
+  Future<void> cambiarCorreo(String usuarioId, String nuevoCorreo, String contrasena) async {
     try {
       await _apiClient.post(
         '/api/Usuarios/$usuarioId/cambiar-correo',
@@ -45,7 +45,7 @@ class PerfilDataSource {
     }
   }
 
-  Future<void> cambiarContrasena(int usuarioId, String contrasenaActual, String nuevaContrasena) async {
+  Future<void> cambiarContrasena(String usuarioId, String contrasenaActual, String nuevaContrasena) async {
     try {
       await _apiClient.post(
         '/api/Usuarios/$usuarioId/cambiar-contrasena',

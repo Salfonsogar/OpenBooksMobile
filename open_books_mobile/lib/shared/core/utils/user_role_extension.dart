@@ -3,18 +3,10 @@ import '../../../features/auth/data/models/usuario.dart';
 
 enum UserRole { admin, usuario }
 
-extension RoleX on Usuario {
-  bool get isAdmin => nombreRol == 'Admin';
-  bool get isUsuario => nombreRol == 'Usuario';
-}
-
 extension SessionRoleX on AuthState {
   bool get isAdmin {
     if (this is AuthLoginSuccess) {
-      return (this as AuthLoginSuccess).usuario.nombreRol == 'Admin';
-    }
-    if (this is AuthRegisterSuccess) {
-      return (this as AuthRegisterSuccess).usuario.nombreRol == 'Admin';
+      return (this as AuthLoginSuccess).usuario.isAdmin;
     }
     return false;
   }
@@ -22,9 +14,6 @@ extension SessionRoleX on AuthState {
   Usuario? get usuario {
     if (this is AuthLoginSuccess) {
       return (this as AuthLoginSuccess).usuario;
-    }
-    if (this is AuthRegisterSuccess) {
-      return (this as AuthRegisterSuccess).usuario;
     }
     return null;
   }

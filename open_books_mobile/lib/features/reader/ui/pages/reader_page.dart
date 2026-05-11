@@ -56,7 +56,7 @@ class _ReaderPageState extends State<ReaderPage> {
       final bookmarkCubit = context.read<BookmarkCubit>();
       final highlightCubit = context.read<HighlightCubit>();
 
-      int? usuarioId;
+      String? usuarioId;
       final sessionState = context.read<SessionCubit>().state;
       if (sessionState is SessionAuthenticated) {
         usuarioId = sessionState.user.id;
@@ -188,7 +188,7 @@ class _ReaderPageState extends State<ReaderPage> {
         errorMessage: state.message,
         onRetry: () {
           final sessionState = context.read<SessionCubit>().state;
-          int? usuarioId;
+          String? usuarioId;
           if (sessionState is SessionAuthenticated) {
             usuarioId = sessionState.user.id;
           }

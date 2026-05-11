@@ -11,6 +11,8 @@ class MockStorage extends Mock {
 }
 
 void main() {
+  const testUserId = '550e8400-e29b-41d4-a716-446655440000';
+
   group('SessionCubit', () {
     late SessionCubit sessionCubit;
 
@@ -22,52 +24,29 @@ void main() {
       expect(sessionCubit.state, isA<SessionInitial>());
     });
 
-    test('SessionAuthenticated.isAdmin returns true for rolId 1', () {
+    test('SessionAuthenticated.isAdmin returns true for Administrador', () {
       final user = Usuario(
-        id: 1,
+        id: testUserId,
         userName: 'test',
         nombreCompleto: 'Test User',
         email: 'test@test.com',
         estado: true,
-        sancionado: false,
         fechaRegistro: DateTime.now(),
-        nombreRol: 'Usuario',
-        rolId: 1,
+        nombreRol: 'Administrador',
       );
       final state = SessionAuthenticated(user: user, token: 'token123');
       expect(state.isAdmin, isTrue);
     });
 
-    test(
-      'SessionAuthenticated.isAdmin returns true for administrator role',
-      () {
-        final user = Usuario(
-          id: 1,
-          userName: 'test',
-          nombreCompleto: 'Test User',
-          email: 'test@test.com',
-          estado: true,
-          sancionado: false,
-          fechaRegistro: DateTime.now(),
-          nombreRol: 'Administrador',
-          rolId: 2,
-        );
-        final state = SessionAuthenticated(user: user, token: 'token123');
-        expect(state.isAdmin, isTrue);
-      },
-    );
-
     test('SessionAuthenticated.isAdmin returns false for regular user', () {
       final user = Usuario(
-        id: 1,
+        id: testUserId,
         userName: 'test',
         nombreCompleto: 'Test User',
         email: 'test@test.com',
         estado: true,
-        sancionado: false,
         fechaRegistro: DateTime.now(),
         nombreRol: 'Usuario',
-        rolId: 2,
       );
       final state = SessionAuthenticated(user: user, token: 'token123');
       expect(state.isAdmin, isFalse);
@@ -75,18 +54,30 @@ void main() {
 
     test('SessionAuthenticated props are correct', () {
       final user = Usuario(
-        id: 1,
+        id: testUserId,
         userName: 'test',
         nombreCompleto: 'Test User',
         email: 'test@test.com',
         estado: true,
-        sancionado: false,
         fechaRegistro: DateTime.now(),
         nombreRol: 'Usuario',
-        rolId: 2,
       );
       final state = SessionAuthenticated(user: user, token: 'token123');
       expect(state.props, [user, 'token123']);
+    });
+
+    test('SessionAuthenticated.userId returns correct String id', () {
+      final user = Usuario(
+        id: testUserId,
+        userName: 'test',
+        nombreCompleto: 'Test User',
+        email: 'test@test.com',
+        estado: true,
+        fechaRegistro: DateTime.now(),
+        nombreRol: 'Usuario',
+      );
+      final state = SessionAuthenticated(user: user, token: 'token123');
+      expect(state.userId, testUserId);
     });
   });
 

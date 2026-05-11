@@ -6,6 +6,7 @@ class LibroBiblioteca {
   final String autor;
   final String descripcion;
   final String? portadaBase64;
+  final String? portadaUrl;
   final List<String> categorias;
   final double progreso;
   final int? page;
@@ -19,6 +20,7 @@ class LibroBiblioteca {
     required this.autor,
     required this.descripcion,
     this.portadaBase64,
+    this.portadaUrl,
     required this.categorias,
     this.progreso = 0.0,
     this.page,
@@ -52,7 +54,8 @@ class LibroBiblioteca {
       titulo: libro.titulo,
       autor: libro.autor,
       descripcion: libro.descripcion,
-      portadaBase64: libro.portadaBase64,
+      portadaBase64: null,
+      portadaUrl: libro.portadaUrl,
       categorias: libro.categorias,
       progreso: progreso,
       page: page,
@@ -69,6 +72,7 @@ class LibroBiblioteca {
       'autor': autor,
       'descripcion': descripcion,
       'portadaBase64': portadaBase64,
+      'portadaUrl': portadaUrl,
       'categorias': categorias,
       'progreso': progreso,
       'page': page,

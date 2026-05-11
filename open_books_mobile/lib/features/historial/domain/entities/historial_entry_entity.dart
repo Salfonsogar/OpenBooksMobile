@@ -3,7 +3,7 @@ import 'package:equatable/equatable.dart';
 class HistorialEntryEntity extends Equatable {
   final int id;
   final int libroId;
-  final int usuarioId;
+  final String usuarioId;
   final String titulo;
   final String? autor;
   final String? portadaBase64;
@@ -45,7 +45,7 @@ class HistorialEntryEntity extends Equatable {
   HistorialEntryEntity copyWith({
     int? id,
     int? libroId,
-    int? usuarioId,
+    String? usuarioId,
     String? titulo,
     String? autor,
     String? portadaBase64,

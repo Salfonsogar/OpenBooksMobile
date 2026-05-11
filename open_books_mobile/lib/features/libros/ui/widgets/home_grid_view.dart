@@ -6,7 +6,7 @@ import 'libro_card.dart';
 class HomeGridView extends StatelessWidget {
   final LibrosLoaded state;
   final ScrollController scrollController;
-  final VoidCallback onRefresh;
+  final Future<void> Function() onRefresh;
   final void Function(int) onLibroTap;
 
   const HomeGridView({

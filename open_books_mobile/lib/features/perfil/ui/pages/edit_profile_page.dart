@@ -27,7 +27,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late final TextEditingController _passwordController;
   late final TextEditingController _newPasswordController;
 
-  String? _fotoPerfilBase64;
+  String? _fotoPerfilUrl;
   Uint8List? _fotoPerfilBytes;
 
   @override
@@ -40,7 +40,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _emailController = TextEditingController(text: widget.usuario.email);
     _passwordController = TextEditingController();
     _newPasswordController = TextEditingController();
-    _fotoPerfilBase64 = widget.usuario.fotoPerfilBase64;
+    _fotoPerfilUrl = widget.usuario.fotoPerfilUrl;
   }
 
   @override
@@ -60,7 +60,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final bytes = await image.readAsBytes();
       setState(() {
         _fotoPerfilBytes = bytes;
-        _fotoPerfilBase64 = base64Encode(bytes);
+        _fotoPerfilUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
       });
     }
   }
@@ -71,7 +71,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     if (userName.isEmpty &&
         nombreCompleto.isEmpty &&
-        _fotoPerfilBase64 == null) {
+        _fotoPerfilUrl == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No hay cambios para guardar')),
       );
@@ -81,7 +81,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     context.read<PerfilCubit>().actualizarPerfil(
       userName: userName.isNotEmpty ? userName : null,
       nombreCompleto: nombreCompleto.isNotEmpty ? nombreCompleto : null,
-      fotoPerfilBase64: _fotoPerfilBase64,
+      fotoPerfilUrl: _fotoPerfilUrl,
     );
   }
 
@@ -330,12 +330,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
             backgroundImage: _fotoPerfilBytes != null
                 ? MemoryImage(_fotoPerfilBytes!)
-                : _fotoPerfilBase64 != null && _fotoPerfilBase64!.isNotEmpty
-                ? MemoryImage(base64Decode(_fotoPerfilBase64!))
+                : _fotoPerfilUrl != null && _fotoPerfilUrl!.isNotEmpty
+                ? (_fotoPerfilUrl!.startsWith('data:'))
+                    ? MemoryImage(base64Decode(_fotoPerfilUrl!.split(',').last))
+                    : NetworkImage(_fotoPerfilUrl!)
                 : null,
             child:
                 _fotoPerfilBytes == null &&
-                    (_fotoPerfilBase64 == null || _fotoPerfilBase64!.isEmpty)
+                    (_fotoPerfilUrl == null || _fotoPerfilUrl!.isEmpty)
                 ? Text(
                     widget.usuario.userName.isNotEmpty
                         ? widget.usuario.userName[0].toUpperCase()

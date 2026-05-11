@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 
 import '../../data/models/libro.dart';
@@ -29,11 +27,11 @@ class LibroCard extends StatelessWidget {
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: libro.portadaBase64 != null && libro.portadaBase64!.isNotEmpty
+              child: libro.portadaUrl != null && libro.portadaUrl!.isNotEmpty
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.memory(
-                        base64Decode(libro.portadaBase64!),
+                      child: Image.network(
+                        libro.portadaUrl!,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return const Center(

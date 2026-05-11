@@ -29,6 +29,7 @@ class BibliotecaMapper {
       autor: model.autor ?? '',
       descripcion: model.descripcion ?? '',
       portadaBase64: model.portadaBase64,
+      portadaUrl: model.portadaUrl,
       categorias: categorias,
       progreso: model.progreso,
       isDownloaded: model.isDownloaded,
@@ -56,6 +57,7 @@ class BibliotecaMapper {
       autor: entity.autor,
       descripcion: entity.descripcion,
       portadaBase64: entity.portadaBase64,
+      portadaUrl: entity.portadaUrl,
       categorias: jsonEncode(entity.categorias),
       progreso: entity.progreso,
       isDownloaded: entity.isDownloaded,
@@ -78,11 +80,12 @@ class BibliotecaMapper {
     return LibroBibliotecaEntity(
       id: model.id,
       libroId: model.id,
-      usuarioId: 0,
+      usuarioId: '',
       titulo: model.titulo,
       autor: model.autor,
       descripcion: model.descripcion,
       portadaBase64: model.portadaBase64,
+      portadaUrl: model.portadaUrl,
       categorias: model.categorias,
       progreso: model.progreso,
       isDownloaded: false,
@@ -99,7 +102,7 @@ class BibliotecaMapper {
 
   static BibliotecaLocalModel fromApiToLocalModel(
     LibroBiblioteca apiModel,
-    int usuarioId,
+    String usuarioId,
   ) {
     return BibliotecaLocalModel(
       libroId: apiModel.id,
@@ -108,6 +111,7 @@ class BibliotecaMapper {
       autor: apiModel.autor,
       descripcion: apiModel.descripcion,
       portadaBase64: apiModel.portadaBase64,
+      portadaUrl: apiModel.portadaUrl,
       categorias: jsonEncode(apiModel.categorias),
       progreso: apiModel.progreso,
       isDownloaded: false,

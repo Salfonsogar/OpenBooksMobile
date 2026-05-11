@@ -10,7 +10,7 @@ class GetBibliotecaUseCase {
 
   GetBibliotecaUseCase(this.repository);
 
-  Future<Result<List<LibroBibliotecaEntity>>> call(int usuarioId) async {
+  Future<Result<List<LibroBibliotecaEntity>>> call(String usuarioId) async {
     final isConnected = await repository.isConnected;
 
     if (isConnected) {

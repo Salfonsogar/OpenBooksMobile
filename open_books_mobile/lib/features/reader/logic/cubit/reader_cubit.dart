@@ -90,7 +90,7 @@ class ReaderCubit extends Cubit<ReaderState> {
   final ChapterCache _chapterCache = ChapterCache();
   final HistorialLocalDataSource? _historialDataSource;
   final int initialPage;
-  int _usuarioId = 0;
+  String _usuarioId = '';
 
   ReaderCubit(
     this._repository,
@@ -130,7 +130,7 @@ class ReaderCubit extends Cubit<ReaderState> {
   }
 
   Future<void> _saveProgressBeforeModeChange(ReaderLoaded state) async {
-    if (_historialDataSource != null && _usuarioId > 0) {
+    if (_historialDataSource != null && _usuarioId.isNotEmpty) {
       try {
         final scrollFraction = state.scrollPositions[state.currentChapterIndex] ?? 0.0;
         await _historialDataSource.saveProgress(
@@ -146,8 +146,8 @@ class ReaderCubit extends Cubit<ReaderState> {
     }
   }
 
-  Future<void> cargarLibro({int? initialPage, int? usuarioId}) async {
-    if (usuarioId != null && usuarioId > 0) {
+  Future<void> cargarLibro({int? initialPage, String? usuarioId}) async {
+    if (usuarioId != null && usuarioId.isNotEmpty) {
       _usuarioId = usuarioId;
     }
 
@@ -175,7 +175,7 @@ class ReaderCubit extends Cubit<ReaderState> {
         startIndex = initialPage - 1;
       } else if (this.initialPage > 0 && this.initialPage < manifest.readingOrder.length) {
         startIndex = this.initialPage - 1;
-      } else if (_usuarioId > 0) {
+      } else if (_usuarioId.isNotEmpty) {
         emit(const ReaderLoading(step: 'progress'));
         final progress = await _restoreProgress();
         if (progress != null) {
@@ -207,7 +207,7 @@ class ReaderCubit extends Cubit<ReaderState> {
   }
 
   Future<Map<String, dynamic>?> _restoreProgress() async {
-    if (_historialDataSource == null || _usuarioId == 0) return null;
+    if (_historialDataSource == null || _usuarioId.isEmpty) return null;
 
     try {
       final historial = await _historialDataSource.getProgress(libroId, _usuarioId);
@@ -224,7 +224,7 @@ class ReaderCubit extends Cubit<ReaderState> {
   }
 
   Future<void> saveProgress(double scrollPosition, {int? chapterIndex}) async {
-    if (_historialDataSource == null || _usuarioId == 0) return;
+    if (_historialDataSource == null || _usuarioId.isEmpty) return;
 
     final currentState = state;
     if (currentState is! ReaderLoaded) return;

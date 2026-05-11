@@ -12,7 +12,7 @@ class AuthDataSource {
   Future<LoginResponse> login(LoginRequest request) async {
     try {
       final response = await _apiClient.post(
-        '/api/Usuarios/Login',
+        '/api/Auth/login',
         data: request.toJson(),
       );
 
@@ -42,24 +42,28 @@ class AuthDataSource {
     return Exception(message.isNotEmpty ? message : 'Error de conexión');
   }
 
-  Future<LoginResponse> register(RegisterRequest request) async {
+  Future<void> register(RegisterRequest request) async {
     try {
       final response = await _apiClient.post(
-        '/api/Usuarios/Register',
+        '/api/Auth/register',
         data: request.toJson(),
       );
-      return LoginResponse.fromJson(parseResponseData(response.data));
+      final statusCode = response.statusCode ?? 0;
+      if (statusCode >= 400) {
+        throw _handleErrorFromResponse(statusCode, response.data);
+      }
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  Future<void> solicitarRecuperacion(RecoveryRequest request) async {
+  Future<Map<String, dynamic>> solicitarRecuperacion(RecoveryRequest request) async {
     try {
-      await _apiClient.post(
-        '/api/Usuarios/SolicitarRecuperacion',
+      final response = await _apiClient.post(
+        '/api/Usuario/solicitar-recuperacion',
         data: request.toJson(),
       );
+      return parseResponseData(response.data);
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -68,7 +72,7 @@ class AuthDataSource {
   Future<void> resetearContrasena(ResetPasswordRequest request) async {
     try {
       await _apiClient.post(
-        '/api/Usuarios/ResetearContrasena',
+        '/api/Usuario/reset-password',
         data: request.toJson(),
       );
     } on DioException catch (e) {
@@ -76,18 +80,18 @@ class AuthDataSource {
     }
   }
 
-  Future<Usuario> getUsuario(int id) async {
+  Future<Usuario> getUsuario(String id) async {
     try {
-      final response = await _apiClient.get('/api/Usuarios/$id');
+      final response = await _apiClient.get('/api/Usuario/$id');
       return Usuario.fromJson(parseResponseData(response.data));
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  Future<Usuario> updateUsuario(int id, Map<String, dynamic> data) async {
+  Future<Usuario> updateUsuario(String id, Map<String, dynamic> data) async {
     try {
-      final response = await _apiClient.patch('/api/Usuarios/$id', data: data);
+      final response = await _apiClient.patch('/api/Usuario/$id', data: data);
       return Usuario.fromJson(parseResponseData(response.data));
     } on DioException catch (e) {
       throw _handleError(e);

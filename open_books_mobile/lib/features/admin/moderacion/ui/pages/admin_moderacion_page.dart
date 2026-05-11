@@ -4,15 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:open_books_mobile/shared/core/session/session_cubit.dart';
 import 'package:open_books_mobile/shared/core/session/session_state.dart';
 import 'package:open_books_mobile/features/admin/moderacion/data/models/admin_denuncia.dart';
-import 'package:open_books_mobile/features/admin/moderacion/data/models/admin_sancion.dart';
 import 'package:open_books_mobile/features/admin/moderacion/logic/cubit/admin_denuncias_cubit.dart';
-import 'package:open_books_mobile/features/admin/moderacion/logic/cubit/admin_sanciones_cubit.dart';
 import 'package:open_books_mobile/features/admin/moderacion/ui/widgets/denuncia_detail_dialog.dart';
 import 'package:open_books_mobile/features/admin/moderacion/ui/widgets/denuncia_delete_dialog.dart';
-import 'package:open_books_mobile/features/admin/moderacion/ui/widgets/sancion_form_dialog.dart';
-import 'package:open_books_mobile/features/admin/moderacion/ui/widgets/sancion_delete_dialog.dart';
 import 'package:open_books_mobile/features/admin/ui/widgets/admin_error_view.dart';
 import 'package:open_books_mobile/features/admin/ui/widgets/admin_empty_view.dart';
+
+// Sanciones eliminadas - backend no tiene sanciones
 
 class AdminModeracionPage extends StatefulWidget {
   const AdminModeracionPage({super.key});
@@ -25,13 +23,12 @@ class _AdminModeracionPageState extends State<AdminModeracionPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _scrollControllerDenuncias = ScrollController();
-  final _scrollControllerSanciones = ScrollController();
   bool _scrollListenersAttached = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 1, vsync: this);
     _initCubits();
     _attachScrollListeners();
   }
@@ -41,7 +38,6 @@ class _AdminModeracionPageState extends State<AdminModeracionPage>
     _scrollListenersAttached = true;
 
     _scrollControllerDenuncias.addListener(_onDenunciasScroll);
-    _scrollControllerSanciones.addListener(_onSancionesScroll);
   }
 
   void _onDenunciasScroll() {
@@ -51,28 +47,18 @@ class _AdminModeracionPageState extends State<AdminModeracionPage>
     }
   }
 
-  void _onSancionesScroll() {
-    if (_scrollControllerSanciones.position.pixels >=
-        _scrollControllerSanciones.position.maxScrollExtent - 200) {
-      context.read<AdminSancionesCubit>().loadMoreSanciones();
-    }
-  }
-
   void _initCubits() {
     final sessionState = context.read<SessionCubit>().state;
     if (sessionState is SessionAuthenticated) {
       context.read<AdminDenunciasCubit>().setToken(sessionState.token);
-      context.read<AdminSancionesCubit>().setToken(sessionState.token);
     }
     context.read<AdminDenunciasCubit>().loadDenuncias();
-    context.read<AdminSancionesCubit>().loadSanciones();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     _scrollControllerDenuncias.dispose();
-    _scrollControllerSanciones.dispose();
     super.dispose();
   }
 
@@ -95,29 +81,6 @@ class _AdminModeracionPageState extends State<AdminModeracionPage>
     );
   }
 
-  void _showSancionCreateDialog() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => SancionFormDialog(
-        onSave: (request) async {
-          return await context.read<AdminSancionesCubit>().createSancion(request);
-        },
-      ),
-    );
-  }
-
-  void _showSancionDeleteDialog(AdminSancion sancion) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => SancionDeleteDialog(
-        sancion: sancion,
-        onConfirm: () async {
-          return await context.read<AdminSancionesCubit>().deleteSancion(sancion.id);
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -126,7 +89,6 @@ class _AdminModeracionPageState extends State<AdminModeracionPage>
           controller: _tabController,
           tabs: const [
             Tab(text: 'Denuncias'),
-            Tab(text: 'Sanciones'),
           ],
         ),
         Expanded(
@@ -134,7 +96,6 @@ class _AdminModeracionPageState extends State<AdminModeracionPage>
             controller: _tabController,
             children: [
               _buildDenunciasTab(),
-              _buildSancionesTab(),
             ],
           ),
         ),
@@ -187,72 +148,6 @@ class _AdminModeracionPageState extends State<AdminModeracionPage>
           );
         },
       ),
-    );
-  }
-
-  Widget _buildSancionesTab() {
-    return BlocBuilder<AdminSancionesCubit, AdminSancionesState>(
-      builder: (context, state) {
-        if (state is AdminSancionesLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (state is AdminSancionesError) {
-          return AdminErrorView(
-            message: state.message,
-            onRetry: () => context.read<AdminSancionesCubit>().loadSanciones(),
-          );
-        }
-        if (state is AdminSancionesLoaded) {
-          return _buildSancionesList(state);
-        }
-        return const SizedBox.shrink();
-      },
-    );
-  }
-
-  Widget _buildSancionesList(AdminSancionesLoaded state) {
-    if (state.sanciones.items.isEmpty) {
-      return const AdminEmptyView(
-        icon: Icons.verified_outlined,
-        message: 'No hay sanciones',
-      );
-    }
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton.filled(
-                onPressed: _showSancionCreateDialog,
-                icon: const Icon(Icons.add),
-                tooltip: 'Nueva Sanción',
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              await context.read<AdminSancionesCubit>().refresh();
-            },
-            child: ListView.builder(
-              controller: _scrollControllerSanciones,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: state.sanciones.items.length,
-              itemBuilder: (context, index) {
-                final sancion = state.sanciones.items[index];
-                return _SancionCard(
-                  sancion: sancion,
-                  onDelete: () => _showSancionDeleteDialog(sancion),
-                );
-              },
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -366,128 +261,6 @@ class _DenunciaCard extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
-}
-
-class _SancionCard extends StatelessWidget {
-  final AdminSancion sancion;
-  final VoidCallback onDelete;
-
-  const _SancionCard({
-    required this.sancion,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        sancion.nombreUsuario,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: sancion.activa
-                              ? Colors.red.withValues(alpha: 0.1)
-                              : Colors.grey.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          sancion.tipoSancion,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: sancion.activa ? Colors.red : Colors.grey,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: sancion.activa
-                        ? Colors.green.withValues(alpha: 0.1)
-                        : Colors.grey.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    sancion.activa ? 'Activa' : 'Inactiva',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: sancion.activa ? Colors.green : Colors.grey,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (sancion.descripcion != null && sancion.descripcion!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                sancion.descripcion!,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.calendar_today_outlined, size: 14),
-                const SizedBox(width: 4),
-                Text(
-                  'Desde: ${_formatDate(sancion.fechaInicio)}',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                if (sancion.fechaFin != null) ...[
-                  const SizedBox(width: 16),
-                  const Icon(Icons.event_outlined, size: 14),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Hasta: ${_formatDate(sancion.fechaFin!)}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton.icon(
-                  onPressed: onDelete,
-                  icon: const Icon(Icons.delete_outlined, size: 16),
-                  label: const Text('Eliminar'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );

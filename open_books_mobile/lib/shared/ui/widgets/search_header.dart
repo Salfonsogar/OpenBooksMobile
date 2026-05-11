@@ -83,45 +83,39 @@ class SearchHeader extends StatelessWidget {
                           children: [
                             BlocBuilder<SessionCubit, SessionState>(
                               builder: (context, state) {
-                                if (state is SessionAuthenticated &&
-                                    state.fotoPerfilBase64 != null &&
-                                    state.fotoPerfilBase64!.isNotEmpty) {
-                                  try {
+                                if (state is SessionAuthenticated) {
+                                  final fotoUrl = state.user.fotoPerfilUrl;
+                                  if (fotoUrl != null && fotoUrl.isNotEmpty) {
                                     return CircleAvatar(
                                       radius: 20,
-                                      backgroundImage: MemoryImage(
-                                        base64Decode(state.fotoPerfilBase64!),
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    return CircleAvatar(
-                                      radius: 20,
-                                      backgroundColor:
-                                          Theme.of(context).colorScheme.primaryContainer,
-                                      child: Text(
-                                        state.userName.isNotEmpty
-                                            ? state.userName[0].toUpperCase()
-                                            : '?',
-                                        style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onPrimaryContainer,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      backgroundImage: fotoUrl.startsWith('data:')
+                                          ? MemoryImage(base64Decode(fotoUrl.split(',').last))
+                                          : NetworkImage(fotoUrl),
                                     );
                                   }
+                                  return CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor:
+                                        Theme.of(context).colorScheme.primaryContainer,
+                                    child: Text(
+                                      state.userName.isNotEmpty
+                                          ? state.userName[0].toUpperCase()
+                                          : '?',
+                                      style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimaryContainer,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  );
                                 }
-                                final initial = state is SessionAuthenticated &&
-                                        state.userName.isNotEmpty
-                                    ? state.userName[0].toUpperCase()
-                                    : '?';
                                 return CircleAvatar(
                                   radius: 20,
                                   backgroundColor:
                                       Theme.of(context).colorScheme.primaryContainer,
                                   child: Text(
-                                    initial,
+                                    '?',
                                     style: TextStyle(
                                       color:
                                           Theme.of(context).colorScheme.onPrimaryContainer,

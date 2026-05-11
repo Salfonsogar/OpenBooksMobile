@@ -6,7 +6,7 @@ class AddToHistorialUseCase {
 
   AddToHistorialUseCase(this.repository);
 
-  Future<void> call(int usuarioId, Libro libro) async {
+  Future<void> call(String usuarioId, Libro libro) async {
     await repository.addToHistorial(usuarioId, libro);
 
     final isConnected = await repository.isConnected;

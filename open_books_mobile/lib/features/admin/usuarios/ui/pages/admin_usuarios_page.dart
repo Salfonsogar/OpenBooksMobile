@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:open_books_mobile/features/auth/data/models/rol.dart';
+// Roles deshabilitados - backend no tiene tabla de roles
 import 'package:open_books_mobile/shared/core/session/session_cubit.dart';
 import 'package:open_books_mobile/shared/core/session/session_state.dart';
 import 'package:open_books_mobile/features/admin/usuarios/logic/cubit/admin_usuarios_cubit.dart';
@@ -11,10 +11,6 @@ import 'package:open_books_mobile/features/admin/usuarios/logic/cubit/admin_usua
 import 'package:open_books_mobile/features/admin/usuarios/data/models/admin_usuario.dart';
 import 'package:open_books_mobile/features/admin/usuarios/ui/widgets/usuario_form_dialog.dart';
 import 'package:open_books_mobile/features/admin/usuarios/ui/widgets/usuario_delete_dialog.dart';
-import 'package:open_books_mobile/features/admin/moderacion/data/models/admin_rol.dart';
-import 'package:open_books_mobile/features/admin/moderacion/logic/cubit/admin_roles_cubit.dart';
-import 'package:open_books_mobile/features/admin/moderacion/ui/widgets/rol_form_dialog.dart';
-import 'package:open_books_mobile/features/admin/moderacion/ui/widgets/rol_delete_dialog.dart';
 import 'package:open_books_mobile/features/admin/ui/widgets/admin_search_bar.dart';
 import 'package:open_books_mobile/features/admin/ui/widgets/admin_error_view.dart';
 import 'package:open_books_mobile/features/admin/ui/widgets/admin_empty_view.dart';
@@ -36,7 +32,7 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 1, vsync: this);
     _initCubits();
     _attachScrollListeners();
   }
@@ -45,10 +41,8 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
     final sessionState = context.read<SessionCubit>().state;
     if (sessionState is SessionAuthenticated) {
       context.read<AdminUsuariosCubit>().setToken(sessionState.token);
-      context.read<AdminRolesCubit>().setToken(sessionState.token);
     }
     context.read<AdminUsuariosCubit>().loadUsuarios();
-    context.read<AdminRolesCubit>().loadRoles();
   }
 
   void _attachScrollListeners() {
@@ -76,15 +70,10 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
   }
 
   void _showCreateDialog() {
-    final rolesState = context.read<AdminRolesCubit>().state;
-    if (rolesState is! AdminRolesLoaded) return;
-    final roles = rolesState.roles
-        .map((r) => Rol(id: r.id, nombre: r.nombre))
-        .toList();
     showDialog(
       context: context,
       builder: (dialogContext) => UsuarioFormDialog(
-        roles: roles,
+        roles: const [],
         onSave: (request) async {
           final cubit = context.read<AdminUsuariosCubit>();
           return await cubit.createUsuario(request as CreateUsuarioRequest);
@@ -94,16 +83,11 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
   }
 
   void _showEditDialog(AdminUsuario usuario) {
-    final rolesState = context.read<AdminRolesCubit>().state;
-    if (rolesState is! AdminRolesLoaded) return;
-    final roles = rolesState.roles
-        .map((r) => Rol(id: r.id, nombre: r.nombre))
-        .toList();
     showDialog(
       context: context,
       builder: (dialogContext) => UsuarioFormDialog(
         usuario: usuario,
-        roles: roles,
+        roles: const [],
         onSave: (request) async {
           final cubit = context.read<AdminUsuariosCubit>();
           return await cubit.updateUsuario(usuario.id, request as UpdateUsuarioRequest);
@@ -125,41 +109,6 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
     );
   }
 
-  void _showRolCreateDialog() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => RolFormDialog(
-        onSave: (request) async {
-          return await context.read<AdminRolesCubit>().createRol(request);
-        },
-      ),
-    );
-  }
-
-  void _showRolEditDialog(AdminRol rol) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => RolFormDialog(
-        rol: rol,
-        onSave: (request) async {
-          return await context.read<AdminRolesCubit>().updateRol(rol.id, request);
-        },
-      ),
-    );
-  }
-
-  void _showRolDeleteDialog(AdminRol rol) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => RolDeleteDialog(
-        rol: rol,
-        onConfirm: () async {
-          return await context.read<AdminRolesCubit>().deleteRol(rol.id);
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -168,7 +117,6 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
           controller: _tabController,
           tabs: const [
             Tab(text: 'Usuarios'),
-            Tab(text: 'Roles'),
           ],
         ),
         Expanded(
@@ -176,7 +124,6 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
             controller: _tabController,
             children: [
               _buildUsuariosTab(),
-              _buildRolesTab(),
             ],
           ),
         ),
@@ -255,72 +202,6 @@ class _AdminUsuariosPageState extends State<AdminUsuariosPage>
           );
         },
       ),
-    );
-  }
-
-  Widget _buildRolesTab() {
-    return BlocBuilder<AdminRolesCubit, AdminRolesState>(
-      builder: (context, state) {
-        if (state is AdminRolesLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (state is AdminRolesError) {
-          return AdminErrorView(
-            message: state.message,
-            onRetry: () => context.read<AdminRolesCubit>().loadRoles(),
-          );
-        }
-        if (state is AdminRolesLoaded) {
-          return _buildRolesList(state);
-        }
-        return const SizedBox.shrink();
-      },
-    );
-  }
-
-  Widget _buildRolesList(AdminRolesLoaded state) {
-    if (state.roles.isEmpty) {
-      return const AdminEmptyView(
-        icon: Icons.badge_outlined,
-        message: 'No hay roles',
-      );
-    }
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton.filled(
-                onPressed: _showRolCreateDialog,
-                icon: const Icon(Icons.add),
-                tooltip: 'Nuevo Rol',
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              await context.read<AdminRolesCubit>().loadRoles();
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: state.roles.length,
-              itemBuilder: (context, index) {
-                final rol = state.roles[index];
-                return _RolCard(
-                  rol: rol,
-                  onEdit: () => _showRolEditDialog(rol),
-                  onDelete: () => _showRolDeleteDialog(rol),
-                );
-              },
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -523,95 +404,4 @@ class _UsuarioCard extends StatelessWidget {
   }
 }
 
-class _RolCard extends StatelessWidget {
-  final AdminRol rol;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
 
-  const _RolCard({
-    required this.rol,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: rol.isAdministrador
-                    ? Colors.purple.withValues(alpha: 0.1)
-                    : Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                rol.isAdministrador ? Icons.admin_panel_settings : Icons.badge,
-                color: rol.isAdministrador ? Colors.purple : Colors.blue,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    rol.nombre,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'ID: ${rol.id}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'edit') {
-                  onEdit();
-                } else if (value == 'delete') {
-                  onDelete();
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit_outlined),
-                      SizedBox(width: 8),
-                      Text('Editar'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_outlined, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Eliminar', style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

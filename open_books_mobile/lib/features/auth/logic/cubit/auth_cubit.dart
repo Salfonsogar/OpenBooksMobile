@@ -2,21 +2,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/models/usuario.dart';
 import '../../data/repositories/auth_repository.dart';
-import '../../data/repositories/roles_repository.dart';
 import '../../../../shared/core/session/session_cubit.dart';
+import '../../../../shared/core/utils/jwt_utils.dart';
 import 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepository _authRepository;
-  final RolesRepository _rolesRepository;
   final SessionCubit _sessionCubit;
 
   AuthCubit({
     required AuthRepository authRepository,
-    required RolesRepository rolesRepository,
     required SessionCubit sessionCubit,
   }) : _authRepository = authRepository,
-       _rolesRepository = rolesRepository,
        _sessionCubit = sessionCubit,
        super(AuthInitial());
 
@@ -24,37 +21,42 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     try {
       final response = await _authRepository.login(correo, contrasena);
-      await _buildUserAndLogin(
-        response.usuario,
-        response.token,
-        response.usuario.rolId,
+
+      final userId = _extractUserId(response.token);
+      final claims = _extractClaims(response.token);
+      final nombreRol = claims.contains('Administrador') ? 'Administrador' : 'Usuario';
+
+      final user = Usuario(
+        id: userId,
+        userName: response.username,
+        nombreCompleto: response.username,
+        email: response.correo,
+        estado: true,
+        fechaRegistro: DateTime.now(),
+        nombreRol: nombreRol,
+        fotoPerfilUrl: response.fotoPerfilUrl,
       );
-      emit(AuthLoginSuccess(usuario: response.usuario, token: response.token));
+
+      await _sessionCubit.login(user: user, token: response.token);
+      emit(AuthLoginSuccess(usuario: user, token: response.token));
     } catch (e) {
       emit(AuthError(_formatError(e)));
     }
   }
 
   Future<void> register({
-    required String nombreUsuario,
+    required String userName,
     required String correo,
     required String contrasena,
-    required int rolId,
-    required String nombreCompleto,
   }) async {
     emit(AuthLoading());
     try {
-      final response = await _authRepository.register(
-        nombreUsuario: nombreUsuario,
+      await _authRepository.register(
+        userName: userName,
         correo: correo,
         contrasena: contrasena,
-        rolId: rolId,
-        nombreCompleto: nombreCompleto,
       );
-      await _buildUserAndLogin(response.usuario, response.token, rolId);
-      emit(
-        AuthRegisterSuccess(usuario: response.usuario, token: response.token),
-      );
+      await login(correo, contrasena);
     } catch (e) {
       emit(AuthError(_formatError(e)));
     }
@@ -74,45 +76,33 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> resetearContrasena(String token, String nuevaContrasena) async {
+  Future<void> resetearContrasena(
+    String email,
+    String token,
+    String nuevaContrasena,
+  ) async {
     emit(AuthLoading());
     try {
-      await _authRepository.resetearContrasena(token, nuevaContrasena);
+      await _authRepository.resetearContrasena(email, token, nuevaContrasena);
       emit(AuthPasswordResetSuccess());
     } catch (e) {
       emit(AuthError(_formatError(e)));
     }
   }
 
-  Future<void> _buildUserAndLogin(
-    Usuario source,
-    String token,
-    int rolId,
-  ) async {
-    final nombreRol = await _getRoleName(rolId);
-
-    final user = Usuario(
-      id: source.id,
-      userName: source.userName,
-      nombreCompleto: source.nombreCompleto,
-      email: source.email,
-      estado: true,
-      sancionado: source.sancionado,
-      fechaRegistro: DateTime.now(),
-      nombreRol: nombreRol,
-      rolId: rolId,
-      fotoPerfilBase64: source.fotoPerfilBase64,
-    );
-
-    await _sessionCubit.login(user: user, token: token);
+  String _extractUserId(String token) {
+    final payload = decodeJwtPayload(token);
+    const key = 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier';
+    return payload[key] as String? ?? '';
   }
 
-  Future<String> _getRoleName(int rolId) async {
-    try {
-      final rol = await _rolesRepository.getRol(rolId);
-      if (rol != null) return rol.nombre;
-    } catch (_) {}
-    return 'Usuario';
+  List<String> _extractClaims(String token) {
+    final payload = decodeJwtPayload(token);
+    const roleKey = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
+    final role = payload[roleKey];
+    if (role is List) return role.cast<String>();
+    if (role is String) return [role];
+    return [];
   }
 
   String _formatError(Object e) {

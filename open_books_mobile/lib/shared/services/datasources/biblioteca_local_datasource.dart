@@ -17,7 +17,7 @@ class BibliotecaLocalDataSource {
     return maps.map((map) => BibliotecaLocalModel.fromMap(map)).toList();
   }
 
-  Future<List<BibliotecaLocalModel>> getByUsuarioId(int usuarioId) async {
+  Future<List<BibliotecaLocalModel>> getByUsuarioId(String usuarioId) async {
     final maps = await _db.query(
       _tableName,
       where: 'usuario_id = ?',
@@ -38,7 +38,7 @@ class BibliotecaLocalDataSource {
     return BibliotecaLocalModel.fromMap(maps.first);
   }
 
-  Future<BibliotecaLocalModel?> getByLibroId(int libroId, int usuarioId) async {
+  Future<BibliotecaLocalModel?> getByLibroId(int libroId, String usuarioId) async {
     final maps = await _db.query(
       _tableName,
       where: 'libro_id = ? AND usuario_id = ?',
@@ -74,7 +74,7 @@ class BibliotecaLocalDataSource {
     );
   }
 
-  Future<void> deleteByLibroId(int libroId, int usuarioId) async {
+  Future<void> deleteByLibroId(int libroId, String usuarioId) async {
     await _db.delete(
       _tableName,
       where: 'libro_id = ? AND usuario_id = ?',
